@@ -1348,7 +1348,7 @@ def generate_json_template():
             "description": "批量导入桥梁数据的JSON模板",
             "required_fields": ["bridge_type", "part", "damage_type", "scales"],
             "optional_fields": ["structure_type", "component_type", "*_desc"],
-            "null_handling": "结构类型和部件类型可以为null，系统会自动创建默认值",
+            "null_handling": "结构类型和部件类型可以为null",
             "scales_format": "标度为字符串数组，系统会自动解析",
             "options": {
                 "skip_existing": "是否跳过已存在的路径",
