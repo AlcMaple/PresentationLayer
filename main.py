@@ -1329,8 +1329,8 @@ def generate_json_template():
             {
                 "bridge_type": "拱式桥",
                 "part": "主拱圈",
-                "structure_type": null,  # 结构类型为空，会自动创建默认值
-                "component_type": null,  # 部件类型为空，会自动创建默认值
+                "structure_type": None,  # 结构类型为空，会自动创建默认值
+                "component_type": None,  # 部件类型为空，会自动创建默认值
                 "damage_type": "裂缝",
                 "scales": ["1级", "2级", "3级", "4级", "5级"],
             },
