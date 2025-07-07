@@ -1,0 +1,1168 @@
+{
+  "metadata": {
+    "export_time": "2025-07-07T10:56:04.868481",
+    "total_records": 137,
+    "columns": [
+      "桥梁类型",
+      "部位",
+      "结构类型",
+      "部件类型",
+      "构件形式",
+      "病害类型",
+      "标度",
+      "定性描述"
+    ]
+  },
+  "bridge_types": {
+    "钢-混凝土组合拱桥": {
+      "name": "钢-混凝土组合拱桥",
+      "record_count": 137,
+      "parts": {
+        "上部结构": {
+          "name": "上部结构",
+          "level": "部位",
+          "record_count": 67,
+          "children": {
+            "拱肋、横向联结系": {
+              "name": "拱肋、横向联结系",
+              "level": "结构类型",
+              "record_count": 15,
+              "children": {
+                "-": {
+                  "name": "-",
+                  "level": "部件类型",
+                  "record_count": 15,
+                  "children": {
+                    "涂层缺陷": {
+                      "name": "涂层缺陷",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "焊缝开裂": {
+                      "name": "焊缝开裂",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "混凝土裂缝": {
+                      "name": "混凝土裂缝",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "构件扭曲变形、局部损伤": {
+                      "name": "构件扭曲变形、局部损伤",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "构件腐蚀、生锈": {
+                      "name": "构件腐蚀、生锈",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "管内混凝土填充不密实或脱空": {
+                      "name": "管内混凝土填充不密实或脱空",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "主拱圈挠度": {
+                      "name": "主拱圈挠度",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "拱肋位移": {
+                      "name": "拱肋位移",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "蜂窝、麻面": {
+                      "name": "蜂窝、麻面",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "剥落、掉角": {
+                      "name": "剥落、掉角",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "空洞、孔洞": {
+                      "name": "空洞、孔洞",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "混凝土保护层厚度": {
+                      "name": "混凝土保护层厚度",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "钢筋锈蚀": {
+                      "name": "钢筋锈蚀",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "混凝土碳化": {
+                      "name": "混凝土碳化",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "混凝土强度": {
+                      "name": "混凝土强度",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    }
+                  }
+                }
+              }
+            },
+            "立柱": {
+              "name": "立柱",
+              "level": "结构类型",
+              "record_count": 10,
+              "children": {
+                "-": {
+                  "name": "-",
+                  "level": "部件类型",
+                  "record_count": 10,
+                  "children": {
+                    "混凝土裂缝": {
+                      "name": "混凝土裂缝",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "涂层缺陷": {
+                      "name": "涂层缺陷",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "焊缝开裂": {
+                      "name": "焊缝开裂",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "构件扭曲变形、局部损伤": {
+                      "name": "构件扭曲变形、局部损伤",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "构件腐蚀、生锈": {
+                      "name": "构件腐蚀、生锈",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "管内混凝土填充不密实或脱空": {
+                      "name": "管内混凝土填充不密实或脱空",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "蜂窝、麻面": {
+                      "name": "蜂窝、麻面",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "剥落、掉角": {
+                      "name": "剥落、掉角",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "空洞、孔洞": {
+                      "name": "空洞、孔洞",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "钢筋锈蚀": {
+                      "name": "钢筋锈蚀",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    }
+                  }
+                }
+              }
+            },
+            "吊杆": {
+              "name": "吊杆",
+              "level": "结构类型",
+              "record_count": 10,
+              "children": {
+                "-": {
+                  "name": "-",
+                  "level": "部件类型",
+                  "record_count": 10,
+                  "children": {
+                    "渗水": {
+                      "name": "渗水",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "锚头、螺栓、钢管护套": {
+                      "name": "锚头、螺栓、钢管护套",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "锚头损坏": {
+                      "name": "锚头损坏",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "橡胶老化变质（吊杆端部及减振器）": {
+                      "name": "橡胶老化变质（吊杆端部及减振器）",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "防护套损坏（吊杆端部出口处钢管护套以及钢管护套与PE护套连接处）": {
+                      "name": "防护套损坏（吊杆端部出口处钢管护套以及钢管护套与PE护套连接处）",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "吊杆的防护层破坏": {
+                      "name": "吊杆的防护层破坏",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "断丝": {
+                      "name": "断丝",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "蜂窝、麻面": {
+                      "name": "蜂窝、麻面",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "剥落、掉角": {
+                      "name": "剥落、掉角",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "空洞、孔洞": {
+                      "name": "空洞、孔洞",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    }
+                  }
+                }
+              }
+            },
+            "系杆及防护板": {
+              "name": "系杆及防护板",
+              "level": "结构类型",
+              "record_count": 9,
+              "children": {
+                "-": {
+                  "name": "-",
+                  "level": "部件类型",
+                  "record_count": 9,
+                  "children": {
+                    "锚头、防护罩、钢箱": {
+                      "name": "锚头、防护罩、钢箱",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "系杆外部涂层脱落": {
+                      "name": "系杆外部涂层脱落",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "系杆连接松动": {
+                      "name": "系杆连接松动",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "锚头、防护套损坏": {
+                      "name": "锚头、防护套损坏",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "断丝": {
+                      "name": "断丝",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "混凝土裂缝": {
+                      "name": "混凝土裂缝",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "蜂窝、麻面": {
+                      "name": "蜂窝、麻面",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "剥落、掉角": {
+                      "name": "剥落、掉角",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "空洞、孔洞": {
+                      "name": "空洞、孔洞",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    }
+                  }
+                }
+              }
+            },
+            "支座": {
+              "name": "支座",
+              "level": "结构类型",
+              "record_count": 12,
+              "children": {
+                "橡胶支座": {
+                  "name": "橡胶支座",
+                  "level": "部件类型",
+                  "record_count": 6,
+                  "children": {
+                    "板式支座老化变质、开裂": {
+                      "name": "板式支座老化变质、开裂",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "板式支座缺陷": {
+                      "name": "板式支座缺陷",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "板式支座位置串动、脱空或剪切超限": {
+                      "name": "板式支座位置串动、脱空或剪切超限",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "盆式支座组件损坏": {
+                      "name": "盆式支座组件损坏",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "聚四氟乙烯滑板磨损": {
+                      "name": "聚四氟乙烯滑板磨损",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "盆式支座位移、转角超限": {
+                      "name": "盆式支座位移、转角超限",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    }
+                  }
+                },
+                "钢支座": {
+                  "name": "钢支座",
+                  "level": "部件类型",
+                  "record_count": 3,
+                  "children": {
+                    "钢支座组件或功能缺陷": {
+                      "name": "钢支座组件或功能缺陷",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "钢支座位移、转角超限": {
+                      "name": "钢支座位移、转角超限",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "钢支座部件磨损、裂缝": {
+                      "name": "钢支座部件磨损、裂缝",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    }
+                  }
+                },
+                "混凝土摆式支座": {
+                  "name": "混凝土摆式支座",
+                  "level": "部件类型",
+                  "record_count": 3,
+                  "children": {
+                    "混凝土缺损": {
+                      "name": "混凝土缺损",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "活动支座滑动面不平整、生锈咬死": {
+                      "name": "活动支座滑动面不平整、生锈咬死",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "轴承有裂纹、切口或偏移": {
+                      "name": "轴承有裂纹、切口或偏移",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    }
+                  }
+                }
+              }
+            },
+            "桥面板（梁）": {
+              "name": "桥面板（梁）",
+              "level": "结构类型",
+              "record_count": 11,
+              "children": {
+                "-": {
+                  "name": "-",
+                  "level": "部件类型",
+                  "record_count": 11,
+                  "children": {
+                    "蜂窝、麻面": {
+                      "name": "蜂窝、麻面",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "剥落、掉角": {
+                      "name": "剥落、掉角",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "空洞、孔洞": {
+                      "name": "空洞、孔洞",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "混凝土保护层厚度": {
+                      "name": "混凝土保护层厚度",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "钢筋锈蚀": {
+                      "name": "钢筋锈蚀",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "混凝土碳化": {
+                      "name": "混凝土碳化",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "混凝土强度": {
+                      "name": "混凝土强度",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "跨中挠度": {
+                      "name": "跨中挠度",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "结构变位": {
+                      "name": "结构变位",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "预应力构件损伤": {
+                      "name": "预应力构件损伤",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "裂缝": {
+                      "name": "裂缝",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "下部结构": {
+          "name": "下部结构",
+          "level": "部位",
+          "record_count": 46,
+          "children": {
+            "翼墙、耳墙": {
+              "name": "翼墙、耳墙",
+              "level": "结构类型",
+              "record_count": 4,
+              "children": {
+                "-": {
+                  "name": "-",
+                  "level": "部件类型",
+                  "record_count": 4,
+                  "children": {
+                    "破损": {
+                      "name": "破损",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "位移": {
+                      "name": "位移",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "鼓肚、砌体松动": {
+                      "name": "鼓肚、砌体松动",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "裂缝": {
+                      "name": "裂缝",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    }
+                  }
+                }
+              }
+            },
+            "锥坡、护坡": {
+              "name": "锥坡、护坡",
+              "level": "结构类型",
+              "record_count": 2,
+              "children": {
+                "-": {
+                  "name": "-",
+                  "level": "部件类型",
+                  "record_count": 2,
+                  "children": {
+                    "缺陷": {
+                      "name": "缺陷",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "冲刷": {
+                      "name": "冲刷",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    }
+                  }
+                }
+              }
+            },
+            "桥墩": {
+              "name": "桥墩",
+              "level": "结构类型",
+              "record_count": 15,
+              "children": {
+                "墩身": {
+                  "name": "墩身",
+                  "level": "部件类型",
+                  "record_count": 9,
+                  "children": {
+                    "蜂窝、麻面": {
+                      "name": "蜂窝、麻面",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "剥落、露筋": {
+                      "name": "剥落、露筋",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "空洞、孔洞": {
+                      "name": "空洞、孔洞",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "钢筋锈蚀": {
+                      "name": "钢筋锈蚀",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "混凝土碳化、腐蚀": {
+                      "name": "混凝土碳化、腐蚀",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "磨损": {
+                      "name": "磨损",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "圬工砌体缺陷": {
+                      "name": "圬工砌体缺陷",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "位移": {
+                      "name": "位移",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "裂缝": {
+                      "name": "裂缝",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    }
+                  }
+                },
+                "盖梁或系梁": {
+                  "name": "盖梁或系梁",
+                  "level": "部件类型",
+                  "record_count": 6,
+                  "children": {
+                    "蜂窝、麻面": {
+                      "name": "蜂窝、麻面",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "剥落、露筋": {
+                      "name": "剥落、露筋",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "空洞、孔洞": {
+                      "name": "空洞、孔洞",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "钢筋锈蚀": {
+                      "name": "钢筋锈蚀",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "混凝土碳化、腐蚀": {
+                      "name": "混凝土碳化、腐蚀",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "裂缝": {
+                      "name": "裂缝",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    }
+                  }
+                }
+              }
+            },
+            "桥台": {
+              "name": "桥台",
+              "level": "结构类型",
+              "record_count": 13,
+              "children": {
+                "台身": {
+                  "name": "台身",
+                  "level": "部件类型",
+                  "record_count": 9,
+                  "children": {
+                    "剥落": {
+                      "name": "剥落",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "空洞、孔洞": {
+                      "name": "空洞、孔洞",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "磨损": {
+                      "name": "磨损",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "混凝土碳化、腐蚀": {
+                      "name": "混凝土碳化、腐蚀",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "圬工砌体缺陷": {
+                      "name": "圬工砌体缺陷",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "桥头跳车": {
+                      "name": "桥头跳车",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "台背排水状况": {
+                      "name": "台背排水状况",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "位移": {
+                      "name": "位移",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "裂缝": {
+                      "name": "裂缝",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    }
+                  }
+                },
+                "台帽": {
+                  "name": "台帽",
+                  "level": "部件类型",
+                  "record_count": 4,
+                  "children": {
+                    "破损": {
+                      "name": "破损",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "混凝土碳化、腐蚀": {
+                      "name": "混凝土碳化、腐蚀",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "裂缝": {
+                      "name": "裂缝",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "空洞、孔洞": {
+                      "name": "空洞、孔洞",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    }
+                  }
+                }
+              }
+            },
+            "墩台基础": {
+              "name": "墩台基础",
+              "level": "结构类型",
+              "record_count": 7,
+              "children": {
+                "基础\n（包括水下基础）": {
+                  "name": "基础\n（包括水下基础）",
+                  "level": "部件类型",
+                  "record_count": 7,
+                  "children": {
+                    "冲刷、淘空": {
+                      "name": "冲刷、淘空",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "剥落、露筋": {
+                      "name": "剥落、露筋",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "冲蚀": {
+                      "name": "冲蚀",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "河底铺砌损坏": {
+                      "name": "河底铺砌损坏",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "沉降": {
+                      "name": "沉降",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "滑移和倾斜": {
+                      "name": "滑移和倾斜",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "裂缝": {
+                      "name": "裂缝",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    }
+                  }
+                }
+              }
+            },
+            "河床": {
+              "name": "河床",
+              "level": "结构类型",
+              "record_count": 3,
+              "children": {
+                "-": {
+                  "name": "-",
+                  "level": "部件类型",
+                  "record_count": 3,
+                  "children": {
+                    "堵塞": {
+                      "name": "堵塞",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "冲刷": {
+                      "name": "冲刷",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "河床变迁": {
+                      "name": "河床变迁",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    }
+                  }
+                }
+              }
+            },
+            "调治构造物": {
+              "name": "调治构造物",
+              "level": "结构类型",
+              "record_count": 2,
+              "children": {
+                "-": {
+                  "name": "-",
+                  "level": "部件类型",
+                  "record_count": 2,
+                  "children": {
+                    "损坏": {
+                      "name": "损坏",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "冲刷、变形": {
+                      "name": "冲刷、变形",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "桥面系": {
+          "name": "桥面系",
+          "level": "部位",
+          "record_count": 24,
+          "children": {
+            "桥面铺装": {
+              "name": "桥面铺装",
+              "level": "结构类型",
+              "record_count": 11,
+              "children": {
+                "沥青混凝土桥面铺装": {
+                  "name": "沥青混凝土桥面铺装",
+                  "level": "部件类型",
+                  "record_count": 4,
+                  "children": {
+                    "车辙、拥包、高低不平": {
+                      "name": "车辙、拥包、高低不平",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "泛油": {
+                      "name": "泛油",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "破损": {
+                      "name": "破损",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "龟裂、块裂、纵向裂缝、横向裂缝": {
+                      "name": "龟裂、块裂、纵向裂缝、横向裂缝",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    }
+                  }
+                },
+                "水泥混凝土桥面铺装": {
+                  "name": "水泥混凝土桥面铺装",
+                  "level": "部件类型",
+                  "record_count": 7,
+                  "children": {
+                    "磨光、脱皮、露骨": {
+                      "name": "磨光、脱皮、露骨",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "错台": {
+                      "name": "错台",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "坑洞": {
+                      "name": "坑洞",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "剥落": {
+                      "name": "剥落",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "拱起": {
+                      "name": "拱起",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "接缝料损坏": {
+                      "name": "接缝料损坏",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "板角断裂、破碎板": {
+                      "name": "板角断裂、破碎板",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    }
+                  }
+                }
+              }
+            },
+            "伸缩缝装置": {
+              "name": "伸缩缝装置",
+              "level": "结构类型",
+              "record_count": 4,
+              "children": {
+                "-": {
+                  "name": "-",
+                  "level": "部件类型",
+                  "record_count": 4,
+                  "children": {
+                    "凹凸不平": {
+                      "name": "凹凸不平",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "锚固区缺陷": {
+                      "name": "锚固区缺陷",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "破损": {
+                      "name": "破损",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "失效": {
+                      "name": "失效",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    }
+                  }
+                }
+              }
+            },
+            "人行道": {
+              "name": "人行道",
+              "level": "结构类型",
+              "record_count": 2,
+              "children": {
+                "-": {
+                  "name": "-",
+                  "level": "部件类型",
+                  "record_count": 2,
+                  "children": {
+                    "破损": {
+                      "name": "破损",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "缺失": {
+                      "name": "缺失",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    }
+                  }
+                }
+              }
+            },
+            "栏杆、护栏": {
+              "name": "栏杆、护栏",
+              "level": "结构类型",
+              "record_count": 2,
+              "children": {
+                "-": {
+                  "name": "-",
+                  "level": "部件类型",
+                  "record_count": 2,
+                  "children": {
+                    "撞坏、缺失": {
+                      "name": "撞坏、缺失",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "破损": {
+                      "name": "破损",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    }
+                  }
+                }
+              }
+            },
+            "防排水系统": {
+              "name": "防排水系统",
+              "level": "结构类型",
+              "record_count": 2,
+              "children": {
+                "-": {
+                  "name": "-",
+                  "level": "部件类型",
+                  "record_count": 2,
+                  "children": {
+                    "排水不畅": {
+                      "name": "排水不畅",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "泄水管、引水槽缺陷": {
+                      "name": "泄水管、引水槽缺陷",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    }
+                  }
+                }
+              }
+            },
+            "照明、标志": {
+              "name": "照明、标志",
+              "level": "结构类型",
+              "record_count": 3,
+              "children": {
+                "-": {
+                  "name": "-",
+                  "level": "部件类型",
+                  "record_count": 3,
+                  "children": {
+                    "污损或损坏": {
+                      "name": "污损或损坏",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "照明设施": {
+                      "name": "照明设施",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    },
+                    "标志脱落、缺失": {
+                      "name": "标志脱落、缺失",
+                      "level": "构件形式",
+                      "record_count": 1,
+                      "children": {}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
