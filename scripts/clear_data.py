@@ -13,7 +13,7 @@ def clear_all_tables():
         "bridge_quantities",
         "bridge_qualities",
         "bridge_scales",
-        "bridge_hazards",
+        "bridge_diseases",
         "bridge_component_forms",
         "bridge_component_types",
         "bridge_structures",

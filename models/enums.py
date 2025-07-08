@@ -8,3 +8,18 @@ class ScalesType(str, Enum):
     PERCENTAGE = "PERCENTAGE"  # 百分比型：10%-20%，20%-50%
     RANGE = "RANGE"  # 范围型：≤10mm，＞10mm 且≤20mm
     TEXT = "TEXT"  # 文本型
+
+
+class CodePrefix(str, Enum):
+    """编码前缀枚举"""
+
+    CATEGORIES = "CAT"
+    BRIDGE_TYPES = "BT"
+    BRIDGE_PARTS = "BP"
+    BRIDGE_STRUCTURES = "BS"
+    BRIDGE_COMPONENT_TYPES = "BCT"
+    BRIDGE_COMPONENT_FORMS = "BCF"
+    BRIDGE_DISEASES = "BD"
+    BRIDGE_SCALES = "SC"
+    BRIDGE_QUALITIES = "QL"
+    BRIDGE_QUANTITIES = "QT"

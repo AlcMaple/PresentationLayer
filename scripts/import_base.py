@@ -19,6 +19,7 @@ from models import (
     BridgeQualities,
     BridgeQuantities,
 )
+from services.code_generator import get_code_generator
 
 
 class BridgeDataImporter:
@@ -27,6 +28,7 @@ class BridgeDataImporter:
     def __init__(self, json_file_path: str):
         self.json_file_path = json_file_path
         self.session = Session(engine)
+        self.code_generator = get_code_generator(self.session)
 
         # 用于去重的集合
         self.bridge_types: Set[str] = set()
@@ -156,84 +158,97 @@ class BridgeDataImporter:
         """导入桥梁类型"""
         print("导入桥梁类型...")
         for idx, name in enumerate(sorted(self.bridge_types), 1):
+            # 使用新的编码生成器
+            code = self.code_generator.generate_code("bridge_types")
+
             bridge_type = BridgeTypes(
                 name=name,
-                code=f"BT{idx:03d}",
+                code=code,
                 description=f"{name}类型桥梁",
                 sort_order=idx,
             )
             self.session.add(bridge_type)
-        self.session.commit()
+            self.session.commit()
         print(f"成功导入 {len(self.bridge_types)} 个桥梁类型")
 
     def import_parts(self):
         """导入部位"""
         print("导入部位...")
         for idx, name in enumerate(sorted(self.parts), 1):
+            code = self.code_generator.generate_code("bridge_parts")
+
             part = BridgeParts(
                 name=name,
-                code=f"BP{idx:03d}",
+                code=code,
                 description=f"{name}部位",
                 sort_order=idx,
             )
             self.session.add(part)
-        self.session.commit()
+            self.session.commit()
         print(f"成功导入 {len(self.parts)} 个部位")
 
     def import_structures(self):
         """导入结构类型"""
         print("导入结构类型...")
         for idx, name in enumerate(sorted(self.structures), 1):
+            code = self.code_generator.generate_code("bridge_structures")
+
             structure = BridgeStructures(
                 name=name,
-                code=f"BS{idx:03d}",
+                code=code,
                 description=f"{name}结构",
                 sort_order=idx,
             )
             self.session.add(structure)
-        self.session.commit()
+            self.session.commit()
         print(f"成功导入 {len(self.structures)} 个结构类型")
 
     def import_component_types(self):
         """导入部件类型"""
         print("导入部件类型...")
         for idx, name in enumerate(sorted(self.component_types), 1):
+            code = self.code_generator.generate_code("bridge_component_types")
+
             comp_type = BridgeComponentTypes(
                 name=name,
-                code=f"BCT{idx:03d}",
+                code=code,
                 description=f"{name}部件",
                 sort_order=idx,
             )
             self.session.add(comp_type)
-        self.session.commit()
+            self.session.commit()
         print(f"成功导入 {len(self.component_types)} 个部件类型")
 
     def import_component_forms(self):
         """导入构件形式"""
         print("导入构件形式...")
         for idx, name in enumerate(sorted(self.component_forms), 1):
+            code = self.code_generator.generate_code("bridge_component_forms")
+
             comp_form = BridgeComponentForms(
                 name=name,
-                code=f"BCF{idx:03d}",
+                code=code,
                 description=f"{name}构件",
                 sort_order=idx,
             )
             self.session.add(comp_form)
-        self.session.commit()
+            self.session.commit()
         print(f"成功导入 {len(self.component_forms)} 个构件形式")
 
     def import_hazards(self):
         """导入病害类型"""
         print("导入病害类型...")
         for idx, name in enumerate(sorted(self.hazards), 1):
+            code = self.code_generator.generate_code("bridge_diseases")
+
             hazard = BridgeDiseases(
                 name=name,
-                code=f"BH{idx:03d}",
+                code=code,
                 description=f"{name}病害",
                 sort_order=idx,
             )
             self.session.add(hazard)
-        self.session.commit()
+            self.session.commit()
         print(f"成功导入 {len(self.hazards)} 个病害类型")
 
     def import_scales(self):
@@ -242,48 +257,54 @@ class BridgeDataImporter:
         from models.enums import ScalesType
 
         for scale_val in sorted(self.scales):
+            code = self.code_generator.generate_code("bridge_scales")
+
             scale = BridgeScales(
                 name=f"标度{scale_val}",
-                code=f"SC{scale_val:03d}",
+                code=code,
                 description=f"标度等级{scale_val}",
                 scale_type=ScalesType.NUMERIC,
                 scale_value=scale_val,
                 sort_order=scale_val,
             )
             self.session.add(scale)
-        self.session.commit()
+            self.session.commit()
         print(f"成功导入 {len(self.scales)} 个标度")
 
     def import_qualities(self):
         """导入定性描述"""
         print("导入定性描述...")
         for idx, desc in enumerate(sorted(self.qualities), 1):
+            code = self.code_generator.generate_code("bridge_qualities")
+
             quality = BridgeQualities(
                 name=(
                     desc[:50] + "..." if len(desc) > 50 else desc
                 ),  # 截取前50字符作为名称
-                code=f"QL{idx:04d}",
+                code=code,
                 description=desc,
                 sort_order=idx,
             )
             self.session.add(quality)
-        self.session.commit()
+            self.session.commit()
         print(f"成功导入 {len(self.qualities)} 个定性描述")
 
     def import_quantities(self):
         """导入定量描述"""
         print("导入定量描述...")
         for idx, desc in enumerate(sorted(self.quantities), 1):
+            code = self.code_generator.generate_code("bridge_quantities")
+
             quantity = BridgeQuantities(
                 name=(
                     desc[:50] + "..." if len(desc) > 50 else desc
                 ),  # 截取前50字符作为名称
-                code=f"QT{idx:04d}",
+                code=code,
                 description=desc,
                 sort_order=idx,
             )
             self.session.add(quantity)
-        self.session.commit()
+            self.session.commit()
         print(f"成功导入 {len(self.quantities)} 个定量描述")
 
     def run_import(self):
