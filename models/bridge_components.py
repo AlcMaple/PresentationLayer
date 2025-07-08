@@ -4,12 +4,13 @@ from datetime import datetime
 
 from .base import BaseModel
 from .enums import ScalesType
-from .categories import Categories
 
 
 class BridgeComponentBase(BaseModel):
     name: str = Field(description="名称")
-    code: Optional[str] = Field(description="编码", default=None, unique=True)
+    code: Optional[str] = Field(
+        description="编码", default=None, max_length=20, index=True
+    )
     description: Optional[str] = Field(description="描述", default=None)
     sort_order: int = Field(description="排序", default=0)
     is_active: bool = Field(description="是否启用", default=True)
@@ -27,6 +28,7 @@ class BridgeTypes(BridgeComponentBase, table=True):
     __table_args__ = (
         Index("idx_bridge_types_code", "code"),
         Index("idx_bridge_types_active", "is_active"),
+        Index("idx_bridge_types_name", "name"),
     )
 
 
@@ -39,6 +41,7 @@ class BridgeParts(BridgeComponentBase, table=True):
     __table_args__ = (
         Index("idx_bridge_parts_code", "code"),
         Index("idx_bridge_parts_active", "is_active"),
+        Index("idx_bridge_parts_name", "name"),
     )
 
 
@@ -53,6 +56,7 @@ class BridgeStructures(BridgeComponentBase, table=True):
     __table_args__ = (
         Index("idx_bridge_structures_code", "code"),
         Index("idx_bridge_structures_active", "is_active"),
+        Index("idx_bridge_structures_name", "name"),
     )
 
 
@@ -67,6 +71,7 @@ class BridgeComponentTypes(BridgeComponentBase, table=True):
     __table_args__ = (
         Index("idx_bridge_component_types_code", "code"),
         Index("idx_bridge_component_types_active", "is_active"),
+        Index("idx_bridge_component_types_name", "name"),
     )
 
 
@@ -81,6 +86,7 @@ class BridgeComponentForms(BridgeComponentBase, table=True):
     __table_args__ = (
         Index("idx_bridge_component_forms_code", "code"),
         Index("idx_bridge_component_forms_active", "is_active"),
+        Index("idx_bridge_component_forms_name", "name"),
     )
 
 
@@ -95,6 +101,7 @@ class BridgeDiseases(BridgeComponentBase, table=True):
     __table_args__ = (
         Index("idx_bridge_diseases_code", "code"),
         Index("idx_bridge_diseases_active", "is_active"),
+        Index("idx_bridge_diseases_name", "name"),
     )
 
 
@@ -117,6 +124,7 @@ class BridgeScales(BridgeComponentBase, table=True):
         Index("idx_bridge_scales_active", "is_active"),
         Index("idx_bridge_scales_value", "scale_value"),
         Index("idx_bridge_scales_type", "scale_type"),
+        Index("idx_bridge_scales_name", "name"),
     )
 
 
@@ -131,6 +139,7 @@ class BridgeQualities(BridgeComponentBase, table=True):
     __table_args__ = (
         Index("idx_bridge_qualities_code", "code"),
         Index("idx_bridge_qualities_active", "is_active"),
+        Index("idx_bridge_qualities_name", "name"),
     )
 
 
@@ -145,4 +154,5 @@ class BridgeQuantities(BridgeComponentBase, table=True):
     __table_args__ = (
         Index("idx_bridge_quantities_code", "code"),
         Index("idx_bridge_quantities_active", "is_active"),
+        Index("idx_bridge_quantities_name", "name"),
     )

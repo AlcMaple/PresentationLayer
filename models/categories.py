@@ -8,7 +8,12 @@ class CategoriesBase(BaseModel):
     """分类基础模型"""
 
     name: str = Field(max_length=100, description="分类名称")
-    code: str = Field(max_length=50, description="分类编码", unique=True)
+    code: Optional[str] = Field(
+        default=None,
+        max_length=20,
+        description="分类编码",
+        index=True,
+    )
     description: Optional[str] = Field(
         default=None, max_length=500, description="分类描述"
     )
@@ -38,4 +43,5 @@ class Categories(CategoriesBase, table=True):
         Index("idx_categories_code", "code"),
         Index("idx_categories_level", "level"),
         Index("idx_categories_active", "is_active"),
+        Index("idx_categories_name", "name"),
     )

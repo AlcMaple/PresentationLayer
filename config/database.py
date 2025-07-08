@@ -9,7 +9,7 @@ from models import (
     BridgeStructures,
     BridgeComponentTypes,
     BridgeComponentForms,
-    BridgeHazards,
+    BridgeDiseases,
     BridgeScales,
     BridgeQualities,
     BridgeQuantities,
