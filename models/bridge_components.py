@@ -4,6 +4,7 @@ from datetime import datetime
 
 from .base import BaseModel
 from .enums import ScalesType
+from .categories import Categories
 
 
 class BridgeComponentBase(BaseModel):
@@ -19,6 +20,9 @@ class BridgeTypes(BridgeComponentBase, table=True):
     __tablename__ = "bridge_types"
 
     id: Optional[int] = Field(default=None, primary_key=True, description="桥梁主键ID")
+    category_id: Optional[int] = Field(
+        default=None, foreign_key="categories.id", description="分类ID"
+    )
 
     __table_args__ = (
         Index("idx_bridge_types_code", "code"),
