@@ -2,6 +2,18 @@ from sqlmodel import SQLModel, create_engine, Session
 from typing import Generator
 
 from .settings import settings
+from models import (
+    Categories,
+    BridgeTypes,
+    BridgeParts,
+    BridgeStructures,
+    BridgeComponentTypes,
+    BridgeComponentForms,
+    BridgeHazards,
+    BridgeScales,
+    BridgeQualities,
+    BridgeQuantities,
+)
 
 # 数据库引擎
 engine = create_engine(
