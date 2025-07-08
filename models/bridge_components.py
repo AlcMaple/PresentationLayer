@@ -81,16 +81,16 @@ class BridgeComponentForms(BridgeComponentBase, table=True):
 
 
 # 病害类型表
-class BridgeHazards(BridgeComponentBase, table=True):
-    __tablename__ = "bridge_hazards"
+class BridgeDiseases(BridgeComponentBase, table=True):
+    __tablename__ = "bridge_diseases"
 
     id: Optional[int] = Field(
         default=None, primary_key=True, description="病害类型主键ID"
     )
 
     __table_args__ = (
-        Index("idx_bridge_hazards_code", "code"),
-        Index("idx_bridge_hazards_active", "is_active"),
+        Index("idx_bridge_diseases_code", "code"),
+        Index("idx_bridge_diseases_active", "is_active"),
     )
 
 

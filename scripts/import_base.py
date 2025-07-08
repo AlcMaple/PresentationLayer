@@ -14,7 +14,7 @@ from models import (
     BridgeStructures,
     BridgeComponentTypes,
     BridgeComponentForms,
-    BridgeHazards,
+    BridgeDiseases,
     BridgeScales,
     BridgeQualities,
     BridgeQuantities,
@@ -226,7 +226,7 @@ class BridgeDataImporter:
         """导入病害类型"""
         print("导入病害类型...")
         for idx, name in enumerate(sorted(self.hazards), 1):
-            hazard = BridgeHazards(
+            hazard = BridgeDiseases(
                 name=name,
                 code=f"BH{idx:03d}",
                 description=f"{name}病害",
