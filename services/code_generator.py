@@ -59,7 +59,7 @@ class CodeGeneratorService:
                 try:
                     number = int(code.split("_")[1])
                     max_seq = max(max_seq, number)
-                except:
+                except (IndexError, ValueError):
                     continue
             return max_seq
         except Exception as e:
