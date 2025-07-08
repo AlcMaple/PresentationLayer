@@ -356,7 +356,7 @@ def main():
         # 处理单个文件
         input_file = input("请输入要调整的JSON文件路径: ").strip()
         if not input_file:
-            input_file = "json_output/all_bridge_data.json"  # 默认文件
+            input_file = "static/json_output/all_bridge_data.json"  # 默认文件
 
         output_file = input("请输入输出文件路径 (回车使用默认): ").strip()
         if not output_file:

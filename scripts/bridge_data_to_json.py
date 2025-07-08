@@ -213,7 +213,7 @@ class BridgeDataJsonConverter:
                         "is_complete": True,
                     }
 
-    def convert_all_sheets_to_json(self, output_dir="json_output"):
+    def convert_all_sheets_to_json(self, output_dir="static/json_output"):
         """转换所有工作表为JSON文件"""
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
@@ -278,7 +278,7 @@ class BridgeDataJsonConverter:
 
 def main():
     """主函数"""
-    excel_file = "utils/work.xls"
+    excel_file = "static/work.xls"
 
     if not os.path.exists(excel_file):
         print(f"错误: 文件 {excel_file} 不存在")

@@ -321,7 +321,7 @@ class BridgeDataImporter:
 def main():
     """主函数"""
     # JSON文件路径
-    json_file = "utils/json_output/all_bridge_data_adjusted.json"
+    json_file = "static/json_output/all_bridge_data_adjusted.json"
 
     if not os.path.exists(json_file):
         print(f"❌ JSON文件不存在: {json_file}")
