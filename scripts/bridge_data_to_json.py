@@ -275,115 +275,10 @@ class BridgeDataJsonConverter:
 
         return all_sheets_data
 
-    def generate_database_schema(self, json_data, output_dir="json_output"):
-        """根据JSON数据生成MySQL数据库schema建议"""
-        schema_sql = """
--- 桥梁数据库Schema建议
--- 生成时间: {export_time}
-
--- 1. 桥梁类型表
-CREATE TABLE bridge_types (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    name VARCHAR(100) NOT NULL UNIQUE,
-    description TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-
--- 2. 部位表
-CREATE TABLE parts (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    bridge_type_id INT,
-    name VARCHAR(100) NOT NULL,
-    description TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (bridge_type_id) REFERENCES bridge_types(id) ON DELETE CASCADE,
-    INDEX idx_bridge_type (bridge_type_id)
-);
-
--- 3. 结构类型表
-CREATE TABLE structure_types (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    part_id INT,
-    name VARCHAR(200) NOT NULL,
-    description TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (part_id) REFERENCES parts(id) ON DELETE CASCADE,
-    INDEX idx_part (part_id)
-);
-
--- 4. 部件类型表
-CREATE TABLE component_types (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    structure_type_id INT,
-    name VARCHAR(200) NOT NULL,
-    description TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (structure_type_id) REFERENCES structure_types(id) ON DELETE CASCADE,
-    INDEX idx_structure_type (structure_type_id)
-);
-
--- 5. 构件形式表
-CREATE TABLE component_forms (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    component_type_id INT,
-    name VARCHAR(200) NOT NULL,
-    description TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (component_type_id) REFERENCES component_types(id) ON DELETE CASCADE,
-    INDEX idx_component_type (component_type_id)
-);
-
--- 6. 病害类型表
-CREATE TABLE damage_types (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    component_form_id INT,
-    name VARCHAR(200) NOT NULL,
-    description TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (component_form_id) REFERENCES component_forms(id) ON DELETE CASCADE,
-    INDEX idx_component_form (component_form_id)
-);
-
--- 7. 评估标准表（标度、定性描述、定量描述）
-CREATE TABLE evaluation_standards (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    damage_type_id INT,
-    scale_value VARCHAR(50) NOT NULL,
-    qualitative_description TEXT,
-    quantitative_description TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (damage_type_id) REFERENCES damage_types(id) ON DELETE CASCADE,
-    INDEX idx_damage_type (damage_type_id),
-    INDEX idx_scale (scale_value)
-);
-
--- 8. 数据导入日志表
-CREATE TABLE import_logs (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    source_file VARCHAR(255),
-    sheet_name VARCHAR(100),
-    records_imported INT,
-    import_status ENUM('success', 'failed', 'partial'),
-    error_message TEXT,
-    imported_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-""".format(
-            export_time=datetime.now().isoformat()
-        )
-
-        schema_filepath = os.path.join(output_dir, "database_schema.sql")
-        with open(schema_filepath, "w", encoding="utf-8") as f:
-            f.write(schema_sql)
-
-        print(f"✓ 数据库Schema已保存到: {schema_filepath}")
-
-        return schema_filepath
-
 
 def main():
     """主函数"""
-    excel_file = "work.xls"
+    excel_file = "utils/work.xls"
 
     if not os.path.exists(excel_file):
         print(f"错误: 文件 {excel_file} 不存在")
@@ -402,14 +297,9 @@ def main():
         all_data = converter.convert_all_sheets_to_json()
 
         if all_data:
-            # 生成数据库schema
-            converter.generate_database_schema(all_data)
-
             print(f"\n✅ 转换完成!")
             print(f"📁 输出目录: json_output/")
             print(f"📄 主文件: json_output/all_bridge_data.json")
-            print(f"🗄️  数据库Schema: json_output/database_schema.sql")
-
             # 显示统计信息
             total_bridge_types = len(all_data.get("sheets", {}))
             print(f"\n📊 统计信息:")
