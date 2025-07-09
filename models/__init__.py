@@ -13,7 +13,7 @@ from .bridge_components import (
     BridgeQuantities,
 )
 from .paths import Paths
-from .assessment_unit import AssessmentUnit
+from .assessment_units import AssessmentUnit
 
 __all__ = [
     "BaseModel",

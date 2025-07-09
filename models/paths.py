@@ -12,6 +12,12 @@ class Paths(BaseModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True, description="路径主键ID")
 
     # 层级路径字段
+    category_id: Optional[int] = Field(
+        default=None, foreign_key="categories.id", description="桥梁类别ID"
+    )
+    assessment_unit_id: Optional[int] = Field(
+        default=None, foreign_key="assessment_units.id", description="评定单元ID"
+    )
     bridge_type_id: Optional[int] = Field(
         default=None, foreign_key="bridge_types.id", description="桥梁类型ID"
     )
@@ -42,7 +48,9 @@ class Paths(BaseModel, table=True):
 
     # 索引配置
     __table_args__ = (
-        # 单字段索引
+        # 单索引
+        Index("idx_paths_category", "category_id"),
+        Index("idx_paths_assessment_unit", "assessment_unit_id"),
         Index("idx_paths_bridge_type", "bridge_type_id"),
         Index("idx_paths_part", "part_id"),
         Index("idx_paths_structure", "structure_id"),
@@ -51,9 +59,15 @@ class Paths(BaseModel, table=True):
         Index("idx_paths_disease", "disease_id"),
         Index("idx_paths_scale", "scale_id"),
         # 复合索引
+        Index("idx_paths_category_unit", "category_id", "assessment_unit_id"),
+        Index("idx_paths_category_bridge_type", "category_id", "bridge_type_id"),
+        Index("idx_paths_unit_bridge_type", "assessment_unit_id", "bridge_type_id"),
         Index("idx_paths_bridge_disease", "bridge_type_id", "disease_id"),
+        # 路径索引
         Index(
-            "idx_paths_full_path",
+            "idx_paths_full_hierarchy",
+            "category_id",
+            "assessment_unit_id",
             "bridge_type_id",
             "part_id",
             "structure_id",

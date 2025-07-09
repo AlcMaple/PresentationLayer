@@ -9,6 +9,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config.database import engine
 from models import (
+    Categories,
+    AssessmentUnit,
     BridgeTypes,
     BridgeParts,
     BridgeStructures,
@@ -31,6 +33,8 @@ class PathImporter:
 
         # 缓存字典 - 避免重复查询
         self.name_to_id_cache = {
+            "categories": {},
+            "assessment_units": {},
             "bridge_types": {},
             "parts": {},
             "structures": {},
@@ -65,6 +69,16 @@ class PathImporter:
     def build_cache(self):
         """构建name到id的缓存映射"""
         print("正在构建缓存映射...")
+
+        # 分类
+        categories = self.session.exec(select(Categories)).all()
+        for cat in categories:
+            self.name_to_id_cache["categories"][cat.name] = cat.id
+
+        # 评定单元
+        units = self.session.exec(select(AssessmentUnit)).all()
+        for unit in units:
+            self.name_to_id_cache["assessment_units"][unit.name] = unit.id
 
         # 桥梁类型
         bridge_types = self.session.exec(select(BridgeTypes)).all()
@@ -124,6 +138,9 @@ class PathImporter:
     def process_json_data(self, data: Dict):
         """处理JSON数据，提取路径"""
         print("开始处理JSON数据...")
+
+        self.category_id = self.get_id_by_name("categories", "公路桥")
+        self.assessment_unit_id = self.get_id_by_name("assessment_units", "-")
 
         sheets = data.get("sheets", {})
 
@@ -249,6 +266,8 @@ class PathImporter:
 
                     # 创建路径记录
                     path_record = Paths(
+                        category_id=self.category_id,
+                        assessment_unit_id=self.assessment_unit_id,
                         bridge_type_id=bridge_type_id,
                         part_id=part_id,
                         structure_id=structure_id,

@@ -18,6 +18,8 @@ from models import (
     BridgeScales,
     BridgeQualities,
     BridgeQuantities,
+    Categories,
+    AssessmentUnit,
 )
 from services.code_generator import get_code_generator
 
@@ -307,6 +309,40 @@ class BridgeDataImporter:
             self.session.commit()
         print(f"成功导入 {len(self.quantities)} 个定量描述")
 
+    def import_categories(self):
+        """导入分类数据"""
+        print("导入分类...")
+        category_names = ["公路桥", "城市桥"]
+        for idx, name in enumerate(category_names, 1):
+            code = self.code_generator.generate_code("categories")
+            category = Categories(
+                name=name,
+                code=code,
+                description=f"{name}分类",
+                parent_id=None,
+                level=0,
+                sort_order=idx,
+                is_active=True,
+            )
+            self.session.add(category)
+            self.session.commit()
+        print(f"成功导入 {len(category_names)} 个分类")
+
+    def import_assessment_unit(self):
+        """导入评定单元（空数据）"""
+        print("导入评定单元...")
+        code = self.code_generator.generate_code("assessment_units")
+        unit = AssessmentUnit(
+            name="-",
+            code=code,
+            description=None,
+            sort_order=0,
+            is_active=True,
+        )
+        self.session.add(unit)
+        self.session.commit()
+        print("成功导入 1 个评定单元（空数据）")
+
     def run_import(self):
         """执行完整的导入流程"""
         try:
@@ -318,21 +354,33 @@ class BridgeDataImporter:
             # 2. 提取基础数据
             self.extract_data_from_json(data)
 
-            # 3. 按顺序导入各个基础表
-            self.import_bridge_types()
-            self.import_parts()
-            self.import_structures()
-            self.import_component_types()
-            self.import_component_forms()
-            self.import_hazards()
-            self.import_scales()
-            self.import_qualities()
-            self.import_quantities()
+            # 3. 按顺序导入各个基础表，每一部分单独try，避免全部中断
+            steps = [
+                ("桥梁类型", self.import_bridge_types),
+                ("部位", self.import_parts),
+                ("结构类型", self.import_structures),
+                ("部件类型", self.import_component_types),
+                ("构件形式", self.import_component_forms),
+                ("病害类型", self.import_hazards),
+                ("标度", self.import_scales),
+                ("定性描述", self.import_qualities),
+                ("定量描述", self.import_quantities),
+                ("分类", self.import_categories),
+                ("评定单元", self.import_assessment_unit),
+            ]
+
+            for name, func in steps:
+                try:
+                    print(f"🚀 正在导入: {name}")
+                    func()
+                except Exception as e:
+                    print(f"❌ 导入 {name} 失败: {e}")
+                    self.session.rollback()
 
             print("✅ 桥梁数据导入完成!")
 
         except Exception as e:
-            print(f"❌ 导入过程中发生错误: {e}")
+            print(f"❌ 导入过程中发生严重错误: {e}")
             self.session.rollback()
             raise
         finally:

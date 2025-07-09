@@ -10,6 +10,7 @@ from config.database import engine
 def clear_all_tables():
     """清空所有基础表数据"""
     tables = [
+        "paths",
         "bridge_quantities",
         "bridge_qualities",
         "bridge_scales",
@@ -19,6 +20,8 @@ def clear_all_tables():
         "bridge_structures",
         "bridge_parts",
         "bridge_types",
+        "categories",
+        "assessment_units",
     ]
 
     with Session(engine) as session:
