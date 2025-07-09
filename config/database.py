@@ -14,6 +14,7 @@ from models import (
     BridgeQualities,
     BridgeQuantities,
     Paths,
+    AssessmentUnit,
 )
 
 # 数据库引擎

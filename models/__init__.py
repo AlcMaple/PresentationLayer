@@ -13,6 +13,7 @@ from .bridge_components import (
     BridgeQuantities,
 )
 from .paths import Paths
+from .assessment_unit import AssessmentUnit
 
 __all__ = [
     "BaseModel",
@@ -28,4 +29,5 @@ __all__ = [
     "BridgeQualities",
     "BridgeQuantities",
     "Paths",
+    "AssessmentUnit",
 ]
