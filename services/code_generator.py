@@ -139,6 +139,21 @@ class CodeGeneratorService:
         except Exception:
             return False
 
+    def assign_or_generate_code(
+        self, table_name: str, user_code: Optional[str] = None
+    ) -> str:
+        """
+        Args:
+            table_name: 表名
+            user_code: 用户自定义编码
+        """
+        if user_code:
+            if self.code_exists(table_name, user_code):
+                raise ValueError(f"编码已存在：{user_code}")
+            return user_code
+
+        return self.generate_code(table_name)
+
 
 # 工厂函数
 def get_code_generator(session: Session) -> CodeGeneratorService:
