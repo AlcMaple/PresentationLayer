@@ -4,6 +4,8 @@ from dataclasses import dataclass
 
 from models import (
     Paths,
+    Categories,
+    AssessmentUnit,
     BridgeTypes,
     BridgeParts,
     BridgeStructures,
@@ -21,6 +23,23 @@ class BridgePathData:
     """桥梁路径数据类"""
 
     id: int
+
+    # ID字段
+    category_id: Optional[int] = None
+    assessment_unit_id: Optional[int] = None
+    bridge_type_id: Optional[int] = None
+    part_id: Optional[int] = None
+    structure_id: Optional[int] = None
+    component_type_id: Optional[int] = None
+    component_form_id: Optional[int] = None
+    disease_id: Optional[int] = None
+    scale_id: Optional[int] = None
+    quality_id: Optional[int] = None
+    quantity_id: Optional[int] = None
+
+    # NAME字段
+    category_name: Optional[str] = None
+    assessment_unit_name: Optional[str] = None
     bridge_type_name: Optional[str] = None
     part_name: Optional[str] = None
     structure_name: Optional[str] = None
@@ -32,6 +51,8 @@ class BridgePathData:
     quantity_name: Optional[str] = None
 
     # CODE字段
+    category_code: Optional[str] = None
+    assessment_unit_code: Optional[str] = None
     bridge_type_code: Optional[str] = None
     part_code: Optional[str] = None
     structure_code: Optional[str] = None
@@ -41,17 +62,6 @@ class BridgePathData:
     scale_code: Optional[str] = None
     quality_code: Optional[str] = None
     quantity_code: Optional[str] = None
-
-    # ID字段
-    bridge_type_id: Optional[int] = None
-    part_id: Optional[int] = None
-    structure_id: Optional[int] = None
-    component_type_id: Optional[int] = None
-    component_form_id: Optional[int] = None
-    disease_id: Optional[int] = None
-    scale_id: Optional[int] = None
-    quality_id: Optional[int] = None
-    quantity_id: Optional[int] = None
 
 
 class BridgeQueryService:
@@ -68,6 +78,8 @@ class BridgeQueryService:
         statement = (
             select(
                 Paths.id,
+                Paths.category_id,
+                Paths.assessment_unit_id,
                 Paths.bridge_type_id,
                 Paths.part_id,
                 Paths.structure_id,
@@ -78,6 +90,8 @@ class BridgeQueryService:
                 Paths.quality_id,
                 Paths.quantity_id,
                 # NAME字段
+                Categories.name.label("category_name"),
+                AssessmentUnit.name.label("assessment_unit_name"),
                 BridgeTypes.name.label("bridge_type_name"),
                 BridgeParts.name.label("part_name"),
                 BridgeStructures.name.label("structure_name"),
@@ -88,6 +102,8 @@ class BridgeQueryService:
                 BridgeQualities.name.label("quality_name"),
                 BridgeQuantities.name.label("quantity_name"),
                 # CODE字段
+                Categories.code.label("category_code"),
+                AssessmentUnit.code.label("assessment_unit_code"),
                 BridgeTypes.code.label("bridge_type_code"),
                 BridgeParts.code.label("part_code"),
                 BridgeStructures.code.label("structure_code"),
@@ -98,6 +114,8 @@ class BridgeQueryService:
                 BridgeQualities.code.label("quality_code"),
                 BridgeQuantities.code.label("quantity_code"),
             )
+            .outerjoin(Categories, Paths.category_id == Categories.id)
+            .outerjoin(AssessmentUnit, Paths.assessment_unit_id == AssessmentUnit.id)
             .outerjoin(BridgeTypes, Paths.bridge_type_id == BridgeTypes.id)
             .outerjoin(BridgeParts, Paths.part_id == BridgeParts.id)
             .outerjoin(BridgeStructures, Paths.structure_id == BridgeStructures.id)
@@ -124,6 +142,8 @@ class BridgeQueryService:
         for row in results:
             path_data = BridgePathData(
                 id=row.id,
+                category_id=row.category_id,
+                assessment_unit_id=row.assessment_unit_id,
                 bridge_type_id=row.bridge_type_id,
                 part_id=row.part_id,
                 structure_id=row.structure_id,
@@ -134,6 +154,8 @@ class BridgeQueryService:
                 quality_id=row.quality_id,
                 quantity_id=row.quantity_id,
                 # NAME字段
+                category_name=row.category_name,
+                assessment_unit_name=row.assessment_unit_name,
                 bridge_type_name=row.bridge_type_name,
                 part_name=row.part_name,
                 structure_name=row.structure_name,
@@ -144,6 +166,8 @@ class BridgeQueryService:
                 quality_name=row.quality_name,
                 quantity_name=row.quantity_name,
                 # CODE字段
+                category_code=row.category_code,
+                assessment_unit_code=row.assessment_unit_code,
                 bridge_type_code=row.bridge_type_code,
                 part_code=row.part_code,
                 structure_code=row.structure_code,
@@ -169,6 +193,8 @@ class BridgeQueryService:
         statement = (
             select(
                 Paths.id,
+                Paths.category_id,
+                Paths.assessment_unit_id,
                 Paths.bridge_type_id,
                 Paths.part_id,
                 Paths.structure_id,
@@ -179,6 +205,8 @@ class BridgeQueryService:
                 Paths.quality_id,
                 Paths.quantity_id,
                 # NAME字段
+                Categories.name.label("category_name"),
+                AssessmentUnit.name.label("assessment_unit_name"),
                 BridgeTypes.name.label("bridge_type_name"),
                 BridgeParts.name.label("part_name"),
                 BridgeStructures.name.label("structure_name"),
@@ -189,6 +217,8 @@ class BridgeQueryService:
                 BridgeQualities.name.label("quality_name"),
                 BridgeQuantities.name.label("quantity_name"),
                 # CODE字段
+                Categories.code.label("category_code"),
+                AssessmentUnit.code.label("assessment_unit_code"),
                 BridgeTypes.code.label("bridge_type_code"),
                 BridgeParts.code.label("part_code"),
                 BridgeStructures.code.label("structure_code"),
@@ -199,6 +229,8 @@ class BridgeQueryService:
                 BridgeQualities.code.label("quality_code"),
                 BridgeQuantities.code.label("quantity_code"),
             )
+            .outerjoin(Categories, Paths.category_id == Categories.id)
+            .outerjoin(AssessmentUnit, Paths.assessment_unit_id == AssessmentUnit.id)
             .outerjoin(BridgeTypes, Paths.bridge_type_id == BridgeTypes.id)
             .outerjoin(BridgeParts, Paths.part_id == BridgeParts.id)
             .outerjoin(BridgeStructures, Paths.structure_id == BridgeStructures.id)
@@ -223,6 +255,8 @@ class BridgeQueryService:
         for row in results:
             path_data = BridgePathData(
                 id=row.id,
+                category_id=row.category_id,
+                assessment_unit_id=row.assessment_unit_id,
                 bridge_type_id=row.bridge_type_id,
                 part_id=row.part_id,
                 structure_id=row.structure_id,
@@ -233,6 +267,8 @@ class BridgeQueryService:
                 quality_id=row.quality_id,
                 quantity_id=row.quantity_id,
                 # NAME字段
+                category_name=row.category_name,
+                assessment_unit_name=row.assessment_unit_name,
                 bridge_type_name=row.bridge_type_name,
                 part_name=row.part_name,
                 structure_name=row.structure_name,
@@ -243,6 +279,8 @@ class BridgeQueryService:
                 quality_name=row.quality_name,
                 quantity_name=row.quantity_name,
                 # CODE字段
+                category_code=row.category_code,
+                assessment_unit_code=row.assessment_unit_code,
                 bridge_type_code=row.bridge_type_code,
                 part_code=row.part_code,
                 structure_code=row.structure_code,

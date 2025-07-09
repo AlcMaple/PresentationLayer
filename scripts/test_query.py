@@ -30,6 +30,10 @@ def test_basic_query():
 
         for i, path in enumerate(paths, 1):
             print(f"记录 {i} (ID: {path.id}):")
+            print(f"  分类: {path.category_name} (code: {path.category_code})")
+            print(
+                f"  评定单元: {path.assessment_unit_name} (code: {path.assessment_unit_code})"
+            )
             print(
                 f"  桥梁类型: {path.bridge_type_name} (code: {path.bridge_type_code})"
             )
@@ -79,6 +83,10 @@ def test_disease_search():
         print(f"\n前3条详细记录:")
         for i, path in enumerate(paths[:3], 1):
             print(f"记录 {i}:")
+            print(f"  分类: {path.category_name} (code: {path.category_code})")
+            print(
+                f"  评定单元: {path.assessment_unit_name} (code: {path.assessment_unit_code})"
+            )
             print(
                 f"  桥梁类型: {path.bridge_type_name} (code: {path.bridge_type_code})"
             )
@@ -103,7 +111,7 @@ def test_pagination():
         print("第1页 (前3条):")
         for i, path in enumerate(page1, 1):
             print(
-                f"  {i}. {path.bridge_type_name}({path.bridge_type_code}) -> {path.disease_name}({path.disease_code})"
+                f"  {i}. {path.category_name} -> {path.bridge_type_name}({path.bridge_type_code}) -> {path.disease_name}({path.disease_code})"
             )
 
         # 测试第2页
@@ -111,8 +119,36 @@ def test_pagination():
         print("\n第2页 (第4-6条):")
         for i, path in enumerate(page2, 1):
             print(
-                f"  {i+3}. {path.bridge_type_name}({path.bridge_type_code}) -> {path.disease_name}({path.disease_code})"
+                f"  {i+3}. {path.category_name} -> {path.bridge_type_name}({path.bridge_type_code}) -> {path.disease_name}({path.disease_code})"
             )
+
+
+def test_hierarchy_display():
+    """测试11层结构层级显示"""
+    print("\n" + "=" * 60)
+    print("测试11层结构层级显示")
+    print("=" * 60)
+
+    with Session(engine) as session:
+        query_service = get_bridge_query_service(session)
+
+        # 获取前3条记录展示完整层级
+        paths = query_service.get_paths_with_names(limit=3, offset=0)
+
+        for i, path in enumerate(paths, 1):
+            print(f"\n【路径 {i}】完整11层结构:")
+            print(f"  1. 分类: {path.category_name}")
+            print(f"  2. 评定单元: {path.assessment_unit_name}")
+            print(f"  3. 桥梁类型: {path.bridge_type_name}")
+            print(f"  4. 部位: {path.part_name}")
+            print(f"  5. 结构类型: {path.structure_name}")
+            print(f"  6. 部件类型: {path.component_type_name}")
+            print(f"  7. 构件形式: {path.component_form_name}")
+            print(f"  8. 病害类型: {path.disease_name}")
+            print(f"  9. 标度: {path.scale_name}")
+            print(f"  10. 定性描述: {path.quality_name}")
+            print(f"  11. 定量描述: {path.quantity_name}")
+            print("-" * 50)
 
 
 def main():
@@ -121,6 +157,7 @@ def main():
         test_basic_query()
         test_disease_search()
         test_pagination()
+        test_hierarchy_display()
 
         print("\n" + "=" * 60)
         print("✅ 所有测试完成!")
