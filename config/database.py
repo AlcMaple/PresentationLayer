@@ -13,6 +13,7 @@ from models import (
     BridgeScales,
     BridgeQualities,
     BridgeQuantities,
+    Paths,
 )
 
 # 数据库引擎
