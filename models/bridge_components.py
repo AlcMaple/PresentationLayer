@@ -24,11 +24,13 @@ class BridgeTypes(BridgeComponentBase, table=True):
     category_id: Optional[int] = Field(
         default=None, foreign_key="categories.id", description="分类ID"
     )
+    level: int = Field(description="层级深度", default=2)
 
     __table_args__ = (
         Index("idx_bridge_types_code", "code"),
         Index("idx_bridge_types_active", "is_active"),
         Index("idx_bridge_types_name", "name"),
+        Index("idx_bridge_types_level", "level"),
     )
 
 
@@ -37,11 +39,13 @@ class BridgeParts(BridgeComponentBase, table=True):
     __tablename__ = "bridge_parts"
 
     id: Optional[int] = Field(default=None, primary_key=True, description="部位主键ID")
+    level: int = Field(description="层级深度", default=3)
 
     __table_args__ = (
         Index("idx_bridge_parts_code", "code"),
         Index("idx_bridge_parts_active", "is_active"),
         Index("idx_bridge_parts_name", "name"),
+        Index("idx_bridge_parts_level", "level"),
     )
 
 
@@ -52,11 +56,13 @@ class BridgeStructures(BridgeComponentBase, table=True):
     id: Optional[int] = Field(
         default=None, primary_key=True, description="结构类型主键ID"
     )
+    level: int = Field(description="层级深度", default=4)
 
     __table_args__ = (
         Index("idx_bridge_structures_code", "code"),
         Index("idx_bridge_structures_active", "is_active"),
         Index("idx_bridge_structures_name", "name"),
+        Index("idx_bridge_structures_level", "level"),
     )
 
 
@@ -67,11 +73,13 @@ class BridgeComponentTypes(BridgeComponentBase, table=True):
     id: Optional[int] = Field(
         default=None, primary_key=True, description="部件类型主键ID"
     )
+    level: int = Field(description="层级深度", default=5)
 
     __table_args__ = (
         Index("idx_bridge_component_types_code", "code"),
         Index("idx_bridge_component_types_active", "is_active"),
         Index("idx_bridge_component_types_name", "name"),
+        Index("idx_bridge_component_types_level", "level"),
     )
 
 
@@ -82,11 +90,13 @@ class BridgeComponentForms(BridgeComponentBase, table=True):
     id: Optional[int] = Field(
         default=None, primary_key=True, description="构件形式主键ID"
     )
+    level: int = Field(description="层级深度", default=6)
 
     __table_args__ = (
         Index("idx_bridge_component_forms_code", "code"),
         Index("idx_bridge_component_forms_active", "is_active"),
         Index("idx_bridge_component_forms_name", "name"),
+        Index("idx_bridge_component_forms_level", "level"),
     )
 
 
@@ -97,11 +107,13 @@ class BridgeDiseases(BridgeComponentBase, table=True):
     id: Optional[int] = Field(
         default=None, primary_key=True, description="病害类型主键ID"
     )
+    level: int = Field(description="层级深度", default=7)
 
     __table_args__ = (
         Index("idx_bridge_diseases_code", "code"),
         Index("idx_bridge_diseases_active", "is_active"),
         Index("idx_bridge_diseases_name", "name"),
+        Index("idx_bridge_diseases_level", "level"),
     )
 
 
@@ -118,6 +130,7 @@ class BridgeScales(BridgeComponentBase, table=True):
     max_value: Optional[int] = Field(default=None, description="范围最大值")
     unit: Optional[str] = Field(default=None, description="单位")
     display_text: Optional[str] = Field(default=None, description="显示文本")
+    level: int = Field(description="层级深度", default=8)
 
     __table_args__ = (
         Index("idx_bridge_scales_code", "code"),
@@ -125,6 +138,7 @@ class BridgeScales(BridgeComponentBase, table=True):
         Index("idx_bridge_scales_value", "scale_value"),
         Index("idx_bridge_scales_type", "scale_type"),
         Index("idx_bridge_scales_name", "name"),
+        Index("idx_bridge_scales_level", "level"),
     )
 
 
@@ -135,11 +149,13 @@ class BridgeQualities(BridgeComponentBase, table=True):
     id: Optional[int] = Field(
         default=None, primary_key=True, description="定性描述主键ID"
     )
+    level: int = Field(description="层级深度", default=9)
 
     __table_args__ = (
         Index("idx_bridge_qualities_code", "code"),
         Index("idx_bridge_qualities_active", "is_active"),
         Index("idx_bridge_qualities_name", "name"),
+        Index("idx_bridge_qualities_level", "level"),
     )
 
 
@@ -150,9 +166,11 @@ class BridgeQuantities(BridgeComponentBase, table=True):
     id: Optional[int] = Field(
         default=None, primary_key=True, description="定量描述主键ID"
     )
+    level: int = Field(description="层级深度", default=10)
 
     __table_args__ = (
         Index("idx_bridge_quantities_code", "code"),
         Index("idx_bridge_quantities_active", "is_active"),
         Index("idx_bridge_quantities_name", "name"),
+        Index("idx_bridge_quantities_level", "level"),
     )

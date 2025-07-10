@@ -280,9 +280,7 @@ class BridgeDataImporter:
             code = self.code_generator.generate_code("bridge_qualities")
 
             quality = BridgeQualities(
-                name=(
-                    desc[:50] + "..." if len(desc) > 50 else desc
-                ),  # 截取前50字符作为名称
+                name=desc,
                 code=code,
                 description=desc,
                 sort_order=idx,
@@ -298,9 +296,7 @@ class BridgeDataImporter:
             code = self.code_generator.generate_code("bridge_quantities")
 
             quantity = BridgeQuantities(
-                name=(
-                    desc[:50] + "..." if len(desc) > 50 else desc
-                ),  # 截取前50字符作为名称
+                name=desc,
                 code=code,
                 description=desc,
                 sort_order=idx,
@@ -319,7 +315,7 @@ class BridgeDataImporter:
                 name=name,
                 code=code,
                 description=f"{name}分类",
-                parent_id=None,
+                # parent_id=None,
                 level=0,
                 sort_order=idx,
                 is_active=True,

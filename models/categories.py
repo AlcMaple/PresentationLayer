@@ -17,7 +17,7 @@ class CategoriesBase(BaseModel):
     description: Optional[str] = Field(
         default=None, max_length=500, description="分类描述"
     )
-    parent_id: Optional[int] = Field(default=None, description="父级分类ID")
+    # parent_id: Optional[int] = Field(default=None, description="父级分类ID")
     level: int = Field(default=0, description="层级深度")
     sort_order: int = Field(default=0, description="排序序号")
     is_active: bool = Field(default=True, description="是否启用")
@@ -32,10 +32,10 @@ class Categories(CategoriesBase, table=True):
         default=None, primary_key=True, description="分类主键ID"
     )  # 主键自增
 
-    # 外键约束
-    parent_id: Optional[int] = Field(
-        default=None, foreign_key="categories.id", description="父级分类ID"
-    )
+    # # 外键约束
+    # parent_id: Optional[int] = Field(
+    #     default=None, foreign_key="categories.id", description="父级分类ID"
+    # )
 
     # 索引配置
     __table_args__ = (
