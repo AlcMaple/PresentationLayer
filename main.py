@@ -5,6 +5,7 @@ import uvicorn
 from config.settings import settings
 from api.router import router
 from lifecycle import setup_lifespan
+from middleware import ExceptionHandlerMiddleware, set_exception_handlers
 
 
 def create_app() -> FastAPI:
@@ -33,6 +34,12 @@ def create_app() -> FastAPI:
             allow_methods=["GET", "POST", "PUT", "DELETE"],
             allow_headers=["*"],
         )
+
+    # 异常处理中间件
+    app.add_middleware(ExceptionHandlerMiddleware)
+
+    # 异常处理器
+    set_exception_handlers(app)
 
     # API路由
     app.include_router(router, prefix="/api")

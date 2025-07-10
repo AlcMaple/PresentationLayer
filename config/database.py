@@ -21,7 +21,8 @@ from models import (
 engine = create_engine(
     settings.database_url,
     pool_pre_ping=True,
-    echo=settings.ENVIRONMENT == "development",  # 输出SQL日志
+    # echo=settings.ENVIRONMENT == "development",  # 输出SQL日志
+    echo=False,  # 输出SQL日志
     pool_recycle=3600,
 )
 

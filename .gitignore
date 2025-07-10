@@ -1,5 +1,13 @@
-.env
+# env files (can opt-in for committing if needed)
+.env*
+
+# compiled Python files
 __pycache__/
 *.pyc
+.pytest_cache/
+
+# log files
 *.log
+
+# macOS files
 .DS_Store
