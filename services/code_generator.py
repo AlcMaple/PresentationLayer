@@ -10,15 +10,12 @@ class CodeGeneratorService:
     def __init__(self, session: Session):
         self.session = session
 
-    def generate_code(
-        self, table_name: str, custom_prefix: Optional[str] = None
-    ) -> str:
+    def generate_code(self, table_name: str) -> str:
         """
         生成编码
 
         Args:
             table_name: 表名
-            custom_prefix: 自定义前缀
 
         Returns:
             生成的编码，格式：前缀_数字，如 BT_1
