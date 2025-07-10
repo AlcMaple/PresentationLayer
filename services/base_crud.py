@@ -42,32 +42,42 @@ class BaseCRUDService(Generic[ModelType, CreateSchemaType, UpdateSchemaType], AB
         self.session = session
         self.code_generator = get_code_generator(session)
 
-    def get_by_id(self, id: int) -> Optional[ModelType]:
+    def get_by_id(self, id: int, include_deleted: bool = False) -> Optional[ModelType]:
         """
         根据ID查询单条记录
         Args:
             id: 记录ID
+            include_deleted: 是否包含已删除记录
         Returns:
             模型实例或None
         """
         try:
             statement = select(self.model).where(self.model.id == id)
+            if hasattr(self.model, "is_active") and not include_deleted:
+                statement = statement.where(self.model.is_active == True)
+
             result = self.session.exec(statement).first()
             return result
         except Exception as e:
             print(f"查询ID为{id}的记录时出错: {e}")
             return None
 
-    def get_by_code(self, code: str) -> Optional[ModelType]:
+    def get_by_code(
+        self, code: str, include_deleted: bool = False
+    ) -> Optional[ModelType]:
         """
         根据编码查询单条记录
         Args:
             code: 记录编码
+            include_deleted: 是否包含已删除记录
         Returns:
             模型实例或None
         """
         try:
             statement = select(self.model).where(self.model.code == code)
+            if hasattr(self.model, "is_active") and not include_deleted:
+                statement = statement.where(self.model.is_active == True)
+
             result = self.session.exec(statement).first()
             return result
         except Exception as e:
@@ -75,7 +85,10 @@ class BaseCRUDService(Generic[ModelType, CreateSchemaType, UpdateSchemaType], AB
             return None
 
     def get_list(
-        self, page_params: PageParams, filters: Optional[Dict[str, Any]] = None
+        self,
+        page_params: PageParams,
+        filters: Optional[Dict[str, Any]] = None,
+        include_deleted: bool = False,
     ) -> tuple[List[ModelType], int]:
         """
         分页查询列表
@@ -89,12 +102,20 @@ class BaseCRUDService(Generic[ModelType, CreateSchemaType, UpdateSchemaType], AB
             statement = select(self.model)
             count_statement = select(func.count(self.model.id))
 
+            conditions = []
+            if hasattr(self.model, "is_active") and not include_deleted:
+                conditions.append(self.model.is_active == True)
+
             # 过滤
             if filters:
                 conditions = self._build_filter_conditions(filters)
                 if conditions:
                     statement = statement.where(and_(*conditions))
                     count_statement = count_statement.where(and_(*conditions))
+
+            if conditions:
+                statement = statement.where(and_(*conditions))
+                count_statement = count_statement.where(and_(*conditions))
 
             # 默认按创建时间倒序排列
             if hasattr(self.model, "created_at"):
@@ -192,7 +213,7 @@ class BaseCRUDService(Generic[ModelType, CreateSchemaType, UpdateSchemaType], AB
                 )
             obj_data = obj_in.model_dump(exclude_unset=True)
 
-            # 检查名称重复（排除自身）
+            # 检查名称
             if hasattr(self.model, "name") and "name" in obj_data:
                 statement = select(self.model).where(
                     and_(self.model.name == obj_data["name"], self.model.id != id)
