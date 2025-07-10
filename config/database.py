@@ -39,14 +39,14 @@ def create_tables():
     """
     创建数据表
     """
-    print("创建数据表...")
+    # print("创建数据表...")
     try:
         SQLModel.metadata.create_all(engine)
-        print("数据表创建成功")
+        # print("数据表创建成功")
 
-        print("已创建的表：")
-        for table_name in SQLModel.metadata.tables.keys():
-            print(f"   - {table_name}")
+        # print("已创建的表：")
+        # for table_name in SQLModel.metadata.tables.keys():
+        #     print(f"   - {table_name}")
     except Exception as e:
         print(f"数据表创建失败：{e}")
         raise

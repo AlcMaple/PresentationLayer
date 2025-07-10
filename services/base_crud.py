@@ -3,15 +3,27 @@ from sqlmodel import SQLModel, Session, select, and_
 from sqlalchemy import func, desc, asc
 from abc import ABC
 from datetime import datetime
+from pydantic import BaseModel, Field
 
 from exceptions import NotFoundException, DuplicateException
 from services.code_generator import get_code_generator
-from utils.types import PageParams
 
 # 泛型变量定义
 ModelType = TypeVar("ModelType", bound=SQLModel)  # 数据模型类型
 CreateSchemaType = TypeVar("CreateSchemaType", bound=SQLModel)  # 创建模型类型
 UpdateSchemaType = TypeVar("UpdateSchemaType", bound=SQLModel)  # 更新模型类型
+
+
+class PageParams(BaseModel):
+    """分页参数"""
+
+    page: int = Field(default=1, ge=1, description="页码")
+    size: int = Field(default=20, ge=1, le=100, description="每页数量")
+
+    @property
+    def offset(self) -> int:
+        """偏移量"""
+        return (self.page - 1) * self.size
 
 
 class BaseCRUDService(Generic[ModelType, CreateSchemaType, UpdateSchemaType], ABC):

@@ -13,7 +13,7 @@ async def lifespan(app: FastAPI):
 
     # 创建数据表
     create_tables()
-    print("数据表创建完成")
+    # print("数据表创建完成")
 
     yield
 

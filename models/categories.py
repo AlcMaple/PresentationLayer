@@ -39,7 +39,7 @@ class Categories(CategoriesBase, table=True):
 
     # 索引配置
     __table_args__ = (
-        Index("idx_categories_parent_id", "parent_id"),
+        # Index("idx_categories_parent_id", "parent_id"),
         Index("idx_categories_code", "code"),
         Index("idx_categories_level", "level"),
         Index("idx_categories_active", "is_active"),

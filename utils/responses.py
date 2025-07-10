@@ -1,5 +1,21 @@
 from fastapi.responses import JSONResponse
-from typing import Any, Optional, List
+from typing import Any
+from datetime import datetime
+from pydantic import BaseModel
+
+
+def _serialize_data(data: Any) -> Any:
+    """序列化数据"""
+    if isinstance(data, datetime):
+        return data.isoformat()
+    elif isinstance(data, BaseModel):
+        return data.model_dump()
+    elif isinstance(data, list):
+        return [_serialize_data(item) for item in data]
+    elif isinstance(data, dict):
+        return {key: _serialize_data(value) for key, value in data.items()}
+    else:
+        return data
 
 
 def api_response(code: int, msg: str, data: Any = None) -> JSONResponse:
@@ -10,8 +26,9 @@ def api_response(code: int, msg: str, data: Any = None) -> JSONResponse:
         msg: 响应消息
         data: 响应数据
     """
+    serialized_data = _serialize_data(data)
     return JSONResponse(
-        status_code=code, content={"code": code, "msg": msg, "data": data}
+        status_code=code, content={"code": code, "msg": msg, "data": serialized_data}
     )
 
 
@@ -33,10 +50,3 @@ def not_found(msg: str = "资源不存在") -> JSONResponse:
 def server_error(msg: str = "服务器错误") -> JSONResponse:
     """服务器错误 - 500"""
     return api_response(500, msg, None)
-
-
-def paginated(items: List[Any], total: int, page: int, size: int) -> JSONResponse:
-    """分页响应"""
-    pages = (total + size - 1) // size
-    data = {"items": items, "total": total, "page": page, "size": size, "pages": pages}
-    return success(data, "查询成功")
