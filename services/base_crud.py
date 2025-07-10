@@ -149,26 +149,32 @@ class BaseCRUDService(Generic[ModelType, CreateSchemaType, UpdateSchemaType], AB
             # 转换为数据库模型
             obj_data = obj_in.model_dump(exclude_unset=True)
 
-            # 生成编码
-            if hasattr(self.model, "code") and "code" not in obj_data:
-                table_name = self.model.__tablename__
-                obj_data["code"] = self.code_generator.generate_code(table_name)
-
-            # 检查编码
-            if hasattr(self.model, "code") and "code" in obj_data:
-                existing = self.get_by_code(obj_data["code"])
-                if existing:
-                    raise DuplicateException(
-                        resource=self.model.__name__,
-                        field="code",
-                        value=obj_data["code"],
-                    )
+            # 编码
+            if hasattr(self.model, "code"):
+                code_value = obj_data.get("code")
+                # 自动生成
+                if not code_value or not code_value.strip():
+                    table_name = self.model.__tablename__
+                    obj_data["code"] = self.code_generator.generate_code(table_name)
+                else:
+                    # 检查
+                    existing = self.get_by_code(code_value.strip())
+                    if existing:
+                        raise DuplicateException(
+                            resource=self.model.__name__,
+                            field="code",
+                            value=code_value.strip(),
+                        )
+                    obj_data["code"] = code_value.strip()
 
             # 检查名称
             if hasattr(self.model, "name") and "name" in obj_data:
                 statement = select(self.model).where(
                     self.model.name == obj_data["name"]
                 )
+                # 排除已删除的记录
+                if hasattr(self.model, "is_active"):
+                    statement = statement.where(self.model.is_active == True)
                 existing = self.session.exec(statement).first()
                 if existing:
                     raise DuplicateException(
@@ -212,6 +218,30 @@ class BaseCRUDService(Generic[ModelType, CreateSchemaType, UpdateSchemaType], AB
                     resource=self.model.__name__, identifier=str(id)
                 )
             obj_data = obj_in.model_dump(exclude_unset=True)
+
+            # 编码
+            if hasattr(self.model, "code") and "code" in obj_data:
+                code_value = obj_data["code"]
+                # 不更新编码
+                if not code_value or not code_value.strip():
+                    obj_data.pop("code")
+                else:
+                    # 检查
+                    code_value = code_value.strip()
+                    statement = select(self.model).where(
+                        and_(self.model.code == code_value, self.model.id != id)
+                    )
+                    # 删除过滤
+                    if hasattr(self.model, "is_active"):
+                        statement = statement.where(self.model.is_active == True)
+                    existing = self.session.exec(statement).first()
+                    if existing:
+                        raise DuplicateException(
+                            resource=self.model.__name__,
+                            field="code",
+                            value=code_value,
+                        )
+                    obj_data["code"] = code_value
 
             # 检查名称
             if hasattr(self.model, "name") and "name" in obj_data:
