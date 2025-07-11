@@ -6,17 +6,21 @@ from datetime import datetime
 class Create(BaseModel):
     """创建模型"""
 
-    name: str = Field(..., max_length=100, description="名称")
-    code: Optional[str] = Field(None, max_length=20, description="编码")
-    description: Optional[str] = Field(None, max_length=500, description="描述")
+    name: str = Field(..., max_length=100, description="名称", example="")
+    code: Optional[str] = Field(None, max_length=20, description="编码", example="")
+    description: Optional[str] = Field(
+        None, max_length=500, description="描述", example=""
+    )
 
 
 class Update(BaseModel):
     """更新模型"""
 
-    name: Optional[str] = Field(None, max_length=100, description="名称")
-    code: Optional[str] = Field(None, max_length=20, description="编码")
-    description: Optional[str] = Field(None, max_length=500, description="描述")
+    name: Optional[str] = Field(None, max_length=100, description="名称", example="")
+    code: Optional[str] = Field(None, max_length=20, description="编码", example="")
+    description: Optional[str] = Field(
+        None, max_length=500, description="描述", example=""
+    )
 
 
 class Response(BaseModel):
