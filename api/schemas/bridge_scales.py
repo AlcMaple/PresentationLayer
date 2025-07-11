@@ -23,6 +23,14 @@ class BridgeScalesCreate(BaseModel):
         None, max_length=200, description="显示文本", example=""
     )
 
+    @model_validator(mode="after")
+    @classmethod
+    def check_scale_range(cls, values):
+        if values.min_value is not None and values.max_value is not None:
+            if values.min_value > values.max_value:
+                raise ValidationError("最小值不能大于最大值")
+        return values
+
 
 class BridgeScalesUpdate(BaseModel):
     """标度更新模型"""
