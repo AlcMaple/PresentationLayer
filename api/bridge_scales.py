@@ -29,10 +29,10 @@ async def get_bridge_scales_list(
         ScalesType.NUMERIC,
         description="标度类型筛选（NUMERIC(数值)/PERCENTAGE(百分比)/RANGE(范围)/TEXT(文本)）",
     ),
-    scale_value: Optional[int] = Query(None, description="标度值筛选"),
-    min_value: Optional[int] = Query(None, description="最小值筛选"),
-    max_value: Optional[int] = Query(None, description="最大值筛选"),
-    unit: Optional[str] = Query(None, description="单位筛选"),
+    scale_value: Optional[int] = Query(None, description="标度值"),
+    min_value: Optional[int] = Query(None, description="范围最小值"),
+    max_value: Optional[int] = Query(None, description="范围最大值"),
+    unit: Optional[str] = Query(None, description="单位"),
     display_text: Optional[str] = Query(None, description="显示文本模糊查询"),
     session: Session = Depends(get_db),
 ):
@@ -116,62 +116,83 @@ async def create_bridge_scales(
                 )
             obj_data["code"] = code_value.strip()
 
-        # 检查标度值
-        if obj_data.get("scale_value") is not None:
-            existing = session.exec(
-                select(BridgeScales).where(
-                    and_(
-                        BridgeScales.scale_value == obj_data["scale_value"],
-                        BridgeScales.is_active == True,
-                    )
-                )
-            ).first()
-            if existing:
-                raise DuplicateException(
-                    resource="BridgeScales",
-                    field="标度值",
-                    value=str(obj_data["scale_value"]),
-                )
+        # 根据标度类型处理字段
+        scale_type = obj_data.get("scale_type")
 
-        # 检查显示文本
-        if obj_data.get("display_text"):
-            existing = session.exec(
-                select(BridgeScales).where(
-                    and_(
-                        BridgeScales.display_text == obj_data["display_text"],
-                        BridgeScales.is_active == True,
-                    )
-                )
-            ).first()
-            if existing:
-                raise DuplicateException(
-                    resource="BridgeScales",
-                    field="显示文本",
-                    value=obj_data["display_text"],
-                )
+        if scale_type == ScalesType.NUMERIC:
+            # 数值类型
+            obj_data["min_value"] = None
+            obj_data["max_value"] = None
+            obj_data["unit"] = None
+            obj_data["display_text"] = None
 
-        # 检查范围型
-        if (
-            obj_data.get("min_value") is not None
-            and obj_data.get("max_value") is not None
-            and obj_data.get("unit")
-        ):
-            existing = session.exec(
-                select(BridgeScales).where(
-                    and_(
-                        BridgeScales.min_value == obj_data["min_value"],
-                        BridgeScales.max_value == obj_data["max_value"],
-                        BridgeScales.unit == obj_data["unit"],
-                        BridgeScales.is_active == True,
+            # 检查标度值是否已存在
+            if obj_data.get("scale_value") is not None:
+                existing = session.exec(
+                    select(BridgeScales).where(
+                        and_(
+                            BridgeScales.scale_value == obj_data["scale_value"],
+                            BridgeScales.is_active == True,
+                        )
                     )
-                )
-            ).first()
-            if existing:
-                raise DuplicateException(
-                    resource="BridgeScales",
-                    field="范围配置",
-                    value=f"最小值{obj_data['min_value']}-最大值{obj_data['max_value']}-单位{obj_data['unit']}",
-                )
+                ).first()
+                if existing:
+                    raise DuplicateException(
+                        resource="BridgeScales",
+                        field="标度值",
+                        value=str(obj_data["scale_value"]),
+                    )
+
+        elif scale_type in [ScalesType.RANGE, ScalesType.PERCENTAGE]:
+            # 范围类型或百分比类型
+            obj_data["scale_value"] = None
+            obj_data["display_text"] = None
+
+            # 检查范围是否已存在
+            min_value = obj_data.get("min_value")
+            max_value = obj_data.get("max_value")
+            unit = obj_data.get("unit")
+
+            if min_value is not None and max_value is not None and unit:
+                existing = session.exec(
+                    select(BridgeScales).where(
+                        and_(
+                            BridgeScales.min_value == min_value,
+                            BridgeScales.max_value == max_value,
+                            BridgeScales.unit == unit,
+                            BridgeScales.is_active == True,
+                        )
+                    )
+                ).first()
+                if existing:
+                    raise DuplicateException(
+                        resource="BridgeScales",
+                        field="范围配置",
+                        value=f"最小值{min_value}-最大值{max_value}-单位{unit}",
+                    )
+
+        elif scale_type == ScalesType.TEXT:
+            # 文本类型
+            obj_data["scale_value"] = None
+            obj_data["min_value"] = None
+            obj_data["max_value"] = None
+            obj_data["unit"] = None
+
+            # 检查显示文本是否已存在
+            display_text = obj_data.get("display_text")
+            if display_text:
+                existing = session.exec(
+                    select(BridgeScales).where(
+                        and_(
+                            BridgeScales.display_text == display_text,
+                            BridgeScales.is_active == True,
+                        )
+                    )
+                ).first()
+                if existing:
+                    raise DuplicateException(
+                        resource="BridgeScales", field="显示文本", value=display_text
+                    )
 
         # 创建对象
         db_obj = BridgeScales(**obj_data)
@@ -222,7 +243,7 @@ async def update_bridge_scales(
 ):
     """更新标度"""
     try:
-        # 查询
+        # 查询现有记录
         db_obj = session.exec(
             select(BridgeScales).where(
                 and_(BridgeScales.id == id, BridgeScales.is_active == True)
@@ -255,63 +276,86 @@ async def update_bridge_scales(
             else:
                 obj_data.pop("code")  # 不更新编码
 
-        # 检查标度值
-        scale_value = obj_data.get("scale_value", db_obj.scale_value)
-        if scale_value is not None:
-            existing = session.exec(
-                select(BridgeScales).where(
-                    and_(
-                        BridgeScales.scale_value == scale_value,
-                        BridgeScales.id != id,
-                        BridgeScales.is_active == True,
-                    )
-                )
-            ).first()
-            if existing:
-                raise DuplicateException(
-                    resource="BridgeScales", field="标度值", value=str(scale_value)
-                )
+        # 获取标度类型
+        new_scale_type = obj_data.get("scale_type", db_obj.scale_type)
 
-        # 检查显示文本
-        display_text = obj_data.get("display_text", db_obj.display_text)
-        if display_text:
-            existing = session.exec(
-                select(BridgeScales).where(
-                    and_(
-                        BridgeScales.display_text == display_text,
-                        BridgeScales.id != id,
-                        BridgeScales.is_active == True,
-                    )
-                )
-            ).first()
-            if existing:
-                raise DuplicateException(
-                    resource="BridgeScales", field="显示文本", value=display_text
-                )
+        # 根据标度类型处理字段
+        if new_scale_type == ScalesType.NUMERIC:
+            # 数值类型
+            obj_data["min_value"] = None
+            obj_data["max_value"] = None
+            obj_data["unit"] = None
+            obj_data["display_text"] = None
 
-        # 检查范围型
-        min_value = obj_data.get("min_value", db_obj.min_value)
-        max_value = obj_data.get("max_value", db_obj.max_value)
-        unit = obj_data.get("unit", db_obj.unit)
-
-        if min_value is not None and max_value is not None and unit:
-            existing = session.exec(
-                select(BridgeScales).where(
-                    and_(
-                        BridgeScales.min_value == min_value,
-                        BridgeScales.max_value == max_value,
-                        BridgeScales.unit == unit,
-                        BridgeScales.id != id,
-                        BridgeScales.is_active == True,
+            # 检查标度值是否与其他记录重复
+            scale_value = obj_data.get("scale_value", db_obj.scale_value)
+            if scale_value is not None:
+                existing = session.exec(
+                    select(BridgeScales).where(
+                        and_(
+                            BridgeScales.scale_value == scale_value,
+                            BridgeScales.id != id,
+                            BridgeScales.is_active == True,
+                        )
                     )
-                )
-            ).first()
-            if existing:
-                raise DuplicateException(
-                    resource="BridgeScales",
-                    field="范围配置",
-                    value=f"最小值{min_value}-最大值{max_value}-单位{unit}",
-                )
+                ).first()
+                if existing:
+                    raise DuplicateException(
+                        resource="BridgeScales", field="标度值", value=str(scale_value)
+                    )
+
+        elif new_scale_type in [ScalesType.RANGE, ScalesType.PERCENTAGE]:
+            # 范围类型或百分比类型
+            obj_data["scale_value"] = None
+            obj_data["display_text"] = None
+
+            # 检查范围配置是否与其他记录重复
+            min_value = obj_data.get("min_value", db_obj.min_value)
+            max_value = obj_data.get("max_value", db_obj.max_value)
+            unit = obj_data.get("unit", db_obj.unit)
+
+            if min_value is not None and max_value is not None and unit:
+                existing = session.exec(
+                    select(BridgeScales).where(
+                        and_(
+                            BridgeScales.min_value == min_value,
+                            BridgeScales.max_value == max_value,
+                            BridgeScales.unit == unit,
+                            BridgeScales.id != id,
+                            BridgeScales.is_active == True,
+                        )
+                    )
+                ).first()
+                if existing:
+                    raise DuplicateException(
+                        resource="BridgeScales",
+                        field="范围配置",
+                        value=f"最小值{min_value}-最大值{max_value}-单位{unit}",
+                    )
+
+        elif new_scale_type == ScalesType.TEXT:
+            # 文本类型
+            obj_data["scale_value"] = None
+            obj_data["min_value"] = None
+            obj_data["max_value"] = None
+            obj_data["unit"] = None
+
+            # 检查显示文本是否与其他记录重复
+            display_text = obj_data.get("display_text", db_obj.display_text)
+            if display_text:
+                existing = session.exec(
+                    select(BridgeScales).where(
+                        and_(
+                            BridgeScales.display_text == display_text,
+                            BridgeScales.id != id,
+                            BridgeScales.is_active == True,
+                        )
+                    )
+                ).first()
+                if existing:
+                    raise DuplicateException(
+                        resource="BridgeScales", field="显示文本", value=display_text
+                    )
 
         # 更新对象
         for field, value in obj_data.items():
