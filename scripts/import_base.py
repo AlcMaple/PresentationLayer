@@ -183,7 +183,6 @@ class BridgeDataImporter:
                 name=name,
                 code=code,
                 description=f"{name}部位",
-                sort_order=idx,
             )
             self.session.add(part)
             self.session.commit()
@@ -199,7 +198,6 @@ class BridgeDataImporter:
                 name=name,
                 code=code,
                 description=f"{name}结构",
-                sort_order=idx,
             )
             self.session.add(structure)
             self.session.commit()
@@ -215,7 +213,6 @@ class BridgeDataImporter:
                 name=name,
                 code=code,
                 description=f"{name}部件",
-                sort_order=idx,
             )
             self.session.add(comp_type)
             self.session.commit()
@@ -231,7 +228,6 @@ class BridgeDataImporter:
                 name=name,
                 code=code,
                 description=f"{name}构件",
-                sort_order=idx,
             )
             self.session.add(comp_form)
             self.session.commit()
@@ -247,7 +243,6 @@ class BridgeDataImporter:
                 name=name,
                 code=code,
                 description=f"{name}病害",
-                sort_order=idx,
             )
             self.session.add(hazard)
             self.session.commit()
@@ -267,7 +262,6 @@ class BridgeDataImporter:
                 description=f"标度等级{scale_val}",
                 scale_type=ScalesType.NUMERIC,
                 scale_value=scale_val,
-                sort_order=scale_val,
             )
             self.session.add(scale)
             self.session.commit()
@@ -283,7 +277,6 @@ class BridgeDataImporter:
                 name=desc,
                 code=code,
                 description=desc,
-                sort_order=idx,
             )
             self.session.add(quality)
             self.session.commit()
@@ -299,7 +292,6 @@ class BridgeDataImporter:
                 name=desc,
                 code=code,
                 description=desc,
-                sort_order=idx,
             )
             self.session.add(quantity)
             self.session.commit()
@@ -316,9 +308,6 @@ class BridgeDataImporter:
                 code=code,
                 description=f"{name}分类",
                 # parent_id=None,
-                level=0,
-                sort_order=idx,
-                is_active=True,
             )
             self.session.add(category)
             self.session.commit()
@@ -332,8 +321,6 @@ class BridgeDataImporter:
             name="-",
             code=code,
             description=None,
-            sort_order=0,
-            is_active=True,
         )
         self.session.add(unit)
         self.session.commit()
