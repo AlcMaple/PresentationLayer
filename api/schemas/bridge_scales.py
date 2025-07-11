@@ -28,7 +28,7 @@ class BridgeScalesCreate(BaseModel):
     def check_scale_range(cls, values):
         if values.min_value is not None and values.max_value is not None:
             if values.min_value > values.max_value:
-                raise ValidationError("最小值不能大于最大值")
+                raise ValueError("最小值不能大于最大值")
         return values
 
 
