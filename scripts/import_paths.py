@@ -316,7 +316,7 @@ class PathImporter:
             # 5. 提交事务
             self.session.commit()
 
-            print("\n✅ 路径数据导入完成!")
+            print("\n路径数据导入完成!")
             print(f"总路径数: {self.stats['total_paths']}")
             print(f"成功导入: {self.stats['success_paths']}")
             print(f"失败数量: {self.stats['error_paths']}")
@@ -329,7 +329,7 @@ class PathImporter:
                     print(f"  ... 还有 {len(self.stats['errors']) - 5} 个错误")
 
         except Exception as e:
-            print(f"❌ 导入过程中发生错误: {e}")
+            print(f"导入过程中发生错误: {e}")
             self.session.rollback()
             raise
         finally:
@@ -342,12 +342,12 @@ def main():
     json_file = "static/json_output/all_bridge_data_adjusted.json"
 
     if not os.path.exists(json_file):
-        print(f"❌ JSON文件不存在: {json_file}")
+        print(f"JSON文件不存在: {json_file}")
         return
 
     # 执行导入 - 只处理第一个工作表进行测试
     importer = PathImporter(json_file)
-    importer.run_import(limit_sheets=1)
+    importer.run_import(limit_sheets=0)
 
 
 if __name__ == "__main__":
