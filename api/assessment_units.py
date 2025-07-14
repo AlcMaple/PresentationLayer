@@ -5,7 +5,7 @@ from typing import Optional
 from config.database import get_db
 from services.base_crud import BaseCRUDService, PageParams
 from models import AssessmentUnit
-from api.schemas.base import (
+from schemas.base import (
     Create,
     Update,
     Response,
