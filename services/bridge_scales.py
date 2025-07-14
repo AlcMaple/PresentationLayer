@@ -187,7 +187,7 @@ class BridgeScalesService(
             obj_data["unit"] = None
             obj_data["display_text"] = None
 
-        elif scale_type in [ScalesType.RANGE, ScalesType.PERCENTAGE]:
+        elif scale_type in ScalesType.RANGE:
             # 范围类型或百分比类型
             obj_data["scale_value"] = None
             obj_data["display_text"] = None
@@ -249,7 +249,7 @@ class BridgeScalesService(
                         value=str(scale_value),
                     )
 
-        elif scale_type in [ScalesType.RANGE, ScalesType.PERCENTAGE]:
+        elif scale_type in ScalesType.RANGE:
             # 检查范围和百分比是否重复
             min_value = obj_data.get("min_value")
             max_value = obj_data.get("max_value")

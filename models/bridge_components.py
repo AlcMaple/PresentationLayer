@@ -123,7 +123,7 @@ class BridgeScales(BridgeComponentBase, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True, description="标度主键ID")
     scale_type: ScalesType = Field(
-        description="标度类型：NUMERIC(数值)/PERCENTAGE(百分比)/RANGE(范围)/TEXT(文本)"
+        description="标度类型：NUMERIC(数值)/RANGE(范围)/TEXT(文本)"
     )
     scale_value: Optional[int] = Field(default=None, description="标度值")
     min_value: Optional[int] = Field(default=None, description="范围最小值")

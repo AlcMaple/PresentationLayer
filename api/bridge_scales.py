@@ -23,7 +23,7 @@ async def get_bridge_scales_list(
     name: Optional[str] = Query(None, description="标度名称模糊查询"),
     scale_type: Optional[ScalesType] = Query(
         None,
-        description="标度类型筛选（NUMERIC(数值)/PERCENTAGE(百分比)/RANGE(范围)/TEXT(文本)）",
+        description="标度类型筛选（NUMERIC(数值)/RANGE(范围)/TEXT(文本)）",
     ),
     scale_value: Optional[int] = Query(None, description="标度值"),
     min_value: Optional[int] = Query(None, description="范围最小值"),
