@@ -1,5 +1,5 @@
 from typing import List, Dict, Any
-from sqlmodel import Session, select, and_, update
+from sqlmodel import Session, and_, update
 from datetime import datetime
 
 from models.paths import Paths

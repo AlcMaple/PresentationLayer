@@ -81,7 +81,9 @@ async def create_path(path_data: PathsCreate, session: Session = Depends(get_db)
     """创建路径"""
     service = get_paths_service(session)
     item = service.create(path_data)
-    response_item = PathsResponse.model_validate(item).model_dump()
+    # 获取包含关联数据的详细信息
+    detailed_item = service.get_by_id_with_details(item.id)
+    response_item = detailed_item.model_dump() if detailed_item else None
     return success(response_item, "创建成功")
 
 
@@ -89,11 +91,11 @@ async def create_path(path_data: PathsCreate, session: Session = Depends(get_db)
 async def get_path(path_id: int, session: Session = Depends(get_db)):
     """根据ID获取单个路径"""
     service = get_paths_service(session)
-    item = service.get_by_id(path_id)
+    item = service.get_by_id_with_details(path_id)
     if not item:
         raise NotFoundException(resource="Paths", identifier=str(path_id))
 
-    response_item = PathsResponse.model_validate(item).model_dump()
+    response_item = item.model_dump()
     return success(response_item, "查询成功")
 
 
@@ -104,7 +106,9 @@ async def update_path(
     """更新路径"""
     service = get_paths_service(session)
     item = service.update(path_id, path_data)
-    response_item = PathsResponse.model_validate(item).model_dump()
+    # 获取包含关联数据的详细信息
+    detailed_item = service.get_by_id_with_details(path_id)
+    response_item = detailed_item.model_dump() if detailed_item else None
     return success(response_item, "更新成功")
 
 
@@ -112,7 +116,7 @@ async def update_path(
 async def delete_path(path_id: int, session: Session = Depends(get_db)):
     """删除路径"""
     service = get_paths_service(session)
-    success_result = service.delete(path_id)
+    success_result = service.delete(path_id, cascade=False)
     return success(None, "删除成功")
 
 
@@ -124,5 +128,7 @@ async def get_path_by_code(code: str, session: Session = Depends(get_db)):
     if not item:
         raise NotFoundException(resource="Paths", identifier=code)
 
-    response_item = PathsResponse.model_validate(item).model_dump()
+    # 获取包含关联数据的详细信息
+    detailed_item = service.get_by_id_with_details(item.id)
+    response_item = detailed_item.model_dump() if detailed_item else None
     return success(response_item, "查询成功")

@@ -97,6 +97,7 @@ class DiseaseItem(BaseModel):
     quantity_code: Optional[str] = None
     quantity_name: Optional[str] = None
 
+
 class PathsPageResponse(BaseModel):
     """路径分页响应模型"""
 

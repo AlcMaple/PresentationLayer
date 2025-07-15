@@ -298,8 +298,6 @@ class BaseCRUDService(Generic[ModelType, CreateSchemaType, UpdateSchemaType], AB
             if hasattr(db_obj, "is_active"):
                 db_obj.is_active = False
                 if hasattr(db_obj, "updated_at"):
-                    from datetime import datetime
-
                     db_obj.updated_at = datetime.utcnow()
                 self.session.commit()
 

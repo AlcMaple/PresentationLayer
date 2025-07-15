@@ -20,6 +20,7 @@ from models import (
 )
 
 
+# 需要自定义类，不能用工厂函数，只能继承
 class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
     """路径服务类"""
 
@@ -309,7 +310,7 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
 
         return all_options
 
-    def get_by_id(self, id: int) -> Optional[PathsResponse]:
+    def get_by_id_with_details(self, id: int) -> Optional[PathsResponse]:
         """根据 id 获取paths单条记录数据"""
         try:
             # 构建查询语句
