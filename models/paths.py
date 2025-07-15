@@ -10,6 +10,9 @@ class Paths(BaseModel, table=True):
     __tablename__ = "paths"
 
     id: Optional[int] = Field(default=None, primary_key=True, description="路径主键ID")
+    code: str = Field(max_length=50, unique=True, description="路径编码")
+    name: str = Field(max_length=200, description="路径名称")
+    is_active: bool = Field(default=True, description="是否启用")
 
     # 层级路径字段
     category_id: Optional[int] = Field(
@@ -58,6 +61,7 @@ class Paths(BaseModel, table=True):
         Index("idx_paths_component_form", "component_form_id"),
         Index("idx_paths_disease", "disease_id"),
         Index("idx_paths_scale", "scale_id"),
+        Index("idx_paths_active", "is_active"),
         # 复合索引
         Index("idx_paths_category_unit", "category_id", "assessment_unit_id"),
         Index("idx_paths_category_bridge_type", "category_id", "bridge_type_id"),
@@ -65,7 +69,8 @@ class Paths(BaseModel, table=True):
         Index("idx_paths_bridge_disease", "bridge_type_id", "disease_id"),
         # 路径索引
         Index(
-            "idx_paths_full_hierarchy",
+            "idx_paths_full_hierarchy_active",
+            "is_active",
             "category_id",
             "assessment_unit_id",
             "bridge_type_id",

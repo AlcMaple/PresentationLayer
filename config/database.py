@@ -13,8 +13,8 @@ from models import (
     BridgeScales,
     BridgeQualities,
     BridgeQuantities,
-    Paths,
     AssessmentUnit,
+    Paths,
 )
 
 # 数据库引擎
@@ -44,9 +44,9 @@ def create_tables():
         SQLModel.metadata.create_all(engine)
         # print("数据表创建成功")
 
-        # print("已创建的表：")
-        # for table_name in SQLModel.metadata.tables.keys():
-        #     print(f"   - {table_name}")
+        print("已创建的表：")
+        for table_name in SQLModel.metadata.tables.keys():
+            print(f"   - {table_name}")
     except Exception as e:
         print(f"数据表创建失败：{e}")
         raise

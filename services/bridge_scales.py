@@ -92,6 +92,20 @@ class BridgeScalesService(
                     )
                 obj_data["code"] = code_value.strip()
 
+            # 检查名称
+            if hasattr(self.model, "name") and "name" in obj_data:
+                statement = select(BridgeScales).where(
+                    and_(
+                        BridgeScales.name == obj_data["name"],
+                        BridgeScales.is_active == True,
+                    )
+                )
+                existing = self.session.exec(statement).first()
+                if existing:
+                    raise DuplicateException(
+                        resource="BridgeScales", field="name", value=obj_data["name"]
+                    )
+
             # 根据标度类型处理字段
             self._process_scale_type_fields(obj_data)
 
@@ -142,6 +156,21 @@ class BridgeScalesService(
                     obj_data["code"] = code_value.strip()
                 else:
                     obj_data.pop("code")  # 不更新编码
+
+            # 检查名称
+            if hasattr(self.model, "name") and "name" in obj_data:
+                statement = select(BridgeScales).where(
+                    and_(
+                        BridgeScales.name == obj_data["name"],
+                        BridgeScales.is_active == True,
+                        self.model.id != id,
+                    )
+                )
+                existing = self.session.exec(statement).first()
+                if existing:
+                    raise DuplicateException(
+                        resource="BridgeScales", field="name", value=obj_data["name"]
+                    )
 
             # 获取标度类型（新的或现有的）
             new_scale_type = obj_data.get("scale_type", db_obj.scale_type)

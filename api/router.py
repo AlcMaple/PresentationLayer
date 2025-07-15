@@ -10,6 +10,7 @@ from .bridge_diseases import router as bridge_diseases_router
 from .bridge_qualities import router as bridge_qualities_router
 from .bridge_quantities import router as bridge_quantities_router
 from .bridge_scales import router as bridge_scales_router
+from .paths import router as paths_router
 
 router = APIRouter()
 router.include_router(categories_router)
@@ -23,3 +24,4 @@ router.include_router(bridge_diseases_router)
 router.include_router(bridge_qualities_router)
 router.include_router(bridge_quantities_router)
 router.include_router(bridge_scales_router)
+router.include_router(paths_router)

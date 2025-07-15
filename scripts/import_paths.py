@@ -22,6 +22,7 @@ from models import (
     BridgeQuantities,
     Paths,
 )
+from services.code_generator import get_code_generator
 
 
 class PathImporter:
@@ -30,6 +31,7 @@ class PathImporter:
     def __init__(self, json_file_path: str):
         self.json_file_path = json_file_path
         self.session = Session(engine)
+        self.code_generator = get_code_generator(self.session)
 
         # 缓存字典 - 避免重复查询
         self.name_to_id_cache = {
@@ -150,11 +152,14 @@ class PathImporter:
             bridge_types = sheet_data.get("bridge_types", {})
 
             for bridge_type_name, bridge_type_data in bridge_types.items():
-                print(f"  处理桥梁类型: {bridge_type_name}")
+                # print(f"  处理桥梁类型: {bridge_type_name}")
 
                 bridge_type_id = self.get_id_by_name("bridge_types", bridge_type_name)
                 if bridge_type_id is None:
-                    print(f"    警告: 未找到桥梁类型 '{bridge_type_name}' 的ID")
+                    print(f"⚠️ 未找到桥梁类型: '{bridge_type_name}'，已跳过该类型")
+                    print(
+                        f"    当前数据库中的桥梁类型有: {list(self.name_to_id_cache['bridge_types'].keys())}"
+                    )
                     continue
 
                 # 递归处理部位
@@ -163,11 +168,14 @@ class PathImporter:
 
     def process_parts(self, bridge_type_id: int, parts: Dict):
         """处理部位层级"""
+        # print(f"    处理部位，共 {len(parts)} 个部位")
         for part_name, part_data in parts.items():
             part_id = self.get_id_by_name("parts", part_name)
+            # print(f"      部位: {part_name}, ID: {part_id}")
 
             # 处理结构类型
             children = part_data.get("children", {})
+            # print(f"        结构类型数量: {len(children)}")
             self.process_structures(bridge_type_id, part_id, children)
 
     def process_structures(
@@ -176,9 +184,11 @@ class PathImporter:
         """处理结构类型层级"""
         for structure_name, structure_data in structures.items():
             structure_id = self.get_id_by_name("structures", structure_name)
+            # print(f"        结构: {structure_name}, ID: {structure_id}")
 
             # 处理部件类型
             children = structure_data.get("children", {})
+            # print(f"          部件类型数量: {len(children)}")
             self.process_component_types(
                 bridge_type_id, part_id, structure_id, children
             )
@@ -195,9 +205,11 @@ class PathImporter:
             component_type_id = self.get_id_by_name(
                 "component_types", component_type_name
             )
+            # print(f"          部件类型: {component_type_name}, ID: {component_type_id}")
 
             # 处理构件形式
             children = component_type_data.get("children", {})
+            # print(f"            构件形式数量: {len(children)}")
             self.process_component_forms(
                 bridge_type_id, part_id, structure_id, component_type_id, children
             )
@@ -237,8 +249,10 @@ class PathImporter:
         damage_types: Dict,
     ):
         """处理病害类型层级"""
+        # print(f"              病害类型数量: {len(damage_types)}")
         for disease_name, scale_data_list in damage_types.items():
             disease_id = self.get_id_by_name("diseases", disease_name)
+            # print(f"              病害: {disease_name}, ID: {disease_id}, 标度数: {len(scale_data_list)}")
 
             if disease_id is None:
                 print(f"      警告: 未找到病害类型 '{disease_name}' 的ID")
@@ -264,8 +278,14 @@ class PathImporter:
                     quantitative_desc = scale_item.get("quantitative_description", "")
                     quantity_id = self.get_id_by_name("quantities", quantitative_desc)
 
+                    # 生成路径的 code 和 name
+                    path_code = self.code_generator.generate_code("paths")
+                    path_name = f"路径-{self.stats['total_paths']:06d}"
+
                     # 创建路径记录
                     path_record = Paths(
+                        code=path_code,
+                        name=path_name,
                         category_id=self.category_id,
                         assessment_unit_id=self.assessment_unit_id,
                         bridge_type_id=bridge_type_id,
@@ -280,6 +300,7 @@ class PathImporter:
                     )
 
                     self.session.add(path_record)
+                    self.session.commit()
                     self.stats["success_paths"] += 1
 
                     if self.stats["total_paths"] % 100 == 0:
@@ -293,7 +314,7 @@ class PathImporter:
                     self.stats["errors"].append(error_msg)
                     print(f"      错误: {error_msg}")
 
-    def run_import(self, limit_sheets: int = 1):
+    def run_import(self, limit_sheets: int = 0):
         """执行导入流程"""
         try:
             print("开始桥梁路径数据导入...")

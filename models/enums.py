@@ -23,3 +23,4 @@ class CodePrefix(str, Enum):
     BRIDGE_SCALES = "SC"
     BRIDGE_QUALITIES = "QL"
     BRIDGE_QUANTITIES = "QT"
+    PATHS = "P"
