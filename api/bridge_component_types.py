@@ -3,7 +3,7 @@ from sqlmodel import Session
 from typing import Optional
 
 from config.database import get_db
-from services.base_crud import BaseCRUDService, PageParams
+from services.base_crud import get_base_crud_service, PageParams
 from models import BridgeComponentTypes
 from schemas.base import (
     Create,
@@ -24,7 +24,7 @@ async def get_bridge_component_types_list(
     session: Session = Depends(get_db),
 ):
     """分页查询部件类型列表"""
-    service = BaseCRUDService(BridgeComponentTypes, session)
+    service = get_base_crud_service(BridgeComponentTypes, session)
     page_params = PageParams(page=page, size=size)
 
     filters = {}
@@ -48,7 +48,7 @@ async def create_bridge_component_types(
     category_data: Create, session: Session = Depends(get_db)
 ):
     """创建部件类型"""
-    service = BaseCRUDService(BridgeComponentTypes, session)
+    service = get_base_crud_service(BridgeComponentTypes, session)
     item = service.create(category_data)
 
     response_item = Response.model_validate(item)
@@ -60,7 +60,7 @@ async def update_bridge_component_types(
     id: int, category_data: Update, session: Session = Depends(get_db)
 ):
     """更新部件类型"""
-    service = BaseCRUDService(BridgeComponentTypes, session)
+    service = get_base_crud_service(BridgeComponentTypes, session)
     item = service.update(id, category_data)
 
     if not item:
@@ -73,7 +73,7 @@ async def update_bridge_component_types(
 @router.delete("/{id}", summary="删除部件类型")
 async def delete_bridge_component_types(id: int, session: Session = Depends(get_db)):
     """删除部件类型"""
-    service = BaseCRUDService(BridgeComponentTypes, session)
+    service = get_base_crud_service(BridgeComponentTypes, session)
     success_flag = service.delete(id)
 
     if not success_flag:

@@ -3,7 +3,7 @@ from sqlmodel import Session
 from typing import Optional
 
 from config.database import get_db
-from services.paths import PathsService
+from services.paths import get_paths_service
 from services.base_crud import PageParams
 from schemas.paths import PathsCreate, PathsUpdate, PathsResponse, PathConditions
 from utils.responses import success
@@ -31,7 +31,7 @@ async def get_paths_list(
     session: Session = Depends(get_db),
 ):
     """分页查询路径列表"""
-    service = PathsService(session)
+    service = get_paths_service(session)
     page_params = PageParams(page=page, size=size)
 
     # 查询条件
@@ -63,15 +63,15 @@ async def get_paths_list(
 @router.get("/filter-options", summary="获取分页查询条件选项")
 async def get_filter_options(session: Session = Depends(get_db)):
     """获取所有相关表的code和name选项"""
-    service = PathsService(session)
+    service = get_paths_service(session)
     options = service.get_filter_options()
-    return success(options, "获取过滤选项成功")
+    return success(options, "获取分页查询条件选项成功")
 
 
 @router.get("/options", summary="获取所有路径选项")
 async def get_options(session: Session = Depends(get_db)):
     """获取所有路径选项"""
-    service = PathsService(session)
+    service = get_paths_service(session)
     options = service.get_options()
     return success(options, "获取路径选项成功")
 
@@ -79,7 +79,7 @@ async def get_options(session: Session = Depends(get_db)):
 @router.post("/", summary="创建路径")
 async def create_path(path_data: PathsCreate, session: Session = Depends(get_db)):
     """创建路径"""
-    service = PathsService(session)
+    service = get_paths_service(session)
     item = service.create(path_data)
     response_item = PathsResponse.model_validate(item).model_dump()
     return success(response_item, "创建成功")
@@ -88,7 +88,7 @@ async def create_path(path_data: PathsCreate, session: Session = Depends(get_db)
 @router.get("/{path_id}", summary="获取单个路径")
 async def get_path(path_id: int, session: Session = Depends(get_db)):
     """根据ID获取单个路径"""
-    service = PathsService(session)
+    service = get_paths_service(session)
     item = service.get_by_id(path_id)
     if not item:
         raise NotFoundException(resource="Paths", identifier=str(path_id))
@@ -102,7 +102,7 @@ async def update_path(
     path_id: int, path_data: PathsUpdate, session: Session = Depends(get_db)
 ):
     """更新路径"""
-    service = PathsService(session)
+    service = get_paths_service(session)
     item = service.update(path_id, path_data)
     response_item = PathsResponse.model_validate(item).model_dump()
     return success(response_item, "更新成功")
@@ -111,7 +111,7 @@ async def update_path(
 @router.delete("/{path_id}", summary="删除路径")
 async def delete_path(path_id: int, session: Session = Depends(get_db)):
     """删除路径"""
-    service = PathsService(session)
+    service = get_paths_service(session)
     success_result = service.delete(path_id)
     return success(None, "删除成功")
 
@@ -119,7 +119,7 @@ async def delete_path(path_id: int, session: Session = Depends(get_db)):
 @router.get("/by-code/{code}", summary="根据编码获取路径")
 async def get_path_by_code(code: str, session: Session = Depends(get_db)):
     """根据编码获取路径"""
-    service = PathsService(session)
+    service = get_paths_service(session)
     item = service.get_by_code(code)
     if not item:
         raise NotFoundException(resource="Paths", identifier=code)

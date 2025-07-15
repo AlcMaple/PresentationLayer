@@ -337,3 +337,10 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
         except Exception as e:
             print(f"获取paths单条记录数据时出错: {e}")
             return None
+
+
+def get_paths_service(session: Session) -> PathsService:
+    """
+    获取paths服务实例
+    """
+    return PathsService(session)

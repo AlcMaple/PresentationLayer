@@ -3,7 +3,7 @@ from sqlmodel import Session
 from typing import Optional
 
 from config.database import get_db
-from services.base_crud import BaseCRUDService, PageParams
+from services.base_crud import get_base_crud_service, PageParams
 from models import BridgeQualities
 from schemas.base import (
     Create,
@@ -24,7 +24,7 @@ async def get_bridge_qualities_list(
     session: Session = Depends(get_db),
 ):
     """分页查询定性描述列表"""
-    service = BaseCRUDService(BridgeQualities, session)
+    service = get_base_crud_service(BridgeQualities, session)
     page_params = PageParams(page=page, size=size)
 
     filters = {}
@@ -48,7 +48,7 @@ async def create_bridge_qualities(
     category_data: Create, session: Session = Depends(get_db)
 ):
     """创建定性描述"""
-    service = BaseCRUDService(BridgeQualities, session)
+    service = get_base_crud_service(BridgeQualities, session)
     item = service.create(category_data)
 
     response_item = Response.model_validate(item)
@@ -60,7 +60,7 @@ async def update_bridge_qualities(
     id: int, category_data: Update, session: Session = Depends(get_db)
 ):
     """更新定性描述"""
-    service = BaseCRUDService(BridgeQualities, session)
+    service = get_base_crud_service(BridgeQualities, session)
     item = service.update(id, category_data)
 
     if not item:
@@ -73,7 +73,7 @@ async def update_bridge_qualities(
 @router.delete("/{id}", summary="删除定性描述")
 async def delete_bridge_qualities(id: int, session: Session = Depends(get_db)):
     """删除定性描述"""
-    service = BaseCRUDService(BridgeQualities, session)
+    service = get_base_crud_service(BridgeQualities, session)
     success_flag = service.delete(id)
 
     if not success_flag:

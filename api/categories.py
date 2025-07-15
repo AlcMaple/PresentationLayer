@@ -3,7 +3,7 @@ from sqlmodel import Session
 from typing import Optional
 
 from config.database import get_db
-from services.base_crud import BaseCRUDService, PageParams
+from services.base_crud import get_base_crud_service, PageParams
 from models import Categories
 from schemas.base import (
     Create,
@@ -24,7 +24,7 @@ async def get_categories_list(
     session: Session = Depends(get_db),
 ):
     """分页查询分类列表"""
-    service = BaseCRUDService(Categories, session)
+    service = get_base_crud_service(Categories, session)
     page_params = PageParams(page=page, size=size)
 
     filters = {}
@@ -46,7 +46,7 @@ async def get_categories_list(
 @router.post("/", summary="创建分类")
 async def create_category(category_data: Create, session: Session = Depends(get_db)):
     """创建分类"""
-    service = BaseCRUDService(Categories, session)
+    service = get_base_crud_service(Categories, session)
     item = service.create(category_data)
 
     response_item = Response.model_validate(item)
@@ -58,7 +58,7 @@ async def update_category(
     id: int, category_data: Update, session: Session = Depends(get_db)
 ):
     """更新分类"""
-    service = BaseCRUDService(Categories, session)
+    service = get_base_crud_service(Categories, session)
     item = service.update(id, category_data)
 
     if not item:
@@ -71,7 +71,7 @@ async def update_category(
 @router.delete("/{id}", summary="删除分类")
 async def delete_category(id: int, session: Session = Depends(get_db)):
     """删除分类"""
-    service = BaseCRUDService(Categories, session)
+    service = get_base_crud_service(Categories, session)
     success_flag = service.delete(id)
 
     if not success_flag:

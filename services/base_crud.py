@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 
 from exceptions import NotFoundException, DuplicateException
 from services.code_generator import get_code_generator
+from services.path_cascade import get_path_cascade_service
 
 # 泛型变量定义
 ModelType = TypeVar("ModelType", bound=SQLModel)  # 数据模型类型
@@ -276,7 +277,7 @@ class BaseCRUDService(Generic[ModelType, CreateSchemaType, UpdateSchemaType], AB
             print(f"更新记录时出错: {e}")
             raise Exception(f"更新失败: {str(e)}")
 
-    def delete(self, id: int) -> bool:
+    def delete(self, id: int, cascade: bool = True) -> bool:
         """
         删除记录
         Args:
@@ -301,6 +302,10 @@ class BaseCRUDService(Generic[ModelType, CreateSchemaType, UpdateSchemaType], AB
 
                     db_obj.updated_at = datetime.utcnow()
                 self.session.commit()
+
+                # 级联删除paths表中的相关记录
+                if cascade and self._should_cascade_delete():
+                    self._perform_cascade_delete(id)
             else:
                 self.session.delete(db_obj)
                 self.session.commit()
@@ -339,3 +344,67 @@ class BaseCRUDService(Generic[ModelType, CreateSchemaType, UpdateSchemaType], AB
                 conditions.append(field_attr.like(f"%{value}%"))
 
         return conditions
+
+    def _should_cascade_delete(self) -> bool:
+        """
+        判断是否需要级联删除
+        Returns:
+            是否需要级联删除
+        """
+        # 需要级联删除的表列表
+        cascade_tables = [
+            "categories",
+            "assessment_units",
+            "bridge_types",
+            "bridge_parts",
+            "bridge_structures",
+            "bridge_component_types",
+            "bridge_component_forms",
+            "bridge_diseases",
+            "bridge_scales",
+            "bridge_qualities",
+            "bridge_quantities",
+        ]
+
+        return (
+            hasattr(self.model, "__tablename__")
+            and self.model.__tablename__ in cascade_tables
+        )
+
+    def _perform_cascade_delete(self, record_id: int) -> None:
+        """
+        执行级联删除
+        Args:
+            record_id: 被删除的记录ID
+        """
+        try:
+            cascade_service = get_path_cascade_service(self.session)
+            table_name = self.model.__tablename__
+
+            # 级联删除
+            affected_rows = cascade_service.cascade_delete_by_table(
+                table_name, record_id
+            )
+
+            if affected_rows > 0:
+                print(
+                    f"级联删除完成: 表 {table_name} ID {record_id}, 影响 {affected_rows} 条路径"
+                )
+
+        except Exception as e:
+            print(f"级联删除时出错: {e}")
+            pass
+
+
+def get_base_crud_service(
+    model: Type[ModelType], session: Session
+) -> BaseCRUDService[ModelType, CreateSchemaType, UpdateSchemaType]:
+    """
+    获取通用CRUD服务
+    Args:
+        model: 数据模型类
+        session: 数据库会话
+    Returns:
+        CRUD服务实例
+    """
+    return BaseCRUDService(model, session)

@@ -3,7 +3,7 @@ from sqlmodel import Session
 from typing import Optional
 
 from config.database import get_db
-from services.base_crud import BaseCRUDService, PageParams
+from services.base_crud import get_base_crud_service, PageParams
 from models import BridgeComponentForms
 from schemas.base import (
     Create,
@@ -24,7 +24,7 @@ async def get_bridge_component_forms_list(
     session: Session = Depends(get_db),
 ):
     """分页查询构件形式列表"""
-    service = BaseCRUDService(BridgeComponentForms, session)
+    service = get_base_crud_service(BridgeComponentForms, session)
     page_params = PageParams(page=page, size=size)
 
     filters = {}
@@ -48,7 +48,7 @@ async def create_bridge_component_forms(
     category_data: Create, session: Session = Depends(get_db)
 ):
     """创建构件形式"""
-    service = BaseCRUDService(BridgeComponentForms, session)
+    service = get_base_crud_service(BridgeComponentForms, session)
     item = service.create(category_data)
 
     response_item = Response.model_validate(item)
@@ -60,7 +60,7 @@ async def update_bridge_component_forms(
     id: int, category_data: Update, session: Session = Depends(get_db)
 ):
     """更新构件形式"""
-    service = BaseCRUDService(BridgeComponentForms, session)
+    service = get_base_crud_service(BridgeComponentForms, session)
     item = service.update(id, category_data)
 
     if not item:
@@ -73,7 +73,7 @@ async def update_bridge_component_forms(
 @router.delete("/{id}", summary="删除构件形式")
 async def delete_bridge_component_forms(id: int, session: Session = Depends(get_db)):
     """删除构件形式"""
-    service = BaseCRUDService(BridgeComponentForms, session)
+    service = get_base_crud_service(BridgeComponentForms, session)
     success_flag = service.delete(id)
 
     if not success_flag:
