@@ -195,7 +195,7 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
 
     def get_filter_options(self) -> Dict[str, List[Dict[str, Any]]]:
         """
-        获取Paths 表中存在的所有相关表的code和name
+        获取Paths 表中存在的所有相关表的关联数据
 
         Returns:
             包含各表选项的字典
@@ -247,22 +247,75 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
                     existing_ids = self.session.exec(existing_ids_stmt).all()
 
                     if existing_ids:
-                        # 查询在paths表中存在的记录
-                        stmt = (
-                            select(model_class.code, model_class.name)
-                            .where(
-                                and_(
-                                    model_class.id.in_(existing_ids),
-                                    model_class.is_active == True,
+                        # 标度表处理
+                        if model_class == BridgeScales:
+                            # 查询标度表的完整信息
+                            stmt = (
+                                select(
+                                    BridgeScales.code,
+                                    BridgeScales.name,
+                                    BridgeScales.scale_type,
+                                    BridgeScales.scale_value,
+                                    BridgeScales.min_value,
+                                    BridgeScales.max_value,
+                                    BridgeScales.unit,
+                                    BridgeScales.display_text,
                                 )
+                                .where(
+                                    and_(
+                                        BridgeScales.id.in_(existing_ids),
+                                        BridgeScales.is_active == True,
+                                    )
+                                )
+                                .order_by(BridgeScales.code)
                             )
-                            .order_by(model_class.code)
-                        )
 
-                        result = self.session.exec(stmt).all()
-                        options[option_key] = [
-                            {"code": row[0], "name": row[1]} for row in result
-                        ]
+                            results = self.session.exec(stmt).all()
+                            scale_options = []
+
+                            for row in results:
+                                (
+                                    code,
+                                    scale_type,
+                                    scale_value,
+                                    min_value,
+                                    max_value,
+                                    unit,
+                                    display_text,
+                                ) = row
+
+                                # 根据标度类型构建不同的name
+                                if scale_type == "NUMERIC":
+                                    display_name = str(scale_value)
+                                elif scale_type == "RANGE":
+                                    display_name = f"{min_value}-{max_value}{unit}"
+                                elif scale_type == "TEXT":
+                                    display_name = display_text
+                                else:
+                                    display_name = None
+
+                                scale_options.append(
+                                    {"code": code, "name": display_name}
+                                )
+
+                            options[option_key] = scale_options
+                        else:
+                            # 其他表的处理
+                            stmt = (
+                                select(model_class.code, model_class.name)
+                                .where(
+                                    and_(
+                                        model_class.id.in_(existing_ids),
+                                        model_class.is_active == True,
+                                    )
+                                )
+                                .order_by(model_class.code)
+                            )
+
+                            result = self.session.exec(stmt).all()
+                            options[option_key] = [
+                                {"code": row[0], "name": row[1]} for row in result
+                            ]
                     else:
                         options[option_key] = []
 
@@ -329,7 +382,7 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
 
     def get_options(self) -> Dict[str, List[Dict[str, Any]]]:
         """
-        获取所有相关表的 code、name 和 id
+        获取所有相关表的关联数据
 
         Returns:
             包含各表选项的字典
@@ -353,16 +406,65 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
 
         for option_key, model_class, _ in table_configs:
             try:
-                # 查询所有记录
-                stmt = (
-                    select(model_class.id, model_class.code, model_class.name)
-                    .where(model_class.is_active == True)
-                    .order_by(model_class.code)
-                )
-                results = self.session.exec(stmt).all()
-                all_options[option_key] = [
-                    {"id": row[0], "code": row[1], "name": row[2]} for row in results
-                ]
+                # 对标度表进行特殊处理
+                if model_class == BridgeScales:
+                    stmt = (
+                        select(
+                            BridgeScales.id,
+                            BridgeScales.code,
+                            BridgeScales.name,
+                            BridgeScales.scale_type,
+                            BridgeScales.scale_value,
+                            BridgeScales.min_value,
+                            BridgeScales.max_value,
+                            BridgeScales.unit,
+                            BridgeScales.display_text,
+                        )
+                        .where(BridgeScales.is_active == True)
+                        .order_by(BridgeScales.code)
+                    )
+                    results = self.session.exec(stmt).all()
+                    scale_options = []
+
+                    for row in results:
+                        (
+                            id_val,
+                            code,
+                            scale_type,
+                            scale_value,
+                            min_value,
+                            max_value,
+                            unit,
+                            display_text,
+                        ) = row
+
+                        # 根据标度类型构建不同的name
+                        if scale_type == "NUMERIC":
+                            display_name = str(scale_value)
+                        elif scale_type == "RANGE":
+                            display_name = f"{min_value}-{max_value}{unit}"
+                        elif scale_type == "TEXT":
+                            display_name = display_text
+                        else:
+                            display_name = None
+
+                        scale_options.append(
+                            {"id": id_val, "code": code, "name": display_name}
+                        )
+
+                    all_options[option_key] = scale_options
+                else:
+                    # 其他表的处理
+                    stmt = (
+                        select(model_class.id, model_class.code, model_class.name)
+                        .where(model_class.is_active == True)
+                        .order_by(model_class.code)
+                    )
+                    results = self.session.exec(stmt).all()
+                    all_options[option_key] = [
+                        {"id": row[0], "code": row[1], "name": row[2]}
+                        for row in results
+                    ]
             except Exception as e:
                 print(f"查询表 {option_key} 选项时出错: {e}")
                 all_options[option_key] = []

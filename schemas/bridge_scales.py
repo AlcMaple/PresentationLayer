@@ -25,10 +25,29 @@ class BridgeScalesCreate(BaseModel):
 
     @model_validator(mode="after")
     @classmethod
-    def check_scale_range(cls, values):
-        if values.min_value is not None and values.max_value is not None:
+    def validate_scale_fields(cls, values):
+        """根据标度类型验证必填字段"""
+        scale_type = values.scale_type
+
+        if scale_type == ScalesType.NUMERIC:
+            # 数字型
+            if values.scale_value is None:
+                raise ValueError("数字型标度必须填写标度值(scale_value)")
+        elif scale_type == ScalesType.RANGE:
+            # 范围型
+            if values.min_value is None:
+                raise ValueError("范围型标度必须填写最小值(min_value)")
+            if values.max_value is None:
+                raise ValueError("范围型标度必须填写最大值(max_value)")
+            if not values.unit or not values.unit.strip():
+                raise ValueError("范围型标度必须填写单位(unit)")
             if values.min_value > values.max_value:
                 raise ValueError("最小值不能大于最大值")
+        elif scale_type == ScalesType.TEXT:
+            # 文本型
+            if not values.display_text or not values.display_text.strip():
+                raise ValueError("文本型标度必须填写显示文本(display_text)")
+
         return values
 
 
@@ -43,7 +62,7 @@ class BridgeScalesUpdate(BaseModel):
         None, max_length=500, description="标度描述", example=""
     )
     scale_type: Optional[ScalesType] = Field(
-        None, description="标度类型", example=ScalesType.NUMERIC
+        ..., description="标度类型", example=ScalesType.NUMERIC
     )
     scale_value: Optional[int] = Field(None, description="标度值", example=1)
     min_value: Optional[int] = Field(None, description="范围最小值", example=0)
@@ -55,10 +74,29 @@ class BridgeScalesUpdate(BaseModel):
 
     @model_validator(mode="after")
     @classmethod
-    def check_scale_range(cls, values):
-        if values.min_value is not None and values.max_value is not None:
+    def validate_scale_fields(cls, values):
+        """根据标度类型验证必填字段"""
+        scale_type = values.scale_type
+
+        if scale_type == ScalesType.NUMERIC:
+            # 数字型
+            if values.scale_value is None:
+                raise ValueError("数字型标度必须填写标度值(scale_value)")
+        elif scale_type == ScalesType.RANGE:
+            # 范围型
+            if values.min_value is None:
+                raise ValueError("范围型标度必须填写最小值(min_value)")
+            if values.max_value is None:
+                raise ValueError("范围型标度必须填写最大值(max_value)")
+            if not values.unit or not values.unit.strip():
+                raise ValueError("范围型标度必须填写单位(unit)")
             if values.min_value > values.max_value:
                 raise ValueError("最小值不能大于最大值")
+        elif scale_type == ScalesType.TEXT:
+            # 文本型
+            if not values.display_text or not values.display_text.strip():
+                raise ValueError("文本型标度必须填写显示文本(display_text)")
+
         return values
 
 
