@@ -814,7 +814,7 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
             for col, header in enumerate(headers, 1):
                 ws.cell(row=1, column=col, value=header)
 
-            # 获取所有相关表的 code、name 和 id
+            # 获取所有相关表的数据
             all_options = self.get_options()
 
             # 为每列添加数据验证
