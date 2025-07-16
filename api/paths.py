@@ -5,7 +5,7 @@ from typing import Optional
 from config.database import get_db
 from services.paths import get_paths_service
 from services.base_crud import PageParams
-from schemas.paths import PathsCreate, PathsUpdate, PathsResponse, PathConditions
+from schemas.paths import PathsCreate, PathsUpdate, PathConditions
 from utils.responses import success
 from exceptions import NotFoundException
 

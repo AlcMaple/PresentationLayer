@@ -339,6 +339,131 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
             print(f"获取paths单条记录数据时出错: {e}")
             return None
 
+    def create(self, obj_in: PathsCreate) -> Optional[PathsResponse]:
+        """
+        创建paths记录
+
+        Args:
+            obj_in: 创建路径参数
+
+        Returns:
+            创建后的路径数据
+        """
+        try:
+            # 1. 检查 code 和 name 的唯一性（继承基类逻辑）
+            if obj_in.code:
+                existing_code = self.get_by_code(obj_in.code.strip())
+                if existing_code:
+                    from exceptions import DuplicateException
+                    raise DuplicateException(
+                        resource="Paths",
+                        field="code", 
+                        value=obj_in.code.strip()
+                    )
+                    
+            if obj_in.name:
+                stmt = select(Paths).where(Paths.name == obj_in.name)
+                if hasattr(Paths, "is_active"):
+                    stmt = stmt.where(Paths.is_active == True)
+                existing_name = self.session.exec(stmt).first()
+                if existing_name:
+                    from exceptions import DuplicateException
+                    raise DuplicateException(
+                        resource="Paths",
+                        field="name",
+                        value=obj_in.name
+                    )
+
+            # 2. 通过各种 code 找到对应的 ID
+            path_data = {
+                "code": obj_in.code,
+                "name": obj_in.name,
+            }
+
+            # 定义 code 到 ID 的映射关系
+            code_to_id_mappings = [
+                ("category_code", Categories, "category_id"),
+                ("assessment_unit_code", AssessmentUnit, "assessment_unit_id"),
+                ("bridge_type_code", BridgeTypes, "bridge_type_id"),
+                ("part_code", BridgeParts, "part_id"),
+                ("structure_code", BridgeStructures, "structure_id"),
+                ("component_type_code", BridgeComponentTypes, "component_type_id"),
+                ("component_form_code", BridgeComponentForms, "component_form_id"),
+                ("disease_code", BridgeDiseases, "disease_id"),
+                ("scale_code", BridgeScales, "scale_id"),
+                ("quality_code", BridgeQualities, "quality_id"),
+                ("quantity_code", BridgeQuantities, "quantity_id"),
+            ]
+
+            for code_field, model_class, id_field in code_to_id_mappings:
+                code_value = getattr(obj_in, code_field, None)
+                if code_value:
+                    # 查找对应的 ID
+                    stmt = select(model_class.id).where(
+                        and_(
+                            model_class.code == code_value,
+                            model_class.is_active == True
+                        )
+                    )
+                    result = self.session.exec(stmt).first()
+                    if result:
+                        path_data[id_field] = result
+                    else:
+                        raise ValueError(f"找不到 {code_field} 为 '{code_value}' 的记录")
+
+            # 3. 检查路径表记录的唯一性（categories_id 到 quantity_id 完全相同的记录不能重复）
+            path_uniqueness_fields = [
+                "category_id", "assessment_unit_id", "bridge_type_id", "part_id",
+                "structure_id", "component_type_id", "component_form_id", 
+                "disease_id", "scale_id", "quality_id", "quantity_id"
+            ]
+            
+            # 构建唯一性检查条件
+            uniqueness_conditions = []
+            for field in path_uniqueness_fields:
+                field_value = path_data.get(field)
+                if field_value is not None:
+                    uniqueness_conditions.append(getattr(Paths, field) == field_value)
+                else:
+                    uniqueness_conditions.append(getattr(Paths, field).is_(None))
+            
+            # 检查是否存在完全相同的路径记录
+            if uniqueness_conditions:
+                stmt = select(Paths).where(and_(*uniqueness_conditions))
+                if hasattr(Paths, "is_active"):
+                    stmt = stmt.where(Paths.is_active == True)
+                existing_path = self.session.exec(stmt).first()
+                if existing_path:
+                    from exceptions import DuplicateException
+                    raise DuplicateException(
+                        resource="Paths",
+                        field="path_combination",
+                        value="相同的路径组合已存在"
+                    )
+
+            # 4. 创建记录
+            path_model = Paths(**path_data)
+            self.session.add(path_model)
+            self.session.commit()
+            self.session.refresh(path_model)
+
+            # 5. 构建返回数据
+            response_data = {
+                "id": path_model.id,
+                "code": path_model.code,
+                "name": path_model.name,
+            }
+
+            # 添加各个ID对应的code和name
+            response_data.update(self._get_related_codes_and_names(path_model))
+
+            return PathsResponse(**response_data)
+
+        except Exception as e:
+            self.session.rollback()
+            print(f"创建paths记录时出错: {e}")
+            raise
+
 
 def get_paths_service(session: Session) -> PathsService:
     """
