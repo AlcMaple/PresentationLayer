@@ -1,14 +1,14 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
 from config.settings import settings
-from api.router import router
+from api.router import router, router_paths
 from lifecycle import setup_lifespan
 from middleware import ExceptionHandlerMiddleware, set_exception_handlers
 
 
-def create_app() -> FastAPI:
+def create_app(router: APIRouter) -> FastAPI:
     app = FastAPI(
         title=settings.PROJECT_NAME,
         version=settings.VERSION,
@@ -47,7 +47,9 @@ def create_app() -> FastAPI:
     return app
 
 
-app = create_app()
+app = create_app(router)
+app_paths = create_app(router_paths)
+app.mount("/paths", app_paths)
 
 # 设置应用生命周期
 setup_lifespan(app)

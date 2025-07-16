@@ -24,4 +24,6 @@ router.include_router(bridge_diseases_router)
 router.include_router(bridge_qualities_router)
 router.include_router(bridge_quantities_router)
 router.include_router(bridge_scales_router)
-router.include_router(paths_router)
+
+router_paths = APIRouter()
+router_paths.include_router(paths_router)
