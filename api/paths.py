@@ -132,3 +132,11 @@ async def get_path_by_code(code: str, session: Session = Depends(get_db)):
     detailed_item = service.get_by_id_with_details(item.id)
     response_item = detailed_item.model_dump() if detailed_item else None
     return success(response_item, "查询成功")
+
+
+@router.get("/export", summary="导出路径 Excel 模板")
+async def export_path_template(session: Session = Depends(get_db)):
+    """导出路径 Excel 模板"""
+    service = get_paths_service(session)
+    template = service.export_template()
+    return success(template, "导出成功")
