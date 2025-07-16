@@ -153,20 +153,9 @@ class BaseCRUDService(Generic[ModelType, CreateSchemaType, UpdateSchemaType], AB
             # 编码
             if hasattr(self.model, "code"):
                 code_value = obj_data.get("code")
-                # 自动生成
-                if not code_value or not code_value.strip():
-                    table_name = self.model.__tablename__
-                    obj_data["code"] = self.code_generator.generate_code(table_name)
-                else:
-                    # 检查
-                    existing = self.get_by_code(code_value.strip())
-                    if existing:
-                        raise DuplicateException(
-                            resource=self.model.__name__,
-                            field="code",
-                            value=code_value.strip(),
-                        )
-                    obj_data["code"] = code_value.strip()
+                obj_data["code"] = self.code_generator.assign_or_generate_code(
+                    self.model.__tablename__, code_value
+                )
 
             # 检查名称
             if hasattr(self.model, "name") and "name" in obj_data:

@@ -352,20 +352,9 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
         """
         try:
             # 1. 检查 code 和 name
-            code_value = obj_in.code
-            if not code_value or not code_value.strip():
-                # 自动生成 code
-                generated_code = self.code_generator.generate_code("paths")
-                code_value = generated_code
-            else:
-                # 检查用户提供的 code 的唯一性
-                existing_code = self.get_by_code(code_value.strip())
-                if existing_code:
-
-                    raise DuplicateException(
-                        resource="Paths", field="code", value=code_value.strip()
-                    )
-                code_value = code_value.strip()
+            final_code = self.code_generator.assign_or_generate_code(
+                "paths", obj_in.code
+            )
 
             if obj_in.name:
                 stmt = select(Paths).where(Paths.name == obj_in.name)
@@ -379,7 +368,7 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
 
             # 2. 通过各种 code 找到对应的 ID
             path_data = {
-                "code": code_value,
+                "code": final_code,
                 "name": obj_in.name,
             }
 

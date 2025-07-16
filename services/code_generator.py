@@ -2,6 +2,7 @@ from sqlmodel import Session, text
 from typing import Optional
 
 from models.enums import CodePrefix
+from exceptions import ValidationException, DuplicateException
 
 
 class CodeGeneratorService:
@@ -145,9 +146,12 @@ class CodeGeneratorService:
             user_code: 用户自定义编码
         """
         if user_code:
-            if self.code_exists(table_name, user_code):
-                raise ValueError(f"编码已存在：{user_code}")
-            return user_code
+            clean_code = user_code.strip()
+            if self.code_exists(table_name, clean_code):
+                raise DuplicateException(
+                    resource=table_name, field="code", value=clean_code
+                )
+            return clean_code
 
         return self.generate_code(table_name)
 
