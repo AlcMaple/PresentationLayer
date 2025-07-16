@@ -18,7 +18,7 @@ from models import (
     BridgeQualities,
     BridgeQuantities,
 )
-from exceptions import DuplicateException
+from exceptions import DuplicateException, NotFoundException, ValidationException
 
 
 # 需要自定义类，不能用工厂函数，只能继承
@@ -412,11 +412,11 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
                     if result:
                         path_data[id_field] = result
                     else:
-                        raise ValueError(
+                        raise ValidationException(
                             f"找不到 {code_field} 为 '{code_value}' 的记录"
                         )
 
-            # 3. 检查路径表记录的唯一性（categories_id 到 quantity_id 完全相同的记录不能重复）
+            # 3. 检查路径表记录的唯一性
             path_uniqueness_fields = [
                 "category_id",
                 "assessment_unit_id",
