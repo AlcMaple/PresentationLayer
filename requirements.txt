@@ -12,3 +12,4 @@ pytest-asyncio==0.21.1
 httpx==0.25.2
 APScheduler==3.11.0
 SQLAlchemy==2.0.41
+openpyxl==3.1.2

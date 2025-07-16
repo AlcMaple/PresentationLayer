@@ -2,6 +2,9 @@ from typing import List, Optional, Dict, Any, Tuple
 from sqlmodel import Session, select, and_
 from sqlalchemy import func
 from datetime import datetime, timezone
+from openpyxl import Workbook
+from openpyxl.worksheet.datavalidation import DataValidation
+from io import BytesIO
 
 from models.paths import Paths
 from schemas.paths import PathsCreate, PathsUpdate, PathConditions, PathsResponse
@@ -559,7 +562,7 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
             # 检查记录的唯一性（排除当前记录）
             path_uniqueness_fields = [
                 "category_id",
-                "assessment_unit_id", 
+                "assessment_unit_id",
                 "bridge_type_id",
                 "part_id",
                 "structure_id",
@@ -625,7 +628,9 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
         except Exception as e:
             self.session.rollback()
             raise Exception(f"更新失败: {str(e)}")
-            
+
+    def export(self) -> bytes:
+        pass
 
 
 def get_paths_service(session: Session) -> PathsService:
