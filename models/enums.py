@@ -24,4 +24,4 @@ class CodePrefix(str, Enum):
     BRIDGE_QUALITIES = "BQL"
     BRIDGE_QUANTITIES = "BQT"
     PATHS = "P"
-    ASSESSMENTS_UNITS = "AU"
+    ASSESSMENT_UNITS = "AU"
