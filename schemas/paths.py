@@ -1,6 +1,8 @@
 from pydantic import BaseModel, Field, ValidationError, model_validator, field_validator
 from typing import Optional, List
 
+from models.enums import ScalesType
+
 
 class PathsBase(BaseModel):
     """路径基础模型"""
@@ -99,6 +101,14 @@ class PathsResponse(PathsBase):
     quality_name: Optional[str] = None
     quantity_code: Optional[str] = None
     quantity_name: Optional[str] = None
+
+    # 标度其他字段
+    scale_type: Optional[ScalesType] = None
+    scale_value: Optional[int] = None
+    min_value: Optional[int] = None
+    max_value: Optional[int] = None
+    unit: Optional[str] = None
+    display_text: Optional[str] = None
 
 
 class PathConditions(BaseModel):

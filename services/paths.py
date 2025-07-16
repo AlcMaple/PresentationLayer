@@ -82,8 +82,8 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
                     "name": result.name,
                 }
 
-                # 添加各个ID对应的code和name
-                path_data.update(self._get_related_codes_and_names(result))
+                # 添加各个ID对应的关联数据
+                path_data.update(self._get_related_data(result))
                 paths_list.append(PathsResponse(**path_data))
 
             return paths_list, total
@@ -92,9 +92,9 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
             print(f"分页查询路径数据时出错: {e}")
             return [], 0
 
-    def _get_related_codes_and_names(self, path_result) -> Dict[str, Any]:
+    def _get_related_data(self, path_result) -> Dict[str, Any]:
         """
-        获取path记录中各个ID对应的code和name
+        获取path记录中各个ID对应的关联数据
         """
         related_data = {}
 
@@ -117,25 +117,79 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
             field_id = getattr(path_result, field_name, None)
             if field_id:
                 try:
-                    stmt = select(model_class.code, model_class.name).where(
-                        model_class.id == field_id
-                    )
-                    result = self.session.exec(stmt).first()
-                    if result:
-                        related_data[f"{prefix}_code"] = result[0]
-                        related_data[f"{prefix}_name"] = result[1]
+                    # 标度表处理
+                    if model_class == BridgeScales:
+                        stmt = select(
+                            BridgeScales.code,
+                            BridgeScales.name,
+                            BridgeScales.scale_type,
+                            BridgeScales.scale_value,
+                            BridgeScales.min_value,
+                            BridgeScales.max_value,
+                            BridgeScales.unit,
+                            BridgeScales.display_text,
+                        ).where(BridgeScales.id == field_id)
+                        result = self.session.exec(stmt).first()
+                        if result:
+                            related_data[f"{prefix}_code"] = result[0]
+                            related_data[f"{prefix}_name"] = result[1]
+                            related_data["scale_type"] = result[2]
+                            related_data["scale_value"] = result[3]
+                            related_data["min_value"] = result[4]
+                            related_data["max_value"] = result[5]
+                            related_data["unit"] = result[6]
+                            related_data["display_text"] = result[7]
+                        else:
+                            related_data[f"{prefix}_code"] = None
+                            related_data[f"{prefix}_name"] = None
+                            related_data["scale_type"] = None
+                            related_data["scale_value"] = None
+                            related_data["min_value"] = None
+                            related_data["max_value"] = None
+                            related_data["unit"] = None
+                            related_data["display_text"] = None
                     else:
-                        related_data[f"{prefix}_code"] = None
-                        related_data[f"{prefix}_name"] = None
+                        # 其他表的处理
+                        stmt = select(model_class.code, model_class.name).where(
+                            model_class.id == field_id
+                        )
+                        result = self.session.exec(stmt).first()
+                        if result:
+                            related_data[f"{prefix}_code"] = result[0]
+                            related_data[f"{prefix}_name"] = result[1]
+                        else:
+                            related_data[f"{prefix}_code"] = None
+                            related_data[f"{prefix}_name"] = None
                 except Exception as e:
                     print(
                         f"查询模型 {model_class.__name__} 中ID为 {field_id} 的记录时出错: {e}"
                     )
+                    if model_class == BridgeScales:
+                        related_data[f"{prefix}_code"] = None
+                        related_data[f"{prefix}_name"] = None
+                        related_data["scale_type"] = None
+                        related_data["scale_value"] = None
+                        related_data["min_value"] = None
+                        related_data["max_value"] = None
+                        related_data["unit"] = None
+                        related_data["display_text"] = None
+                    else:
+                        related_data[f"{prefix}_code"] = None
+                        related_data[f"{prefix}_name"] = None
+            else:
+                # 字段为空时的处理
+                if model_class == BridgeScales:
                     related_data[f"{prefix}_code"] = None
                     related_data[f"{prefix}_name"] = None
-            else:
-                related_data[f"{prefix}_code"] = None
-                related_data[f"{prefix}_name"] = None
+                    related_data["scale_type"] = None
+                    related_data["scale_value"] = None
+                    related_data["min_value"] = None
+                    related_data["max_value"] = None
+                    related_data["unit"] = None
+                    related_data["display_text"] = None
+                else:
+                    related_data[f"{prefix}_code"] = None
+                    related_data[f"{prefix}_name"] = None
 
         return related_data
 
@@ -335,8 +389,8 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
                 "name": result.name,
             }
 
-            # 添加各个ID对应的code和name
-            path_data.update(self._get_related_codes_and_names(result))
+            # 添加各个ID对应的关联数据
+            path_data.update(self._get_related_data(result))
 
             return PathsResponse(**path_data)
 
@@ -459,8 +513,8 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
                 "name": path_model.name,
             }
 
-            # 添加各个ID对应的code和name
-            response_data.update(self._get_related_codes_and_names(path_model))
+            # 添加各个ID对应的关联数据
+            response_data.update(self._get_related_data(path_model))
 
             return PathsResponse(**response_data)
 
@@ -617,8 +671,8 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
                 "name": db_obj.name,
             }
 
-            # 添加各个ID对应的code和name
-            response_data.update(self._get_related_codes_and_names(db_obj))
+            # 添加各个ID对应的关联数据
+            response_data.update(self._get_related_data(db_obj))
 
             return PathsResponse(**response_data)
 
