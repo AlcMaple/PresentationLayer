@@ -142,9 +142,18 @@ class BridgeScalesService(
             # 处理编码
             if "code" in obj_data:
                 code_value = obj_data["code"]
-                obj_data["code"] = self.code_generator.assign_or_generate_code(
-                    "bridge_scales", code_value
-                )
+                if not code_value or not code_value.strip():
+                    # 如果编码为空，移除该字段，保持原编码不变
+                    obj_data.pop("code")
+                else:
+                    code_value = code_value.strip()
+                    # 检查编码重复（排除当前记录）
+                    existing_code = self._check_code_duplicate(code_value, exclude_id=id)
+                    if existing_code:
+                        raise DuplicateException(
+                            resource="BridgeScales", field="code", value=code_value
+                        )
+                    obj_data["code"] = code_value
 
             # 检查名称
             if hasattr(self.model, "name") and "name" in obj_data:

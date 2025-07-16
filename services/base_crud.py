@@ -212,16 +212,16 @@ class BaseCRUDService(Generic[ModelType, CreateSchemaType, UpdateSchemaType], AB
             # 编码
             if hasattr(self.model, "code") and "code" in obj_data:
                 code_value = obj_data["code"]
-                # 不更新编码
+                # 如果编码为空，移除该字段，保持原编码不变
                 if not code_value or not code_value.strip():
                     obj_data.pop("code")
                 else:
-                    # 检查
+                    # 检查编码重复（排除当前记录）
                     code_value = code_value.strip()
                     statement = select(self.model).where(
                         and_(self.model.code == code_value, self.model.id != id)
                     )
-                    # 删除过滤
+                    # 排除已删除的记录
                     if hasattr(self.model, "is_active"):
                         statement = statement.where(self.model.is_active == True)
                     existing = self.session.exec(statement).first()

@@ -1,6 +1,7 @@
 from typing import List, Optional, Dict, Any, Tuple
 from sqlmodel import Session, select, and_
 from sqlalchemy import func
+from datetime import datetime, timezone
 
 from models.paths import Paths
 from schemas.paths import PathsCreate, PathsUpdate, PathConditions, PathsResponse
@@ -351,7 +352,7 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
             创建后的路径数据
         """
         try:
-            # 1. 检查 code 和 name
+            # 检查 code 和 name
             final_code = self.code_generator.assign_or_generate_code(
                 "paths", obj_in.code
             )
@@ -366,13 +367,13 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
                         resource="Paths", field="name", value=obj_in.name
                     )
 
-            # 2. 通过各种 code 找到对应的 ID
+            # 通过各种 code 找到对应的 ID
             path_data = {
                 "code": final_code,
                 "name": obj_in.name,
             }
 
-            # 定义 code 到 ID 的映射关系
+            # code 到 ID 的映射关系
             code_to_id_mappings = [
                 ("category_code", Categories, "category_id"),
                 ("assessment_unit_code", AssessmentUnit, "assessment_unit_id"),
@@ -405,7 +406,7 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
                             f"找不到 {code_field} 为 '{code_value}' 的记录"
                         )
 
-            # 3. 检查路径表记录的唯一性
+            # 3. 检查记录的唯一性
             path_uniqueness_fields = [
                 "category_id",
                 "assessment_unit_id",
@@ -442,13 +443,13 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
                         value="相同的路径组合已存在",
                     )
 
-            # 4. 创建记录
+            # 创建记录
             path_model = Paths(**path_data)
             self.session.add(path_model)
             self.session.commit()
             self.session.refresh(path_model)
 
-            # 5. 构建返回数据
+            # 构建返回数据
             response_data = {
                 "id": path_model.id,
                 "code": path_model.code,
@@ -464,6 +465,167 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
             self.session.rollback()
             print(f"创建paths记录时出错: {e}")
             raise
+
+    def update(self, id: int, obj_in: PathsUpdate) -> Optional[PathsResponse]:
+        """
+        更新记录
+
+        Args:
+            id: 路径ID
+            obj_in: 更新路径参数
+
+        Returns:
+            更新后的路径数据
+        """
+        try:
+            # 查询现有记录
+            db_obj = self.get_by_id(id)
+            if not db_obj:
+                raise NotFoundException(resource="Paths", identifier=str(id))
+
+            obj_data = obj_in.model_dump(exclude_unset=True)
+
+            # 处理编码
+            if "code" in obj_data:
+                code_value = obj_data["code"]
+                if not code_value or not code_value.strip():
+                    # 如果编码为空，移除该字段，保持原编码不变
+                    obj_data.pop("code")
+                else:
+                    code_value = code_value.strip()
+                    # 检查编码重复（排除当前记录）
+                    statement = select(Paths).where(
+                        and_(Paths.code == code_value, Paths.id != id)
+                    )
+                    if hasattr(Paths, "is_active"):
+                        statement = statement.where(Paths.is_active == True)
+                    existing = self.session.exec(statement).first()
+                    if existing:
+                        raise DuplicateException(
+                            resource="Paths", field="code", value=code_value
+                        )
+                    obj_data["code"] = code_value
+
+            # 检查名称重复（排除当前记录）
+            if "name" in obj_data:
+                statement = select(Paths).where(
+                    and_(Paths.name == obj_data["name"], Paths.id != id)
+                )
+                if hasattr(Paths, "is_active"):
+                    statement = statement.where(Paths.is_active == True)
+                existing = self.session.exec(statement).first()
+                if existing:
+                    raise DuplicateException(
+                        resource="Paths", field="name", value=obj_data["name"]
+                    )
+
+            # code 到 id 的映射
+            code_to_id_mappings = [
+                ("category_code", Categories, "category_id"),
+                ("assessment_unit_code", AssessmentUnit, "assessment_unit_id"),
+                ("bridge_type_code", BridgeTypes, "bridge_type_id"),
+                ("part_code", BridgeParts, "part_id"),
+                ("structure_code", BridgeStructures, "structure_id"),
+                ("component_type_code", BridgeComponentTypes, "component_type_id"),
+                ("component_form_code", BridgeComponentForms, "component_form_id"),
+                ("disease_code", BridgeDiseases, "disease_id"),
+                ("scale_code", BridgeScales, "scale_id"),
+                ("quality_code", BridgeQualities, "quality_id"),
+                ("quantity_code", BridgeQuantities, "quantity_id"),
+            ]
+
+            for code_field, model_class, id_field in code_to_id_mappings:
+                if code_field in obj_data:
+                    code_value = obj_data.pop(code_field)  # 移除code字段
+                    if code_value:
+                        # 查找对应的 ID
+                        stmt = select(model_class.id).where(
+                            and_(
+                                model_class.code == code_value,
+                                model_class.is_active == True,
+                            )
+                        )
+                        result = self.session.exec(stmt).first()
+                        if result:
+                            obj_data[id_field] = result
+                        else:
+                            raise ValidationException(
+                                f"找不到 {code_field} 为 '{code_value}' 的记录"
+                            )
+                    else:
+                        # 如果code为空，将对应的ID设为None
+                        obj_data[id_field] = None
+
+            # 检查记录的唯一性（排除当前记录）
+            path_uniqueness_fields = [
+                "category_id",
+                "assessment_unit_id", 
+                "bridge_type_id",
+                "part_id",
+                "structure_id",
+                "component_type_id",
+                "component_form_id",
+                "disease_id",
+                "scale_id",
+                "quality_id",
+                "quantity_id",
+            ]
+
+            # 构建唯一性检查条件，合并现有值和更新值
+            uniqueness_conditions = []
+            for field in path_uniqueness_fields:
+                # 优先使用更新数据中的值，否则使用现有记录的值
+                field_value = obj_data.get(field, getattr(db_obj, field, None))
+                if field_value is not None:
+                    uniqueness_conditions.append(getattr(Paths, field) == field_value)
+                else:
+                    uniqueness_conditions.append(getattr(Paths, field).is_(None))
+
+            # 检查是否存在完全相同的路径记录（排除当前记录）
+            if uniqueness_conditions:
+                stmt = select(Paths).where(
+                    and_(and_(*uniqueness_conditions), Paths.id != id)
+                )
+                if hasattr(Paths, "is_active"):
+                    stmt = stmt.where(Paths.is_active == True)
+                existing_path = self.session.exec(stmt).first()
+                if existing_path:
+                    raise DuplicateException(
+                        resource="Paths",
+                        field="path_combination",
+                        value="相同的路径组合已存在",
+                    )
+
+            # 更新对象
+            for field, value in obj_data.items():
+                if hasattr(db_obj, field):
+                    setattr(db_obj, field, value)
+
+            if hasattr(db_obj, "updated_at"):
+                db_obj.updated_at = datetime.now(timezone.utc)
+
+            self.session.commit()
+            self.session.refresh(db_obj)
+
+            # 构建返回数据
+            response_data = {
+                "id": db_obj.id,
+                "code": db_obj.code,
+                "name": db_obj.name,
+            }
+
+            # 添加各个ID对应的code和name
+            response_data.update(self._get_related_codes_and_names(db_obj))
+
+            return PathsResponse(**response_data)
+
+        except (NotFoundException, DuplicateException, ValidationException):
+            self.session.rollback()
+            raise
+        except Exception as e:
+            self.session.rollback()
+            raise Exception(f"更新失败: {str(e)}")
+            
 
 
 def get_paths_service(session: Session) -> PathsService:
