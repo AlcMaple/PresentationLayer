@@ -889,12 +889,6 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
                     start_color="E6F3FF", end_color="E6F3FF", fill_type="solid"
                 )
 
-            # # 找出最大行数
-            # max_rows = 0
-            # for _, option_key in ref_columns:
-            #     if option_key in all_options:
-            #         max_rows = max(max_rows, len(all_options[option_key]))
-
             # 写入数据
             for col, (title, option_key) in enumerate(ref_columns, 1):
                 if option_key in all_options:
@@ -907,8 +901,6 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
                 ws_ref.column_dimensions[
                     ws_ref.cell(row=1, column=col).column_letter
                 ].width = 20
-
-            # print(f"参考数据表创建完成，共 {max_rows} 行数据")
 
         except Exception as e:
             print(f"创建参考数据表时出错: {e}")
@@ -970,6 +962,7 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
         except Exception as e:
             print(f"创建说明工作表时出错: {e}")
 
+    
 
 def get_paths_service(session: Session) -> PathsService:
     """

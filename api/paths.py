@@ -111,6 +111,7 @@ async def export_path_template(session: Session = Depends(get_db)):
         return server_error(f"导出模板失败: {str(e)}")
 
 
+
 @router.get("/{path_id}", summary="获取单个路径")
 async def get_path(path_id: int, session: Session = Depends(get_db)):
     """根据ID获取单个路径"""

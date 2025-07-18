@@ -1,62 +1,36 @@
-from fastapi import FastAPI, APIRouter
-from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
 from config.settings import settings
 from api.router import router, router_paths
 from lifecycle import setup_lifespan
-from middleware import ExceptionHandlerMiddleware, set_exception_handlers
+from app_factory import get_app_factory
 
 
-def create_app(router: APIRouter) -> FastAPI:
-    app = FastAPI(
-        title=settings.PROJECT_NAME,
-        version=settings.VERSION,
-        description="桥梁健康监控系统后端API",
-    )
+def setup_applications():
+    """设置应用配置"""
+    factory = get_app_factory()
 
-    # CORS配置
-    if settings.is_development:
-        # 开发环境
-        app.add_middleware(
-            CORSMiddleware,
-            allow_origins=["*"],
-            allow_credentials=True,
-            allow_methods=["*"],
-            allow_headers=["*"],
-        )
-    else:
-        # 生产环境
-        app.add_middleware(
-            CORSMiddleware,
-            allow_origins=["*"],  # 后续改为前端域名
-            allow_credentials=True,
-            allow_methods=["GET", "POST", "PUT", "DELETE"],
-            allow_headers=["*"],
-        )
+    # 注册模块
+    factory.register_module("base", router, "基础管理")
+    factory.register_module("paths", router_paths, "路径管理")
 
-    # 异常处理中间件
-    app.add_middleware(ExceptionHandlerMiddleware)
+    # 创建所有应用
+    main_app, module_apps = factory.create_all_apps()
 
-    # 异常处理器
-    set_exception_handlers(app)
+    # 挂载模块应用
+    factory.mount_module_apps(main_app, module_apps)
 
-    # API路由
-    app.include_router(router, prefix="/api")
-
-    return app
+    return main_app
 
 
-app = create_app(router)
-app_paths = create_app(router_paths)
-app.mount("/paths", app_paths)
+# 创建应用实例
+app = setup_applications()
 
 # 设置应用生命周期
 setup_lifespan(app)
 
 if __name__ == "__main__":
     if settings.is_development:
-        # 开发环境
         uvicorn.run(
             "main:app",
             host=settings.HOST,
@@ -65,7 +39,6 @@ if __name__ == "__main__":
             workers=1,
         )
     else:
-        # 生产环境
         uvicorn.run(
             app,
             host="0.0.0.0",
