@@ -1,12 +1,16 @@
 from fastapi import APIRouter, Depends, Query
 from sqlmodel import Session
 from typing import Optional
+from fastapi.responses import StreamingResponse
+from io import BytesIO
+from datetime import datetime
+import urllib.parse
 
 from config.database import get_db
 from services.paths import get_paths_service
 from services.base_crud import PageParams
 from schemas.paths import PathsCreate, PathsUpdate, PathConditions
-from utils.responses import success
+from utils.responses import success, server_error
 from exceptions import NotFoundException
 
 router = APIRouter(prefix="/paths", tags=["路径管理"])
@@ -87,6 +91,26 @@ async def create_path(path_data: PathsCreate, session: Session = Depends(get_db)
     return success(response_item, "创建成功")
 
 
+@router.get("/export", summary="导出路径 Excel 模板")
+async def export_path_template(session: Session = Depends(get_db)):
+    """导出路径 Excel 模板"""
+    try:
+        service = get_paths_service(session)
+        excel_bytes = service.export_template()
+        buffer = BytesIO(excel_bytes)
+
+        # 设置文件名
+        filename = f"bridge_path_template.xlsx"
+
+        return StreamingResponse(
+            buffer,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f"attachment; filename={filename}"},
+        )
+    except Exception as e:
+        return server_error(f"导出模板失败: {str(e)}")
+
+
 @router.get("/{path_id}", summary="获取单个路径")
 async def get_path(path_id: int, session: Session = Depends(get_db)):
     """根据ID获取单个路径"""
@@ -132,11 +156,3 @@ async def get_path_by_code(code: str, session: Session = Depends(get_db)):
     detailed_item = service.get_by_id_with_details(item.id)
     response_item = detailed_item.model_dump() if detailed_item else None
     return success(response_item, "查询成功")
-
-
-@router.get("/export", summary="导出路径 Excel 模板")
-async def export_path_template(session: Session = Depends(get_db)):
-    """导出路径 Excel 模板"""
-    service = get_paths_service(session)
-    template = service.export_template()
-    return success(template, "导出成功")

@@ -5,6 +5,10 @@ from datetime import datetime, timezone
 from openpyxl import Workbook
 from openpyxl.worksheet.datavalidation import DataValidation
 from io import BytesIO
+import base64
+from openpyxl.styles import Font, PatternFill
+import traceback
+
 
 from models.paths import Paths
 from schemas.paths import PathsCreate, PathsUpdate, PathConditions, PathsResponse
@@ -253,7 +257,6 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
                             stmt = (
                                 select(
                                     BridgeScales.code,
-                                    BridgeScales.name,
                                     BridgeScales.scale_type,
                                     BridgeScales.scale_value,
                                     BridgeScales.min_value,
@@ -412,7 +415,6 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
                         select(
                             BridgeScales.id,
                             BridgeScales.code,
-                            BridgeScales.name,
                             BridgeScales.scale_type,
                             BridgeScales.scale_value,
                             BridgeScales.min_value,
@@ -786,12 +788,19 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
             raise Exception(f"更新失败: {str(e)}")
 
     def export_template(self) -> bytes:
+        """
+        导出路径Excel模板
+
+        Returns:
+            Excel文件的字节内容
+        """
         try:
             # 创建工作薄
             wb = Workbook()
-            ws = wb.active
 
-            ws.title = "路径数据模板"
+            # 创建主工作表
+            ws_main = wb.active
+            ws_main.title = "路径数据"
 
             # 定义表头
             headers = [
@@ -812,19 +821,32 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
 
             # 写入表头
             for col, header in enumerate(headers, 1):
-                ws.cell(row=1, column=col, value=header)
+                cell = ws_main.cell(row=1, column=col, value=header)
+                # 设置表头样式
+                cell.font = Font(bold=True)
+                cell.fill = PatternFill(
+                    start_color="CCCCCC", end_color="CCCCCC", fill_type="solid"
+                )
 
-            # 获取所有相关表的数据
-            all_options = self.get_options()
-
-            # 为每列添加数据验证
-            self._add_data_validations(ws, all_options)
+            # 添加填写说明
+            instruction = "说明：请在下方填写数据，必须与参考数据表中的名称完全一致，编码可留空由系统自动生成"
+            ws_main.cell(row=2, column=1, value=instruction)
+            ws_main.merge_cells("A2:M2")
+            ws_main.cell(row=2, column=1).font = Font(color="FF0000", italic=True)
 
             # 调整列宽
             for col in range(1, len(headers) + 1):
-                ws.column_dimensions[ws.cell(row=1, column=col).column_letter].width = (
-                    15
-                )
+                ws_main.column_dimensions[
+                    ws_main.cell(row=1, column=col).column_letter
+                ].width = 15
+
+            # 创建参考数据工作表
+            ws_ref = wb.create_sheet(title="参考数据")
+            self._create_reference_data_sheet(ws_ref)
+
+            # 创建说明工作表
+            ws_help = wb.create_sheet(title="填写说明")
+            self._create_help_sheet(ws_help)
 
             # 保存到字节流
             buffer = BytesIO()
@@ -832,52 +854,121 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
             buffer.seek(0)
 
             return buffer.getvalue()
+
         except Exception as e:
             print(f"导出模板时出错: {e}")
-            raise
+            traceback.print_exc()  # 追踪报错位置
+            raise Exception(f"导出模板失败: {str(e)}")
 
-    def _add_col_data_validations(self, ws, options_data: Dict[str, List[str]]) -> None:
-        """
-        为工作表添加数据验证
-
-        Args:
-            ws: 工作表
-            options: 所有选项的字典
-        """
+    def _create_reference_data_sheet(self, ws_ref):
+        """创建参考数据工作表"""
         try:
-            # 列名到列索引的映射
-            column_mapping = {
-                "桥梁类别": 3,
-                "评定单元": 4,
-                "桥梁类型": 5,
-                "部位": 6,
-                "结构类型": 7,
-                "部件类型": 8,
-                "构件形式": 9,
-                "病害类型": 10,
-                "标度": 11,
-                "定性描述": 12,
-                "定量描述": 13,
-            }
+            # 获取所有选项数据
+            all_options = self.get_options()
 
-            # 为每列添加数据验证
-            for col_name, col_index in column_mapping.items():
-                if col_name in options_data and options_data[col_name]:
-                    options_str = ",".join(options_data[col_name])
+            # 定义参考表的列
+            ref_columns = [
+                ("桥梁类别", "categories"),
+                ("评定单元", "assessment_units"),
+                ("桥梁类型", "bridge_types"),
+                ("部位", "bridge_parts"),
+                ("结构类型", "bridge_structures"),
+                ("部件类型", "bridge_component_types"),
+                ("构件形式", "bridge_component_forms"),
+                ("病害类型", "bridge_diseases"),
+                ("标度", "bridge_scales"),
+                ("定性描述", "bridge_qualities"),
+                ("定量描述", "bridge_quantities"),
+            ]
 
-                    # 数据验证
-                    dv = DataValidation(
-                        type="list", formula1=f'"{options_str}"', allow_blank=True
-                    )
-                    dv.error = f"请从下拉列表中选择有效的{col_name}"
-                    dv.errorTitle = "输入错误"
+            # 写入列标题
+            for col, (title, _) in enumerate(ref_columns, 1):
+                cell = ws_ref.cell(row=1, column=col, value=title)
+                cell.font = Font(bold=True)
+                cell.fill = PatternFill(
+                    start_color="E6F3FF", end_color="E6F3FF", fill_type="solid"
+                )
 
-                    column_letter = ws.cell(row=1, column=col_index).column_letter
-                    # 预留 1k 行测试效果
-                    dv.add(f"{column_letter}2:{column_letter}1001")
-                    ws.add_data_validation(dv)
+            # # 找出最大行数
+            # max_rows = 0
+            # for _, option_key in ref_columns:
+            #     if option_key in all_options:
+            #         max_rows = max(max_rows, len(all_options[option_key]))
+
+            # 写入数据
+            for col, (title, option_key) in enumerate(ref_columns, 1):
+                if option_key in all_options:
+                    options = all_options[option_key]
+                    for row, option in enumerate(options, 2):  # 从第2行开始
+                        name = option.get("name", "")
+                        ws_ref.cell(row=row, column=col, value=name)
+
+                # 调整列宽
+                ws_ref.column_dimensions[
+                    ws_ref.cell(row=1, column=col).column_letter
+                ].width = 20
+
+            # print(f"参考数据表创建完成，共 {max_rows} 行数据")
+
         except Exception as e:
-            print(f"为工作表添加数据验证时出错: {e}")
+            print(f"创建参考数据表时出错: {e}")
+
+    def _create_help_sheet(self, ws_help):
+        """创建说明工作表"""
+        try:
+            help_content = [
+                ["桥梁路径数据导入模板使用说明", ""],
+                ["", ""],
+                ["1. 基本要求", ""],
+                ["• 编码列：可留空，系统自动生成", ""],
+                ["• 名称列：必填，用于标识整条路径", ""],
+                ["• 其他列：请填写与参考数据表完全一致的名称", ""],
+                ["", ""],
+                ["2. 数据填写", ""],
+                ["• 打开'参考数据'工作表查看所有可用选项", ""],
+                ["• 复制粘贴参考数据中的名称，确保完全一致", ""],
+                ["• 注意大小写和空格", ""],
+                ["", ""],
+                ["3. 导入规则", ""],
+                ["• 系统会严格匹配名称", ""],
+                ["• 无法匹配的行将被跳过", ""],
+                ["• 导入后会生成详细报告", ""],
+                ["", ""],
+                ["4. 常见问题", ""],
+                ["• 名称拼写错误 → 检查参考数据表", ""],
+                ["• 多余的空格 → 使用参考数据表复制粘贴", ""],
+                ["• 大小写不匹配 → 严格按照参考数据填写", ""],
+                ["", ""],
+                ["5. 建议操作", ""],
+                ["• 先填写少量数据测试", ""],
+                ["• 使用复制粘贴避免输入错误", ""],
+                ["• 保存备份以便修改", ""],
+            ]
+
+            for row, (content1, content2) in enumerate(help_content, 1):
+                ws_help.cell(row=row, column=1, value=content1)
+                ws_help.cell(row=row, column=2, value=content2)
+
+                # 设置标题样式
+                if "说明" in content1:
+                    ws_help.cell(row=row, column=1).font = Font(bold=True, size=14)
+                elif (
+                    content1.endswith("要求")
+                    or content1.endswith("填写")
+                    or content1.endswith("规则")
+                    or content1.endswith("问题")
+                    or content1.endswith("操作")
+                ):
+                    ws_help.cell(row=row, column=1).font = Font(
+                        bold=True, color="0066CC"
+                    )
+
+            # 调整列宽
+            ws_help.column_dimensions["A"].width = 30
+            ws_help.column_dimensions["B"].width = 50
+
+        except Exception as e:
+            print(f"创建说明工作表时出错: {e}")
 
 
 def get_paths_service(session: Session) -> PathsService:
