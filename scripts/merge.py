@@ -6,7 +6,7 @@ def merge_same_groups():
     读取合并后的Excel文件，按A列分组，将B、C、D列用顿号合并
     """
     # 输入文件名
-    input_file = "合并后的ABCD列数据.xlsx"
+    input_file = "static/合并后的ABCD列数据-news.xlsx"
     
     # 检查输入文件是否存在
     if not os.path.exists(input_file):
@@ -149,7 +149,7 @@ def merge_same_groups():
         print(grouped_data.head())
         
         # 输出文件名
-        output_file = "按A列分组合并后的数据.xlsx"
+        output_file = "static/按A列分组合并后的数据.xlsx"
         
         # 保存结果到新的Excel文件
         with pd.ExcelWriter(output_file, engine='openpyxl') as writer:

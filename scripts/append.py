@@ -27,7 +27,7 @@ def concat_csv_first_four_columns():
     拼接"病害标度描述"目录下所有CSV文件的前4列数据
     """
     # 目录路径
-    folder_path = "病害标度描述"
+    folder_path = "static/病害标度描述"
 
     # 检查目录是否存在
     if not os.path.exists(folder_path):
@@ -126,7 +126,7 @@ def concat_csv_first_four_columns():
         merged_df = merged_df[column_order]
 
         # 输出Excel文件名
-        output_file = "合并后的ABCD列数据.xlsx"
+        output_file = "static/合并后的ABCD列数据-news.xlsx"
 
         # 保存为Excel文件
         with pd.ExcelWriter(output_file, engine="openpyxl") as writer:
