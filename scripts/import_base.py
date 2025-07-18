@@ -291,7 +291,7 @@ class BridgeDataImporter:
             quantity = BridgeQuantities(
                 name=desc,
                 code=code,
-                description=desc,
+                description=(desc[:50] + "..." if len(desc) > 50 else desc),
             )
             self.session.add(quantity)
             self.session.commit()
