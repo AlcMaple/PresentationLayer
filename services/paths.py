@@ -3,11 +3,10 @@ from sqlmodel import Session, select, and_
 from sqlalchemy import func
 from datetime import datetime, timezone
 from openpyxl import Workbook
-from openpyxl.worksheet.datavalidation import DataValidation
 from io import BytesIO
-import base64
 from openpyxl.styles import Font, PatternFill
 import traceback
+import pandas as pd
 
 
 from models.paths import Paths
@@ -962,7 +961,38 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
         except Exception as e:
             print(f"创建说明工作表时出错: {e}")
 
-    
+    def import_from_excel(self, file_content: bytes, filename: str) -> Dict[str, Any]:
+        """
+        导入 Excel
+        """
+        pass
+
+    def _validate_excel_data(
+        self, file_content: bytes, filename: str
+    ) -> Dict[str, Any]:
+        """
+        验证 Excel 数据
+
+        Args:
+        file_content: Excel文件内容
+        filename: 文件名
+
+        Returns:
+            验证结果报告
+        """
+        try:
+            # 读取Excel文件
+            buffer = BytesIO(file_content)
+
+            # 读取主数据工作表
+            df = pd.read_excel(buffer, sheet_name="路径数据", header=0)
+            df = df.iloc[1:].reset_index(drop=True)  # 去除标题行
+
+            # 删除空白行
+            df = df.dropna(how="all").reset_index(drop=True)
+        except Exception as e:
+            print(f"验证Excel数据时出错: {e}")
+
 
 def get_paths_service(session: Session) -> PathsService:
     """

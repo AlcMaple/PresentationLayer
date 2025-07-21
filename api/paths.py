@@ -1,16 +1,15 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, UploadFile, File
 from sqlmodel import Session
 from typing import Optional
 from fastapi.responses import StreamingResponse
 from io import BytesIO
-from datetime import datetime
-import urllib.parse
+import traceback
 
 from config.database import get_db
 from services.paths import get_paths_service
 from services.base_crud import PageParams
 from schemas.paths import PathsCreate, PathsUpdate, PathConditions
-from utils.responses import success, server_error
+from utils.responses import success, server_error, bad_request
 from exceptions import NotFoundException
 
 router = APIRouter(prefix="/paths", tags=["路径管理"])
@@ -99,7 +98,7 @@ async def export_path_template(session: Session = Depends(get_db)):
         excel_bytes = service.export_template()
         buffer = BytesIO(excel_bytes)
 
-        # 设置文件名
+        # 文件名
         filename = f"bridge_path_template.xlsx"
 
         return StreamingResponse(
@@ -110,6 +109,36 @@ async def export_path_template(session: Session = Depends(get_db)):
     except Exception as e:
         return server_error(f"导出模板失败: {str(e)}")
 
+
+@router.post("/import", summary="导入路径 Excel")
+async def import_path_excel(
+    file: UploadFile = File(..., description="Excel文件"),
+    session: Session = Depends(get_db),
+):
+    """
+    导入路径 Excel
+
+    Args:
+        file: 上传的Excel文件
+        session: 数据库会话
+
+    Returns:
+        导入结果报告
+    """
+    try:
+        # 验证文件类型
+        if not file.filename.endswith(".xlsx", "xls"):
+            return bad_request("文件类型错误，请上传Excel文件(.xlsx或.xls格式)")
+
+        # 读取Excel文件内容
+        file_content = await file.read()
+
+        service = get_paths_service(session)
+        import_result = service.import_from_excel(file_content, file.filename)
+        return success(import_result, "导入成功")
+    except Exception as e:
+        traceback.print_exc()
+        return server_error(f"导入 Excel 失败: {str(e)}")
 
 
 @router.get("/{path_id}", summary="获取单个路径")
