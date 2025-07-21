@@ -27,6 +27,7 @@ from models import (
     BridgeQuantities,
 )
 from exceptions import DuplicateException, NotFoundException, ValidationException
+from models.enums import ScalesType
 
 
 # 需要自定义类，不能用工厂函数，只能继承
@@ -1291,6 +1292,10 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
         if ref_key not in reference_data:
             return {"matched": False}
 
+        # 处理标度
+        if ref_key == "scale":
+            return self._match_scale_name_to_code(input_name)
+
         ref_dict = reference_data[ref_key]
 
         if input_name in ref_dict:
@@ -1301,6 +1306,113 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
             }
 
         return {"matched": False}
+
+    def _match_scale_name_to_code(self, input_value: str) -> Dict[str, Any]:
+        """
+        匹配标度值到编码
+
+        Args:
+            input_value: 输入的标度值
+        """
+        try:
+            input_value = str(input_value).strip()
+
+            try:
+                numeric_value = float(input_value)
+                if numeric_value.is_integer():
+                    numeric_value = int(numeric_value)
+
+                stmt = select(BridgeScales.code).where(
+                    and_(
+                        BridgeScales.scale_type == ScalesType.NUMERIC,
+                        BridgeScales.scale_value == numeric_value,
+                        BridgeScales.is_active == True,
+                    )
+                )
+                result = self.session.exec(stmt).first()
+                if result:
+                    return {
+                        "matched": True,
+                        "code": result,
+                        "matched_name": str(numeric_value),
+                    }
+            except (ValueError, TypeError):
+                pass
+
+            range_match = self._parse_range_value(input_value)
+            if range_match:
+                stmt = select(BridgeScales.code).where(
+                    and_(
+                        BridgeScales.scale_type == ScalesType.RANGE,
+                        BridgeScales.min_value == range_match["min_value"],
+                        BridgeScales.max_value == range_match["max_value"],
+                        BridgeScales.unit == range_match["unit"],
+                        BridgeScales.is_active == True,
+                    )
+                )
+                result = self.session.exec(stmt).first()
+                if result:
+                    return {
+                        "matched": True,
+                        "code": result,
+                        "matched_name": input_value,
+                    }
+
+            stmt = select(BridgeScales.code).where(
+                and_(
+                    BridgeScales.scale_type == ScalesType.TEXT,
+                    BridgeScales.display_text == input_value,
+                    BridgeScales.is_active == True,
+                )
+            )
+            result = self.session.exec(stmt).first()
+            if result:
+                return {
+                    "matched": True,
+                    "code": result,
+                    "matched_name": input_value,
+                }
+
+            return {"matched": False}
+
+        except Exception as e:
+            print(f"匹配标度时出错: {e}")
+            return {"matched": False}
+
+    def _parse_range_value(self, input_value: str) -> Optional[Dict[str, Any]]:
+        """
+        解析范围值
+
+        Args:
+            input_value: 输入值，如 "10-20mm"
+
+        Returns:
+            解析结果 {"min_value": 10, "max_value": 20, "unit": "mm"}
+        """
+        try:
+            import re
+
+            # 匹配格式：数字-数字单位
+            pattern = r"^(\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)([a-zA-Z%]+)$"
+            match = re.match(pattern, input_value.strip())
+
+            if match:
+                min_val = float(match.group(1))
+                max_val = float(match.group(2))
+                unit = match.group(3)
+
+                if min_val.is_integer():
+                    min_val = int(min_val)
+                if max_val.is_integer():
+                    max_val = int(max_val)
+
+                return {"min_value": min_val, "max_value": max_val, "unit": unit}
+
+            return None
+
+        except Exception as e:
+            print(f"解析范围值时出错: {e}")
+            return None
 
 
 def get_paths_service(session: Session) -> PathsService:
