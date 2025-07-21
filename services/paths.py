@@ -7,6 +7,7 @@ from io import BytesIO
 from openpyxl.styles import Font, PatternFill
 import traceback
 import pandas as pd
+from difflib import SequenceMatcher
 
 
 from models.paths import Paths
@@ -963,9 +964,110 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
 
     def import_from_excel(self, file_content: bytes, filename: str) -> Dict[str, Any]:
         """
-        导入 Excel
+        从Excel导入路径数据
+
+        Args:
+            file_content: Excel文件内容
+            filename: 文件名
+
+        Returns:
+            导入结果报告
+
+        Raises:
+            Exception: 文件处理失败或系统错误
         """
-        pass
+        try:
+            # 验证数据
+            validation_result = self._validate_excel_data(file_content, filename)
+
+            # 统计信息
+            total_rows = validation_result["total_rows"]
+            valid_rows_count = validation_result["valid_rows_count"]
+            invalid_rows_count = validation_result["invalid_rows_count"]
+
+            # 没有任何数据
+            if total_rows == 0:
+                return {
+                    "message": "Excel文件中没有数据",
+                    "imported_count": 0,
+                    "failed_count": 0,
+                    "skipped_count": 0,
+                    "total_rows": 0,
+                    "validation_result": validation_result,
+                }
+
+            # 没有有效数据
+            if valid_rows_count == 0:
+                return {
+                    "message": f"共{total_rows}行数据，但没有有效数据可导入",
+                    "imported_count": 0,
+                    "failed_count": 0,
+                    "skipped_count": total_rows,
+                    "total_rows": total_rows,
+                    "validation_result": validation_result,
+                }
+
+            # 导入有效数据
+            valid_rows = validation_result["valid_rows"]
+            imported_count = 0
+            import_errors = []
+
+            for row_index, row_data in enumerate(valid_rows):
+                try:
+                    # 创建路径记录
+                    path_create = PathsCreate(
+                        code=row_data.get("code", ""),
+                        name=row_data["name"],
+                        category_code=row_data["category_code"],
+                        assessment_unit_code=row_data.get("assessment_unit_code"),
+                        bridge_type_code=row_data["bridge_type_code"],
+                        part_code=row_data["part_code"],
+                        structure_code=row_data.get("structure_code"),
+                        component_type_code=row_data.get("component_type_code"),
+                        component_form_code=row_data.get("component_form_code"),
+                        disease_code=row_data["disease_code"],
+                        scale_code=row_data["scale_code"],
+                        quality_code=row_data.get("quality_code"),
+                        quantity_code=row_data.get("quantity_code"),
+                    )
+
+                    # 调用创建方法
+                    result = self.create(path_create)
+                    if result:
+                        imported_count += 1
+                    else:
+                        import_errors.append(
+                            {
+                                "row": row_index + 4,
+                                "error": "创建记录失败",
+                            }
+                        )
+
+                except Exception as e:
+                    import_errors.append(
+                        {"row": row_index + 4, "error": f"导入失败: {str(e)}"}
+                    )
+
+            failed_count = len(import_errors)
+            skipped_count = invalid_rows_count
+            message = f"导入完成，共导入 {imported_count} 条数据，共失败 {failed_count} 条，共无效 {skipped_count} 条"
+
+            return {
+                "message": message,
+                "imported_count": imported_count,
+                "failed_count": failed_count,
+                "skipped_count": skipped_count,
+                "total_rows": total_rows,
+                "import_errors": import_errors,
+                "validation_result": validation_result,
+            }
+
+        except Exception as e:
+            print(f"导入Excel数据时出错: {e}")
+            import traceback
+
+            traceback.print_exc()
+            raise Exception(f"文件处理失败: {str(e)}")
 
     def _validate_excel_data(
         self, file_content: bytes, filename: str
@@ -990,8 +1092,215 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
 
             # 删除空白行
             df = df.dropna(how="all").reset_index(drop=True)
+
+            # 获取关联数据
+            reference_data = self._get_reference_data()
+
+            # 定义验证结果
+            validation_results = {
+                "filename": filename,
+                "total_rows": len(df),
+                "valid_rows": [],
+                "invalid_rows": [],
+                "errors": [],
+                "valid_rows_count": 0,
+                "invalid_rows_count": 0,
+            }
+
+            # 逐行验证
+            for index, row in df.iterrows():
+                row_validation = self._validate_row(row, index + 3, reference_data)
+
+                if row_validation["is_valid"]:
+                    validation_results["valid_rows"].append(row_validation["data"])
+                    validation_results["valid_rows_count"] += 1
+                else:
+                    validation_results["invalid_rows"].append(row_validation)
+                    validation_results["invalid_rows_count"] += 1
+            return validation_results
+
         except Exception as e:
             print(f"验证Excel数据时出错: {e}")
+            traceback.print_exc()
+            raise
+
+    def _get_reference_data(self) -> Dict[str, Dict[str, str]]:
+        """
+        获取用于匹配的参考数据，用于通过 name 去查找 code
+
+        Returns:
+            {
+                'bridge_type': {'钢筋混凝土T梁桥': 'RC_T', ...},
+                'part': {'桥面系': 'P01', ...}
+            }
+        """
+        try:
+            # 获取所有选项数据
+            all_options = self.get_options()
+
+            # 构建name到code的映射
+            reference_data = {}
+
+            # 从 all_options['categories'] 中获取数据，存入 reference_data['category']
+            mappings = [
+                ("categories", "category"),
+                ("assessment_units", "assessment_unit"),
+                ("bridge_types", "bridge_type"),
+                ("bridge_parts", "part"),
+                ("bridge_structures", "structure"),
+                ("bridge_component_types", "component_type"),
+                ("bridge_component_forms", "component_form"),
+                ("bridge_diseases", "disease"),
+                ("bridge_scales", "scale"),
+                ("bridge_qualities", "quality"),
+                ("bridge_quantities", "quantity"),
+            ]
+
+            for option_key, ref_key in mappings:
+                if option_key in all_options:
+                    reference_data[ref_key] = {}
+                    for item in all_options[option_key]:
+                        name = item.get("name", "").strip()
+                        code = item.get("code", "").strip()
+                        if name and code:
+                            # name作为key，code作为value
+                            reference_data[ref_key][name] = code
+
+            return reference_data
+
+        except Exception as e:
+            print(f"获取参考数据时出错: {e}")
+            return {}
+
+    def _validate_row(
+        self, row: pd.Series, row_number: int, reference_data: Dict[str, Dict[str, str]]
+    ) -> Dict[str, Any]:
+        """
+        验证单行数据
+
+        Args:
+            row: 数据行
+            row_number: 行号
+            reference_data: 参考数据
+
+        Returns:
+            验证结果字典，包含是否有效和错误信息
+        """
+        result = {
+            "row_number": row_number,
+            "is_valid": True,
+            "errors": [],
+            "warnings": [],
+            "data": {},
+        }
+
+        try:
+            column_mapping = {
+                # 列名: (内部字段名, 参考数据中的键名, 是否为必填项)
+                "编码": ("code", None, False),
+                "名称": ("name", None, True),
+                "桥梁类别": ("category_code", "category", True),
+                "评定单元": ("assessment_unit_code", "assessment_unit", False),
+                "桥梁类型": ("bridge_type_code", "bridge_type", True),
+                "部位": ("part_code", "part", True),
+                "结构类型": ("structure_code", "structure", False),
+                "部件类型": ("component_type_code", "component_type", False),
+                "构件形式": ("component_form_code", "component_form", False),
+                "病害类型": ("disease_code", "disease", True),
+                "标度": ("scale_code", "scale", True),
+                "定性描述": ("quality_code", "quality", False),
+                "定量描述": ("quantity_code", "quantity", False),
+            }
+
+            # 验证列
+            for col_name, (field_name, ref_key, is_required) in column_mapping.items():
+                # 获取行数据的值
+                value = (
+                    str(row.get(col_name, "")).strip()
+                    if pd.notna(row.get(col_name))
+                    else ""
+                )
+
+                if field_name == "code":
+                    result["data"][field_name] = value
+                elif field_name == "name":
+                    if not value:
+                        result["errors"].append(
+                            {
+                                "column": col_name,
+                                "type": "required",
+                                "message": "名称不能为空",
+                            }
+                        )
+                        result["is_valid"] = False
+                    else:
+                        result["data"][field_name] = value
+                else:
+                    # 其他字段匹配参考数据
+                    if value:
+                        match_result = self._match_name_to_code(
+                            value, ref_key, reference_data
+                        )
+                        if match_result["matched"]:
+                            result["data"][field_name] = match_result["code"]
+                        else:
+                            result["errors"].append(
+                                {
+                                    "column": col_name,
+                                    "type": "not_found",
+                                    "message": f"找不到匹配的{col_name}: '{value}'",
+                                }
+                            )
+                            result["is_valid"] = False
+                    elif is_required:
+                        result["errors"].append(
+                            {
+                                "column": col_name,
+                                "type": "required",
+                                "message": f"{col_name}不能为空",
+                            }
+                        )
+                        result["is_valid"] = False
+                    else:
+                        result["data"][field_name] = None
+
+            return result
+
+        except Exception as e:
+            result["is_valid"] = False
+            result["errors"].append(
+                {
+                    "column": "全行",
+                    "type": "validation_error",
+                    "message": f"验证时出错: {str(e)}",
+                }
+            )
+            return result
+
+    def _match_name_to_code(
+        self, input_name: str, ref_key: str, reference_data: Dict[str, Dict[str, str]]
+    ) -> Dict[str, Any]:
+        """
+        匹配名称到编码
+
+        Args:
+            input_name: 输入的名称
+            ref_key: 参考数据键
+            reference_data: 参考数据
+        """
+        if ref_key not in reference_data:
+            return {"matched": False}
+
+        ref_dict = reference_data[ref_key]
+
+        if input_name in ref_dict:
+            return {
+                "matched": True,
+                "code": ref_dict[input_name],
+                "matched_name": input_name,
+            }
+
+        return {"matched": False}
 
 
 def get_paths_service(session: Session) -> PathsService:

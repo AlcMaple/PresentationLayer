@@ -117,17 +117,10 @@ async def import_path_excel(
 ):
     """
     导入路径 Excel
-
-    Args:
-        file: 上传的Excel文件
-        session: 数据库会话
-
-    Returns:
-        导入结果报告
     """
     try:
         # 验证文件类型
-        if not file.filename.endswith(".xlsx", "xls"):
+        if not file.filename.endswith((".xlsx", ".xls")):
             return bad_request("文件类型错误，请上传Excel文件(.xlsx或.xls格式)")
 
         # 读取Excel文件内容
