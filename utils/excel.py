@@ -5,12 +5,9 @@ import traceback
 import pandas as pd
 
 
-def create_reference_data_sheet(self, ws_ref):
+def create_reference_data_sheet(ws_ref, all_options: Dict[str, Any]):
     """创建参考数据工作表"""
     try:
-        # 获取所有选项数据
-        all_options = self.get_options()
-
         # 定义参考表的列
         ref_columns = [
             ("桥梁类别", "categories"),
@@ -51,7 +48,7 @@ def create_reference_data_sheet(self, ws_ref):
         print(f"创建参考数据表时出错: {e}")
 
 
-def create_help_sheet(self, ws_help):
+def create_help_sheet(ws_help):
     """创建说明工作表"""
     try:
         help_content = [
@@ -107,13 +104,20 @@ def create_help_sheet(self, ws_help):
         print(f"创建说明工作表时出错: {e}")
 
 
-def validate_excel_data(self, file_content: bytes, filename: str) -> Dict[str, Any]:
+def validate_excel_data(
+    file_content: bytes,
+    filename: str,
+    reference_data: Dict[str, Dict[str, str]],
+    match_name_to_code_func,
+) -> Dict[str, Any]:
     """
     验证 Excel 数据
 
     Args:
-    file_content: Excel文件内容
-    filename: 文件名
+        file_content: Excel文件内容
+        filename: 文件名
+        reference_data: 参考数据字典
+        match_name_to_code_func: 匹配名称到编码的函数
 
     Returns:
         验证结果报告
@@ -129,9 +133,6 @@ def validate_excel_data(self, file_content: bytes, filename: str) -> Dict[str, A
         # 删除空白行
         df = df.dropna(how="all").reset_index(drop=True)
 
-        # 获取关联数据
-        reference_data = self._get_reference_data()
-
         # 定义验证结果
         validation_results = {
             "filename": filename,
@@ -145,7 +146,9 @@ def validate_excel_data(self, file_content: bytes, filename: str) -> Dict[str, A
 
         # 逐行验证
         for index, row in df.iterrows():
-            row_validation = self._validate_row(row, index + 3, reference_data)
+            row_validation = validate_row(
+                row, index + 3, reference_data, match_name_to_code_func
+            )
 
             if row_validation["is_valid"]:
                 validation_results["valid_rows"].append(row_validation["data"])
@@ -153,6 +156,7 @@ def validate_excel_data(self, file_content: bytes, filename: str) -> Dict[str, A
             else:
                 validation_results["invalid_rows"].append(row_validation)
                 validation_results["invalid_rows_count"] += 1
+
         return validation_results
 
     except Exception as e:
@@ -162,7 +166,10 @@ def validate_excel_data(self, file_content: bytes, filename: str) -> Dict[str, A
 
 
 def validate_row(
-    self, row: pd.Series, row_number: int, reference_data: Dict[str, Dict[str, str]]
+    row: pd.Series,
+    row_number: int,
+    reference_data: Dict[str, Dict[str, str]],
+    match_name_to_code_func,
 ) -> Dict[str, Any]:
     """
     验证单行数据
@@ -171,6 +178,7 @@ def validate_row(
         row: 数据行
         row_number: 行号
         reference_data: 参考数据
+        match_name_to_code_func: 匹配名称到编码的函数
 
     Returns:
         验证结果字典，包含是否有效和错误信息
@@ -227,7 +235,7 @@ def validate_row(
             else:
                 # 其他字段匹配参考数据
                 if value:
-                    match_result = self._match_name_to_code(
+                    match_result = match_name_to_code_func(
                         value, ref_key, reference_data
                     )
                     if match_result["matched"]:

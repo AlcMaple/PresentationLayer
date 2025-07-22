@@ -1,11 +1,11 @@
 from typing import Optional, Dict, Any
-from sqlmodel import select, and_
+from sqlmodel import Session, select, and_
 
 from models import BridgeScales
 from models.enums import ScalesType
 
 
-def get_reference_data(self) -> Dict[str, Dict[str, str]]:
+def get_reference_data(all_options: Dict[str, Any]) -> Dict[str, Dict[str, str]]:
     """
     获取用于匹配的参考数据，用于通过 name 去查找 code
 
@@ -16,9 +16,6 @@ def get_reference_data(self) -> Dict[str, Dict[str, str]]:
         }
     """
     try:
-        # 获取所有选项数据
-        all_options = self.get_options()
-
         # 构建name到code的映射
         reference_data = {}
 
@@ -54,8 +51,11 @@ def get_reference_data(self) -> Dict[str, Dict[str, str]]:
         return {}
 
 
-def _match_name_to_code(
-    self, input_name: str, ref_key: str, reference_data: Dict[str, Dict[str, str]]
+def match_name_to_code(
+    input_name: str,
+    ref_key: str,
+    reference_data: Dict[str, Dict[str, str]],
+    session: Session = None,
 ) -> Dict[str, Any]:
     """
     匹配名称到编码
@@ -64,13 +64,14 @@ def _match_name_to_code(
         input_name: 输入的名称
         ref_key: 参考数据键
         reference_data: 参考数据
+        session: 数据库会话
     """
     if ref_key not in reference_data:
         return {"matched": False}
 
     # 处理标度
-    if ref_key == "scale":
-        return self._match_scale_name_to_code(input_name)
+    if ref_key == "scale" and session:
+        return match_scale_name_to_code(input_name, session)
 
     ref_dict = reference_data[ref_key]
 
@@ -84,16 +85,18 @@ def _match_name_to_code(
     return {"matched": False}
 
 
-def match_scale_name_to_code(self, input_value: str) -> Dict[str, Any]:
+def match_scale_name_to_code(input_value: str, session: Session) -> Dict[str, Any]:
     """
     匹配标度值到编码
 
     Args:
         input_value: 输入的标度值
+        session: 数据库会话
     """
     try:
         input_value = str(input_value).strip()
 
+        # 数值型
         try:
             numeric_value = float(input_value)
             if numeric_value.is_integer():
@@ -106,7 +109,7 @@ def match_scale_name_to_code(self, input_value: str) -> Dict[str, Any]:
                     BridgeScales.is_active == True,
                 )
             )
-            result = self.session.exec(stmt).first()
+            result = session.exec(stmt).first()
             if result:
                 return {
                     "matched": True,
@@ -116,7 +119,8 @@ def match_scale_name_to_code(self, input_value: str) -> Dict[str, Any]:
         except (ValueError, TypeError):
             pass
 
-        range_match = self._parse_range_value(input_value)
+        # 范围型
+        range_match = parse_range_value(input_value)
         if range_match:
             stmt = select(BridgeScales.code).where(
                 and_(
@@ -127,7 +131,7 @@ def match_scale_name_to_code(self, input_value: str) -> Dict[str, Any]:
                     BridgeScales.is_active == True,
                 )
             )
-            result = self.session.exec(stmt).first()
+            result = session.exec(stmt).first()
             if result:
                 return {
                     "matched": True,
@@ -135,6 +139,7 @@ def match_scale_name_to_code(self, input_value: str) -> Dict[str, Any]:
                     "matched_name": input_value,
                 }
 
+        # 文本型
         stmt = select(BridgeScales.code).where(
             and_(
                 BridgeScales.scale_type == ScalesType.TEXT,
@@ -142,7 +147,7 @@ def match_scale_name_to_code(self, input_value: str) -> Dict[str, Any]:
                 BridgeScales.is_active == True,
             )
         )
-        result = self.session.exec(stmt).first()
+        result = session.exec(stmt).first()
         if result:
             return {
                 "matched": True,
@@ -157,7 +162,7 @@ def match_scale_name_to_code(self, input_value: str) -> Dict[str, Any]:
         return {"matched": False}
 
 
-def parse_range_value(self, input_value: str) -> Optional[Dict[str, Any]]:
+def parse_range_value(input_value: str) -> Optional[Dict[str, Any]]:
     """
     解析范围值
 

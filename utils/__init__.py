@@ -10,6 +10,12 @@ from .excel import (
     validate_excel_data,
     validate_row,
 )
+from .base import (
+    get_reference_data,
+    match_name_to_code,
+    match_scale_name_to_code,
+    parse_range_value,
+)
 
 __all__ = [
     "success",
@@ -20,4 +26,8 @@ __all__ = [
     "create_help_sheet",
     "validate_excel_data",
     "validate_row",
+    "get_reference_data",
+    "match_name_to_code",
+    "match_scale_name_to_code",
+    "parse_range_value",
 ]
