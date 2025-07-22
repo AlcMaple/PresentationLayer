@@ -15,6 +15,7 @@ from models import (
     BridgeQuantities,
     AssessmentUnit,
     Paths,
+    InspectionRecords,
 )
 
 # 数据库引擎
