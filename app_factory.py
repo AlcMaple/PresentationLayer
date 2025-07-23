@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from config.settings import settings
-from middleware import ExceptionHandlerMiddleware, set_exception_handlers
+from middleware import add_exception_handlers
 
 
 class AppFactory:
@@ -93,8 +93,7 @@ class AppFactory:
 
     def _setup_exception_handling(self, app: FastAPI):
         """配置异常处理"""
-        app.add_middleware(ExceptionHandlerMiddleware)
-        set_exception_handlers(app)
+        add_exception_handlers(app)
 
 
 # 工厂实例

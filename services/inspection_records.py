@@ -89,9 +89,7 @@ class InspectionRecordsService(
         """
         try:
             # 通过code获取ID
-            damage_type_id = get_id_by_code(
-                BridgeDiseases, damage_type_code, self.session
-            )
+            damage_type_id = get_id_by_code(BridgeDiseases, damage_type_code)
             scale_id = get_id_by_code(BridgeScales, scale_code, self.session)
 
             if not damage_type_id or not scale_id:
@@ -127,8 +125,8 @@ class InspectionRecordsService(
             return result is not None
 
         except Exception as e:
-            print(f"验证病害标度组合时出错: {e}")
-            return False
+            print(f"验证病害标度组合时发生系统错误: {e}")
+            raise
 
     def create(self, record_data: InspectionRecordsCreate) -> InspectionRecordsResponse:
         """
@@ -196,9 +194,9 @@ class InspectionRecordsService(
         except ValidationException:
             self.session.rollback()
             raise
+
         except Exception as e:
-            self.session.rollback()
-            raise Exception(f"创建检查记录失败: {str(e)}")
+            raise e
 
     def get_record_with_details(self, record_id: int) -> InspectionRecordsResponse:
         """
