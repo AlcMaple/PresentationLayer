@@ -5,12 +5,12 @@ from .base import BaseModel
 
 
 class InspectionRecords(BaseModel, table=True):
-    """检测记录表"""
+    """检查记录表"""
 
     __tablename__ = "inspection_records"
 
     id: Optional[int] = Field(
-        default=None, primary_key=True, description="检测记录主键ID"
+        default=None, primary_key=True, description="检查记录主键ID"
     )
 
     # 前7层路径字段
@@ -34,7 +34,7 @@ class InspectionRecords(BaseModel, table=True):
     damage_type_code: str = Field(description="病害类型编码", max_length=50)
     scale_code: str = Field(description="标度编码", max_length=50)
 
-    # 检测数据字段
+    # 检查数据字段
     damage_location: Optional[str] = Field(
         description="病害位置", default=None, sa_type=Text
     )
@@ -43,8 +43,8 @@ class InspectionRecords(BaseModel, table=True):
     )
 
     # 图片相关字段
-    image_urls: Optional[str] = Field(
-        description="图片URL列表，JSON格式存储", default=None, sa_type=Text
+    image_url: Optional[str] = Field(
+        description="图片URL", default=None, max_length=500
     )
 
     # 状态字段

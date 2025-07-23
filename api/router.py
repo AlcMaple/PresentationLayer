@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+
 from .categories import router as categories_router
 from .assessment_units import router as assessment_units_router
 from .bridge_types import router as bridge_types_router
@@ -11,6 +12,7 @@ from .bridge_qualities import router as bridge_qualities_router
 from .bridge_quantities import router as bridge_quantities_router
 from .bridge_scales import router as bridge_scales_router
 from .paths import router as paths_router
+from .inspection_records import router as inspection_records_router
 
 router = APIRouter()
 router.include_router(categories_router)
@@ -27,3 +29,4 @@ router.include_router(bridge_scales_router)
 
 router_paths = APIRouter()
 router_paths.include_router(paths_router)
+router_paths.include_router(inspection_records_router)
