@@ -4,6 +4,8 @@ from .base import (
     DuplicateException,
     ValidationException,
     DatabaseException,
+    SystemException,
+    ExceptionType,
 )
 
 __all__ = [
@@ -12,4 +14,6 @@ __all__ = [
     "DuplicateException",
     "ValidationException",
     "DatabaseException",
+    "SystemException",
+    "ExceptionType",
 ]

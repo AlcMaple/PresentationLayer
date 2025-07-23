@@ -30,7 +30,7 @@ from schemas.inspection_records import (
     DamageReferenceRequest,
 )
 from services.base_crud import BaseCRUDService, PageParams
-from exceptions import ValidationException, NotFoundException
+from exceptions import ValidationException, NotFoundException, SystemException
 from utils import get_id_by_code
 
 
@@ -89,7 +89,7 @@ class InspectionRecordsService(
         """
         try:
             # 通过code获取ID
-            damage_type_id = get_id_by_code(BridgeDiseases, damage_type_code)
+            damage_type_id = get_id_by_code(BridgeDiseases, damage_type_code,self.session)
             scale_id = get_id_by_code(BridgeScales, scale_code, self.session)
 
             if not damage_type_id or not scale_id:
@@ -125,8 +125,8 @@ class InspectionRecordsService(
             return result is not None
 
         except Exception as e:
-            print(f"验证病害标度组合时发生系统错误: {e}")
-            raise
+            error_message = f"验证病害标度组合时发生系统错误: {e}"
+            raise SystemException(message=error_message, original_error=e)
 
     def create(self, record_data: InspectionRecordsCreate) -> InspectionRecordsResponse:
         """
@@ -191,12 +191,15 @@ class InspectionRecordsService(
             # 返回详细信息
             return self.get_record_with_details(inspection_record.id)
 
-        except ValidationException:
+        except (ValidationException, SystemException) as e:
             self.session.rollback()
-            raise
+            raise e
 
         except Exception as e:
-            raise e
+            self.session.rollback()
+            raise SystemException(
+                message=f"创建检查记录时发生未知系统错误: {e}", original_error=e
+            )
 
     def get_record_with_details(self, record_id: int) -> InspectionRecordsResponse:
         """

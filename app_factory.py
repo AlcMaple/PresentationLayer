@@ -31,6 +31,8 @@ class AppFactory:
             redoc_url="/redoc",
         )
 
+        self._setup_exception_handling(app)
+
         # 包含模块路由
         app.include_router(module["router"], prefix="/api")
         return app

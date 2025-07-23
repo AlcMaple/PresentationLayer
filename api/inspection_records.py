@@ -21,16 +21,9 @@ async def create_inspection_record(
     record_data: InspectionRecordsCreate, session: Session = Depends(get_db)
 ):
     """创建新的检查记录"""
-    try:
-        service = get_inspection_records_service(session)
-        result = service.create(record_data)
-
-        return success(result.model_dump(), "创建检查记录成功")
-
-    except ValidationException as e:
-        return bad_request(str(e))
-    except Exception as e:
-        return bad_request(f"创建检查记录失败: {str(e)}")
+    service = get_inspection_records_service(session)
+    result = service.create(record_data)
+    return success(result.model_dump(), "创建检查记录成功")
 
 
 @router.post("/form-options", summary="根据路径获取表单选项")
