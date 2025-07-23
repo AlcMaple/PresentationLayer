@@ -1,6 +1,6 @@
 from typing import List, Optional, Dict, Any, Tuple
 from sqlmodel import Session, select, and_
-from sqlalchemy import func
+from datetime import datetime, timezone
 
 from models import (
     InspectionRecords,
@@ -32,7 +32,7 @@ from exceptions import ValidationException, NotFoundException
 class InspectionRecordsService(
     BaseCRUDService[InspectionRecords, InspectionRecordsCreate, InspectionRecordsUpdate]
 ):
-    """检测记录服务"""
+    """检查记录服务"""
 
     def __init__(self, session: Session):
         super().__init__(InspectionRecords, session)
@@ -42,7 +42,7 @@ class InspectionRecordsService(
         验证前7层路径是否在paths表中存在
         """
         try:
-            # 构建查询条件 - 直接使用ID，无需转换
+            # 构建查询条件
             conditions = [
                 Paths.category_id == path_request.category_id,
                 Paths.bridge_type_id == path_request.bridge_type_id,
@@ -52,7 +52,6 @@ class InspectionRecordsService(
                 Paths.is_active == True,
             ]
 
-            # 处理可选字段
             if path_request.assessment_unit_id:
                 conditions.append(
                     Paths.assessment_unit_id == path_request.assessment_unit_id
@@ -65,7 +64,6 @@ class InspectionRecordsService(
             else:
                 conditions.append(Paths.structure_id.is_(None))
 
-            # 查询是否存在匹配的路径
             stmt = select(Paths.id).where(and_(*conditions)).limit(1)
             result = self.session.exec(stmt).first()
 
@@ -98,7 +96,6 @@ class InspectionRecordsService(
                 Paths.is_active == True,
             ]
 
-            # 处理可选字段
             if path_request.assessment_unit_id:
                 conditions.append(
                     Paths.assessment_unit_id == path_request.assessment_unit_id
@@ -115,7 +112,6 @@ class InspectionRecordsService(
             stmt = select(Paths.scale_id).where(and_(*conditions)).distinct()
             scale_ids = self.session.exec(stmt).all()
 
-            # 获取标度详细信息，包含所有字段以支持不同类型
             if scale_ids:
                 scale_stmt = (
                     select(
@@ -185,7 +181,7 @@ class InspectionRecordsService(
 
     def create(self, record_data: InspectionRecordsCreate) -> InspectionRecordsResponse:
         """
-        创建检测记录
+        创建检查记录
         """
         try:
             # 验证路径是否存在
@@ -208,7 +204,7 @@ class InspectionRecordsService(
             ):
                 raise ValidationException("指定的病害类型和标度组合无效")
 
-            # 创建检测记录（直接使用ID，无需转换）
+            # 创建检查记录
             inspection_record = InspectionRecords(
                 category_id=record_data.category_id,
                 assessment_unit_id=record_data.assessment_unit_id,
@@ -236,11 +232,11 @@ class InspectionRecordsService(
             raise
         except Exception as e:
             self.session.rollback()
-            raise Exception(f"创建检测记录失败: {str(e)}")
+            raise Exception(f"创建检查记录失败: {str(e)}")
 
     def get_record_with_details(self, record_id: int) -> InspectionRecordsResponse:
         """
-        获取包含详细关联信息的检测记录
+        获取包含详细关联信息的检查记录
         """
         try:
             # 查询基础记录
@@ -293,7 +289,7 @@ class InspectionRecordsService(
         except NotFoundException:
             raise
         except Exception as e:
-            raise Exception(f"获取检测记录详情失败: {str(e)}")
+            raise Exception(f"获取检查记录详情失败: {str(e)}")
 
     def _get_id_by_code(self, model_class, code: str) -> Optional[int]:
         """
@@ -406,7 +402,6 @@ class InspectionRecordsService(
                 Paths.is_active == True,
             ]
 
-            # 处理可选字段
             if path_request.assessment_unit_id:
                 conditions.append(
                     Paths.assessment_unit_id == path_request.assessment_unit_id
@@ -419,7 +414,6 @@ class InspectionRecordsService(
             else:
                 conditions.append(Paths.structure_id.is_(None))
 
-            # 查询是否存在
             stmt = select(Paths.id).where(and_(*conditions)).limit(1)
             result = self.session.exec(stmt).first()
 
@@ -431,7 +425,7 @@ class InspectionRecordsService(
 
     def _get_record_related_data(self, record: InspectionRecords) -> Dict[str, Any]:
         """
-        获取检测记录的关联数据
+        获取检查记录的关联数据
         """
         details = {}
 
@@ -517,7 +511,79 @@ class InspectionRecordsService(
 
         return details
 
+    def update(
+        self, record_id: int, update_data: InspectionRecordsUpdate
+    ) -> InspectionRecordsResponse:
+        """
+        更新检查记录
+
+        Args:
+            record_id: 记录ID
+            update_data: 更新数据
+        """
+        try:
+            # 查询现有记录
+            existing_record = self.get_by_id(record_id)
+            if not existing_record:
+                raise NotFoundException(
+                    resource="InspectionRecords", identifier=str(record_id)
+                )
+
+            # 如果更新了病害类型或标度，需要验证组合的有效性
+            if update_data.damage_type_code or update_data.scale_code:
+                # 构建路径验证请求
+                path_request = PathValidationRequest(
+                    category_id=existing_record.category_id,
+                    assessment_unit_id=existing_record.assessment_unit_id,
+                    bridge_type_id=existing_record.bridge_type_id,
+                    part_id=existing_record.part_id,
+                    structure_id=existing_record.structure_id,
+                    component_type_id=existing_record.component_type_id,
+                    component_form_id=existing_record.component_form_id,
+                )
+
+                # 确定最终的病害类型和标度编码
+                final_damage_code = (
+                    update_data.damage_type_code or existing_record.damage_type_code
+                )
+                final_scale_code = update_data.scale_code or existing_record.scale_code
+
+                # 验证病害类型和标度的组合
+                if not self._validate_damage_scale_combination(
+                    path_request, final_damage_code, final_scale_code
+                ):
+                    raise ValidationException("指定的病害类型和标度组合无效")
+
+            # 更新字段
+            if update_data.damage_type_code is not None:
+                existing_record.damage_type_code = update_data.damage_type_code
+            if update_data.scale_code is not None:
+                existing_record.scale_code = update_data.scale_code
+            if update_data.damage_location is not None:
+                existing_record.damage_location = update_data.damage_location
+            if update_data.damage_description is not None:
+                existing_record.damage_description = update_data.damage_description
+            if update_data.image_url is not None:
+                existing_record.image_url = update_data.image_url
+
+            # 更新时间
+            existing_record.updated_at = datetime.now(timezone.utc)
+
+            # 保存更改
+            self.session.commit()
+            self.session.refresh(existing_record)
+
+            # 返回详细信息
+            return self.get_record_with_details(record_id)
+
+        except (NotFoundException, ValidationException):
+            self.session.rollback()
+            raise
+        except Exception as e:
+            self.session.rollback()
+            raise Exception(f"更新检查记录失败: {str(e)}")
+
 
 def get_inspection_records_service(session: Session) -> InspectionRecordsService:
-    """获取检测记录服务实例"""
+    """获取检查记录服务实例"""
     return InspectionRecordsService(session)
