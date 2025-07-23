@@ -196,3 +196,16 @@ def parse_range_value(input_value: str) -> Optional[Dict[str, Any]]:
     except Exception as e:
         print(f"解析范围值时出错: {e}")
         return None
+
+
+def get_id_by_code(model_class, code: str, session: Session) -> Optional[int]:
+    """
+    通过code获取ID
+    """
+    try:
+        stmt = select(model_class.id).where(
+            and_(model_class.code == code, model_class.is_active == True)
+        )
+        return session.exec(stmt).first()
+    except:
+        return None

@@ -106,8 +106,10 @@ class InspectionRecordsResponse(BaseModel):
     component_form_name: Optional[str] = None
 
     # 病害和标度信息
+    damage_type_id: int
     damage_type_code: str
     damage_type_name: Optional[str] = None
+    scale_id: int
     scale_code: str
     scale_name: Optional[str] = None
     scale_value: Optional[int] = None

@@ -31,8 +31,10 @@ class InspectionRecords(BaseModel, table=True):
     )
 
     # 病害和标度数据
-    damage_type_code: str = Field(description="病害类型编码", max_length=50)
-    scale_code: str = Field(description="标度编码", max_length=50)
+    damage_type_id: int = Field(
+        foreign_key="bridge_diseases.id", description="病害类型ID"
+    )
+    scale_id: int = Field(foreign_key="bridge_scales.id", description="标度ID")
 
     # 检查数据字段
     damage_location: Optional[str] = Field(
@@ -56,8 +58,8 @@ class InspectionRecords(BaseModel, table=True):
         Index("idx_inspection_records_part", "part_id"),
         Index("idx_inspection_records_component_type", "component_type_id"),
         Index("idx_inspection_records_component_form", "component_form_id"),
-        Index("idx_inspection_records_damage_type", "damage_type_code"),
-        Index("idx_inspection_records_scale", "scale_code"),
+        Index("idx_inspection_records_damage_type", "damage_type_id"),
+        Index("idx_inspection_records_scale", "scale_id"),
         Index("idx_inspection_records_active", "is_active"),
         # 复合索引
         Index(
@@ -71,7 +73,7 @@ class InspectionRecords(BaseModel, table=True):
             "bridge_type_id",
             "part_id",
             "component_type_id",
-            "damage_type_code",
+            "damage_type_id",
         ),
         # 桥梁完整路径索引
         Index(
@@ -81,5 +83,11 @@ class InspectionRecords(BaseModel, table=True):
             "part_id",
             "component_type_id",
             "component_form_id",
+        ),
+        # 病害标度组合索引
+        Index(
+            "idx_inspection_records_damage_scale",
+            "damage_type_id",
+            "scale_id",
         ),
     )

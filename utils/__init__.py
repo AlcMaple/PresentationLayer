@@ -15,6 +15,7 @@ from .base import (
     match_name_to_code,
     match_scale_name_to_code,
     parse_range_value,
+    get_id_by_code,
 )
 
 __all__ = [
@@ -30,4 +31,5 @@ __all__ = [
     "match_name_to_code",
     "match_scale_name_to_code",
     "parse_range_value",
+    "get_id_by_code",
 ]
