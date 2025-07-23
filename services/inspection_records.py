@@ -14,6 +14,8 @@ from models import (
     BridgeComponentForms,
     BridgeDiseases,
     BridgeScales,
+    BridgeQualities,
+    BridgeQuantities,
 )
 from models.enums import ScalesType
 from schemas.inspection_records import (
@@ -24,6 +26,8 @@ from schemas.inspection_records import (
     FormOptionsResponse,
     DamageTypeOption,
     ScaleOption,
+    DamageDetailInfo,
+    DamageReferenceRequest,
 )
 from services.base_crud import BaseCRUDService, PageParams
 from exceptions import ValidationException, NotFoundException
@@ -237,6 +241,9 @@ class InspectionRecordsService(
     def get_record_with_details(self, record_id: int) -> InspectionRecordsResponse:
         """
         获取包含详细关联信息的检查记录
+
+        Args:
+            record_id: 记录ID
         """
         try:
             # 查询基础记录
@@ -255,6 +262,19 @@ class InspectionRecordsService(
 
             # 获取关联信息
             details = self._get_record_related_data(record)
+
+            # 初始化form_options
+            form_options = None
+            path_request = PathValidationRequest(
+                category_id=record.category_id,
+                assessment_unit_id=record.assessment_unit_id,
+                bridge_type_id=record.bridge_type_id,
+                part_id=record.part_id,
+                structure_id=record.structure_id,
+                component_type_id=record.component_type_id,
+                component_form_id=record.component_form_id,
+            )
+            form_options = self.get_form_options_by_path(path_request)
 
             # 构建响应
             return InspectionRecordsResponse(
@@ -284,6 +304,7 @@ class InspectionRecordsService(
                 created_at=record.created_at,
                 updated_at=record.updated_at,
                 is_active=record.is_active,
+                form_options=form_options,
             )
 
         except NotFoundException:
@@ -582,6 +603,359 @@ class InspectionRecordsService(
         except Exception as e:
             self.session.rollback()
             raise Exception(f"更新检查记录失败: {str(e)}")
+
+    def get_form_options_by_path(
+        self, path_request: PathValidationRequest
+    ) -> FormOptionsResponse:
+        """
+        根据路径获取表单选项
+        """
+        try:
+            # 查询条件
+            base_conditions = [
+                Paths.category_id == path_request.category_id,
+                Paths.bridge_type_id == path_request.bridge_type_id,
+                Paths.part_id == path_request.part_id,
+                Paths.component_type_id == path_request.component_type_id,
+                Paths.component_form_id == path_request.component_form_id,
+                Paths.is_active == True,
+            ]
+
+            if path_request.assessment_unit_id:
+                base_conditions.append(
+                    Paths.assessment_unit_id == path_request.assessment_unit_id
+                )
+            else:
+                base_conditions.append(Paths.assessment_unit_id.is_(None))
+
+            if path_request.structure_id:
+                base_conditions.append(Paths.structure_id == path_request.structure_id)
+            else:
+                base_conditions.append(Paths.structure_id.is_(None))
+
+            # 查询符合条件的paths记录，只查询有disease_id和scale_id的记录
+            paths_stmt = (
+                select(Paths.disease_id, Paths.scale_id)
+                .where(
+                    and_(
+                        *base_conditions,
+                        Paths.disease_id.is_not(None),
+                        Paths.scale_id.is_not(None),
+                    )
+                )
+                .distinct()
+            )
+
+            path_results = self.session.exec(paths_stmt).all()
+
+            if not path_results:
+                return FormOptionsResponse(damage_types=[], scales_by_damage={})
+
+            # 收集所有的disease_id和scale_id
+            disease_ids = set()
+            scale_ids = set()
+            disease_scale_pairs = set()
+
+            for result in path_results:
+                disease_ids.add(result.disease_id)
+                scale_ids.add(result.scale_id)
+                disease_scale_pairs.add((result.disease_id, result.scale_id))
+
+            # 查询病害类型信息
+            diseases_stmt = (
+                select(BridgeDiseases.id, BridgeDiseases.code, BridgeDiseases.name)
+                .where(
+                    and_(
+                        BridgeDiseases.id.in_(disease_ids),
+                        BridgeDiseases.is_active == True,
+                    )
+                )
+                .order_by(BridgeDiseases.code)
+            )
+
+            disease_results = self.session.exec(diseases_stmt).all()
+            disease_map = {
+                r.id: {"code": r.code, "name": r.name} for r in disease_results
+            }
+
+            # 查询标度信息
+            scales_stmt = (
+                select(
+                    BridgeScales.id,
+                    BridgeScales.code,
+                    BridgeScales.scale_type,
+                    BridgeScales.scale_value,
+                    BridgeScales.min_value,
+                    BridgeScales.max_value,
+                    BridgeScales.unit,
+                    BridgeScales.display_text,
+                )
+                .where(
+                    and_(BridgeScales.id.in_(scale_ids), BridgeScales.is_active == True)
+                )
+                .order_by(BridgeScales.scale_value)
+            )
+
+            scale_results = self.session.exec(scales_stmt).all()
+            scale_map = {}
+
+            for r in scale_results:
+                # 构建标度显示名称
+                if r.scale_type == ScalesType.NUMERIC:
+                    display_name = (
+                        str(r.scale_value) if r.scale_value is not None else r.code
+                    )
+                elif r.scale_type == ScalesType.RANGE:
+                    if r.min_value is not None and r.max_value is not None and r.unit:
+                        display_name = f"{r.min_value}-{r.max_value}{r.unit}"
+                    else:
+                        display_name = r.code
+                elif r.scale_type == ScalesType.TEXT:
+                    display_name = r.display_text if r.display_text else r.code
+                else:
+                    display_name = r.code
+
+                scale_map[r.id] = {
+                    "code": r.code,
+                    "name": display_name,
+                    "value": r.scale_value,
+                }
+
+            # 按病害类型分组组织数据
+            damage_scale_map = {}
+
+            for disease_id, scale_id in disease_scale_pairs:
+                if disease_id not in disease_map or scale_id not in scale_map:
+                    continue
+
+                disease_info = disease_map[disease_id]
+                scale_info = scale_map[scale_id]
+
+                disease_code = disease_info["code"]
+
+                if disease_code not in damage_scale_map:
+                    damage_scale_map[disease_code] = {
+                        "damage_type": DamageTypeOption(
+                            code=disease_code, name=disease_info["name"]
+                        ),
+                        "scales": [],
+                    }
+
+                # 避免重复的标度
+                scale_option = ScaleOption(
+                    code=scale_info["code"],
+                    name=scale_info["name"],
+                    value=scale_info["value"],
+                )
+
+                existing_codes = [
+                    s.code for s in damage_scale_map[disease_code]["scales"]
+                ]
+                if scale_option.code not in existing_codes:
+                    damage_scale_map[disease_code]["scales"].append(scale_option)
+
+            return FormOptionsResponse(
+                damage_types=[
+                    item["damage_type"] for item in damage_scale_map.values()
+                ],
+                scales_by_damage={k: v["scales"] for k, v in damage_scale_map.items()},
+            )
+
+        except Exception as e:
+            print(f"获取表单选项时出错: {e}")
+            import traceback
+
+            traceback.print_exc()
+            return FormOptionsResponse(damage_types=[], scales_by_damage={})
+
+    def get_damage_reference_info(
+        self, request: DamageReferenceRequest
+    ) -> DamageDetailInfo:
+        """
+        根据路径和病害类型获取参考信息
+        """
+        try:
+            # 获取病害类型ID
+            damage_type_id = self._get_id_by_code(
+                BridgeDiseases, request.damage_type_code
+            )
+            if not damage_type_id:
+                return DamageDetailInfo(
+                    damage_type_code=request.damage_type_code,
+                    damage_type_name="",
+                    scales=[],
+                    qualities=[],
+                    quantities=[],
+                )
+
+            # 查询条件
+            base_conditions = [
+                Paths.category_id == request.category_id,
+                Paths.bridge_type_id == request.bridge_type_id,
+                Paths.part_id == request.part_id,
+                Paths.component_type_id == request.component_type_id,
+                Paths.component_form_id == request.component_form_id,
+                Paths.disease_id == damage_type_id,
+                Paths.is_active == True,
+            ]
+
+            if request.assessment_unit_id:
+                base_conditions.append(
+                    Paths.assessment_unit_id == request.assessment_unit_id
+                )
+            else:
+                base_conditions.append(Paths.assessment_unit_id.is_(None))
+
+            if request.structure_id:
+                base_conditions.append(Paths.structure_id == request.structure_id)
+            else:
+                base_conditions.append(Paths.structure_id.is_(None))
+
+            # 查询该病害类型下的所有paths记录
+            paths_stmt = (
+                select(Paths.scale_id, Paths.quality_id, Paths.quantity_id)
+                .where(and_(*base_conditions))
+                .distinct()
+            )
+
+            path_results = self.session.exec(paths_stmt).all()
+
+            if not path_results:
+                # 获取病害类型名称
+                disease_name_stmt = select(BridgeDiseases.name).where(
+                    BridgeDiseases.id == damage_type_id
+                )
+                disease_name = self.session.exec(disease_name_stmt).first() or ""
+
+                return DamageDetailInfo(
+                    damage_type_code=request.damage_type_code,
+                    damage_type_name=disease_name,
+                    scales=[],
+                    qualities=[],
+                    quantities=[],
+                )
+
+            # ID
+            scale_ids = set()
+            quality_ids = set()
+            quantity_ids = set()
+
+            for result in path_results:
+                if result.scale_id:
+                    scale_ids.add(result.scale_id)
+                if result.quality_id:
+                    quality_ids.add(result.quality_id)
+                if result.quantity_id:
+                    quantity_ids.add(result.quantity_id)
+
+            # 获取病害类型名称
+            disease_name_stmt = select(BridgeDiseases.name).where(
+                BridgeDiseases.id == damage_type_id
+            )
+            disease_name = self.session.exec(disease_name_stmt).first() or ""
+
+            # 查询标度信息
+            scales = []
+            if scale_ids:
+                scales_stmt = (
+                    select(
+                        BridgeScales.code,
+                        BridgeScales.scale_type,
+                        BridgeScales.scale_value,
+                        BridgeScales.min_value,
+                        BridgeScales.max_value,
+                        BridgeScales.unit,
+                        BridgeScales.display_text,
+                    )
+                    .where(
+                        and_(
+                            BridgeScales.id.in_(scale_ids),
+                            BridgeScales.is_active == True,
+                        )
+                    )
+                    .order_by(BridgeScales.scale_value)
+                )
+
+                scale_results = self.session.exec(scales_stmt).all()
+
+                for r in scale_results:
+                    # 构建标度显示名称
+                    if r.scale_type == ScalesType.NUMERIC:
+                        display_name = (
+                            str(r.scale_value) if r.scale_value is not None else r.code
+                        )
+                    elif r.scale_type == ScalesType.RANGE:
+                        if (
+                            r.min_value is not None
+                            and r.max_value is not None
+                            and r.unit
+                        ):
+                            display_name = f"{r.min_value}-{r.max_value}{r.unit}"
+                        else:
+                            display_name = r.code
+                    elif r.scale_type == ScalesType.TEXT:
+                        display_name = r.display_text if r.display_text else r.code
+                    else:
+                        display_name = r.code
+
+                    scales.append(
+                        ScaleOption(code=r.code, name=display_name, value=r.scale_value)
+                    )
+
+            # 查询定性描述
+            qualities = []
+            if quality_ids:
+                qualities_stmt = (
+                    select(BridgeQualities.name)
+                    .where(
+                        and_(
+                            BridgeQualities.id.in_(quality_ids),
+                            BridgeQualities.is_active == True,
+                        )
+                    )
+                    .order_by(BridgeQualities.name)
+                )
+
+                quality_results = self.session.exec(qualities_stmt).all()
+                qualities = [r for r in quality_results if r]
+
+            # 查询定量描述
+            quantities = []
+            if quantity_ids:
+                quantities_stmt = (
+                    select(BridgeQuantities.name)
+                    .where(
+                        and_(
+                            BridgeQuantities.id.in_(quantity_ids),
+                            BridgeQuantities.is_active == True,
+                        )
+                    )
+                    .order_by(BridgeQuantities.name)
+                )
+
+                quantity_results = self.session.exec(quantities_stmt).all()
+                quantities = [r for r in quantity_results if r]
+
+            return DamageDetailInfo(
+                damage_type_code=request.damage_type_code,
+                damage_type_name=disease_name,
+                scales=scales,
+                qualities=qualities,
+                quantities=quantities,
+            )
+
+        except Exception as e:
+            print(f"获取病害参考信息时出错: {e}")
+            import traceback
+
+            traceback.print_exc()
+            return DamageDetailInfo(
+                damage_type_code=request.damage_type_code,
+                damage_type_name="",
+                scales=[],
+                qualities=[],
+                quantities=[],
+            )
 
 
 def get_inspection_records_service(session: Session) -> InspectionRecordsService:

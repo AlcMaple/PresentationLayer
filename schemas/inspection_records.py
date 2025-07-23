@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, model_validator
-from typing import Optional, List
+from typing import Optional, List, Dict
 from datetime import datetime
 
 
@@ -38,6 +38,52 @@ class InspectionRecordsUpdate(BaseModel):
     image_url: Optional[str] = Field(None, description="图片URL")
 
 
+class PathValidationRequest(BaseModel):
+    """路径验证请求模型"""
+
+    category_id: int = Field(..., description="桥梁ID")
+    assessment_unit_id: Optional[int] = Field(None, description="评定单元ID")
+    bridge_type_id: int = Field(..., description="桥梁类型ID")
+    part_id: int = Field(..., description="部位ID")
+    structure_id: Optional[int] = Field(None, description="结构类型ID")
+    component_type_id: int = Field(..., description="部件类型ID")
+    component_form_id: int = Field(..., description="构件形式ID")
+
+
+class DamageTypeOption(BaseModel):
+    """病害类型选项"""
+
+    code: str
+    name: str
+
+
+class ScaleOption(BaseModel):
+    """标度选项"""
+
+    code: str
+    name: str
+    value: Optional[int] = None
+
+
+class FormOptionsResponse(BaseModel):
+    """表单选项响应"""
+
+    damage_types: List[DamageTypeOption] = []
+    scales_by_damage: Dict[str, List[ScaleOption]] = Field(
+        default_factory=dict, description="按病害类型分组的标度选项，key为病害类型code"
+    )
+
+
+class DamageDetailInfo(BaseModel):
+    """病害详细信息"""
+
+    damage_type_code: str
+    damage_type_name: str
+    scales: List[ScaleOption] = []
+    qualities: List[str] = []  # 定性描述列表
+    quantities: List[str] = []  # 定量描述列表
+
+
 class InspectionRecordsResponse(BaseModel):
     """检查记录响应模型"""
 
@@ -71,17 +117,20 @@ class InspectionRecordsResponse(BaseModel):
     damage_description: Optional[str] = None
     image_url: Optional[str] = None
 
-    # 时间信息
+    # 其他信息
     created_at: datetime
     updated_at: datetime
     is_active: bool
+
+    # 表单信息
+    form_options: Optional[FormOptionsResponse] = None
 
     class Config:
         from_attributes = True
 
 
-class PathValidationRequest(BaseModel):
-    """路径验证请求模型"""
+class DamageReferenceRequest(BaseModel):
+    """病害参考信息请求"""
 
     category_id: int = Field(..., description="桥梁ID")
     assessment_unit_id: Optional[int] = Field(None, description="评定单元ID")
@@ -90,25 +139,4 @@ class PathValidationRequest(BaseModel):
     structure_id: Optional[int] = Field(None, description="结构类型ID")
     component_type_id: int = Field(..., description="部件类型ID")
     component_form_id: int = Field(..., description="构件形式ID")
-
-
-class DamageTypeOption(BaseModel):
-    """病害类型选项"""
-
-    code: str
-    name: str
-
-
-class ScaleOption(BaseModel):
-    """标度选项"""
-
-    code: str
-    name: str
-    value: Optional[int] = None
-
-
-class FormOptionsResponse(BaseModel):
-    """表单选项响应"""
-
-    damage_types: List[DamageTypeOption] = []
-    scales: List[ScaleOption] = []
+    damage_type_code: str = Field(..., description="病害类型编码")

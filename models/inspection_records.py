@@ -30,7 +30,7 @@ class InspectionRecords(BaseModel, table=True):
         foreign_key="bridge_component_forms.id", description="构件形式ID"
     )
 
-    # 病害和标度数据（用户从paths表选项中选择）
+    # 病害和标度数据
     damage_type_code: str = Field(description="病害类型编码", max_length=50)
     scale_code: str = Field(description="标度编码", max_length=50)
 
