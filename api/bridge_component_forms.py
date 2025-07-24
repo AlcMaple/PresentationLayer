@@ -16,7 +16,7 @@ from exceptions import NotFoundException
 router = APIRouter(prefix="/bridge_component_forms", tags=["构件形式管理"])
 
 
-@router.get("/", summary="分页查询构件形式列表")
+@router.get("", summary="分页查询构件形式列表")
 async def get_bridge_component_forms_list(
     page: int = Query(1, ge=1, description="页码"),
     size: int = Query(20, ge=1, le=100, description="每页数量"),
@@ -43,7 +43,7 @@ async def get_bridge_component_forms_list(
     return success(response_item, "查询成功")
 
 
-@router.post("/", summary="创建构件形式")
+@router.post("", summary="创建构件形式")
 async def create_bridge_component_forms(
     category_data: Create, session: Session = Depends(get_db)
 ):

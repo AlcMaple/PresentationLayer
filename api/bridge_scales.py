@@ -16,7 +16,7 @@ from services.bridge_scales import get_bridge_scales_service
 router = APIRouter(prefix="/bridge_scales", tags=["标度管理"])
 
 
-@router.get("/", summary="分页查询标度列表")
+@router.get("", summary="分页查询标度列表")
 async def get_bridge_scales_list(
     page: int = Query(1, ge=1, description="页码"),
     size: int = Query(20, ge=1, le=100, description="每页数量"),
@@ -65,7 +65,7 @@ async def get_bridge_scales_list(
     return success(response_item, "查询成功")
 
 
-@router.post("/", summary="创建标度")
+@router.post("", summary="创建标度")
 async def create_bridge_scales(
     scale_data: BridgeScalesCreate, session: Session = Depends(get_db)
 ):

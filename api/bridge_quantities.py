@@ -16,7 +16,7 @@ from exceptions import NotFoundException
 router = APIRouter(prefix="/bridge_quantities", tags=["定量描述管理"])
 
 
-@router.get("/", summary="分页查询定量描述列表")
+@router.get("", summary="分页查询定量描述列表")
 async def get_bridge_quantities_list(
     page: int = Query(1, ge=1, description="页码"),
     size: int = Query(20, ge=1, le=100, description="每页数量"),
@@ -43,7 +43,7 @@ async def get_bridge_quantities_list(
     return success(response_item, "查询成功")
 
 
-@router.post("/", summary="创建定量描述")
+@router.post("", summary="创建定量描述")
 async def create_bridge_quantities(
     category_data: Create, session: Session = Depends(get_db)
 ):

@@ -16,7 +16,7 @@ from exceptions import NotFoundException
 router = APIRouter(prefix="/bridge_diseases", tags=["病害类型管理"])
 
 
-@router.get("/", summary="分页查询病害类型列表")
+@router.get("", summary="分页查询病害类型列表")
 async def get_bridge_diseases_list(
     page: int = Query(1, ge=1, description="页码"),
     size: int = Query(20, ge=1, le=100, description="每页数量"),
@@ -43,7 +43,7 @@ async def get_bridge_diseases_list(
     return success(response_item, "查询成功")
 
 
-@router.post("/", summary="创建病害类型")
+@router.post("", summary="创建病害类型")
 async def create_bridge_diseases(
     category_data: Create, session: Session = Depends(get_db)
 ):

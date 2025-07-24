@@ -16,7 +16,7 @@ from exceptions import NotFoundException
 router = APIRouter(prefix="/assentment_units", tags=["评价单元管理"])
 
 
-@router.get("/", summary="分页查询评价单元列表")
+@router.get("", summary="分页查询评价单元列表")
 async def get_assentment_units_list(
     page: int = Query(1, ge=1, description="页码"),
     size: int = Query(20, ge=1, le=100, description="每页数量"),
@@ -43,7 +43,7 @@ async def get_assentment_units_list(
     return success(response_item, "查询成功")
 
 
-@router.post("/", summary="创建评价单元")
+@router.post("", summary="创建评价单元")
 async def create_assentment_unit(
     category_data: Create, session: Session = Depends(get_db)
 ):

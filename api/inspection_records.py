@@ -16,7 +16,7 @@ from services.base_crud import PageParams
 router = APIRouter(prefix="/inspection_records", tags=["检查记录管理"])
 
 
-@router.post("/", summary="创建检查记录")
+@router.post("", summary="创建检查记录")
 async def create_inspection_record(
     record_data: InspectionRecordsCreate, session: Session = Depends(get_db)
 ):
@@ -42,7 +42,7 @@ async def get_form_options_by_path(
         return bad_request(f"获取表单选项失败: {str(e)}")
 
 
-@router.get("/", summary="分页查询检查记录")
+@router.get("", summary="分页查询检查记录")
 async def get_inspection_records_list(
     page: int = Query(1, ge=1, description="页码"),
     size: int = Query(20, ge=1, le=100, description="每页数量"),
@@ -95,15 +95,35 @@ async def get_damage_reference_info(
         return bad_request(f"获取病害参考信息失败: {str(e)}")
 
 
-@router.delete("/", summary="批量删除检查记录")
-async def delete_all_inspection_records(session: Session = Depends(get_db)):
-    """批量软删除所有检查记录"""
+@router.delete("", summary="按路径批量删除检查记录")
+async def delete_inspection_records_by_path(
+    path_request: PathValidationRequest, session: Session = Depends(get_db)
+):
+    """批量软删除检查记录"""
     try:
         service = get_inspection_records_service(session)
-        deleted_count = service.delete_all()
+
+        # 过滤条件
+        filters = {
+            "category_id": path_request.category_id,
+            "bridge_type_id": path_request.bridge_type_id,
+            "part_id": path_request.part_id,
+            "component_type_id": path_request.component_type_id,
+            "component_form_id": path_request.component_form_id,
+        }
+
+        if path_request.assessment_unit_id is not None:
+            filters["assessment_unit_id"] = path_request.assessment_unit_id
+
+        if path_request.structure_id is not None:
+            filters["structure_id"] = path_request.structure_id
+
+        # 批量删除
+        deleted_count = service.delete_all(filters)
 
         return success(
-            {"deleted_count": deleted_count}, f"成功删除 {deleted_count} 条检查记录"
+            {"deleted_count": deleted_count},
+            f"成功删除 {deleted_count} 条检查记录",
         )
 
     except Exception as e:

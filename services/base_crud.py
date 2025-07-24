@@ -109,10 +109,8 @@ class BaseCRUDService(Generic[ModelType, CreateSchemaType, UpdateSchemaType], AB
 
             # 过滤
             if filters:
-                conditions = self._build_filter_conditions(filters)
-                if conditions:
-                    statement = statement.where(and_(*conditions))
-                    count_statement = count_statement.where(and_(*conditions))
+                filter_conditions = self._build_filter_conditions(filters)
+                conditions.extend(filter_conditions)
 
             if conditions:
                 statement = statement.where(and_(*conditions))
@@ -329,6 +327,9 @@ class BaseCRUDService(Generic[ModelType, CreateSchemaType, UpdateSchemaType], AB
             # 字符串模糊查询
             if isinstance(value, str) and field in ["name"]:
                 conditions.append(field_attr.like(f"%{value}%"))
+            # ID字段匹配
+            elif isinstance(value, int) and field.endswith("_id"):
+                conditions.append(field_attr == value)
 
         return conditions
 

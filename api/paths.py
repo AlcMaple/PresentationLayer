@@ -15,7 +15,7 @@ from exceptions import NotFoundException
 router = APIRouter(prefix="/paths", tags=["路径管理"])
 
 
-@router.get("/", summary="分页查询路径列表")
+@router.get("", summary="分页查询路径列表")
 async def get_paths_list(
     page: int = Query(1, ge=1, description="页码"),
     size: int = Query(20, ge=1, le=100, description="每页数量"),
@@ -79,7 +79,7 @@ async def get_options(session: Session = Depends(get_db)):
     return success(options, "获取路径选项成功")
 
 
-@router.post("/", summary="创建路径")
+@router.post("", summary="创建路径")
 async def create_path(path_data: PathsCreate, session: Session = Depends(get_db)):
     """创建路径"""
     service = get_paths_service(session)

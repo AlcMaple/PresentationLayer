@@ -16,7 +16,7 @@ from exceptions import NotFoundException
 router = APIRouter(prefix="/categories", tags=["分类管理"])
 
 
-@router.get("/", summary="分页查询分类列表")
+@router.get("", summary="分页查询分类列表")
 async def get_categories_list(
     page: int = Query(1, ge=1, description="页码"),
     size: int = Query(20, ge=1, le=100, description="每页数量"),
@@ -43,7 +43,7 @@ async def get_categories_list(
     return success(response_item, "查询成功")
 
 
-@router.post("/", summary="创建分类")
+@router.post("", summary="创建分类")
 async def create_category(category_data: Create, session: Session = Depends(get_db)):
     """创建分类"""
     service = get_base_crud_service(Categories, session)
