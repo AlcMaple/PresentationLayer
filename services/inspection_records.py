@@ -1,7 +1,12 @@
 from typing import List, Optional, Dict, Any, Tuple
 from sqlmodel import Session, select, and_
 from datetime import datetime, timezone
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill
+from io import BytesIO
+from fastapi import UploadFile
 
+from services.file_upload import get_file_upload_service
 from models import (
     InspectionRecords,
     Paths,
@@ -130,7 +135,9 @@ class InspectionRecordsService(
             error_message = f"验证病害标度组合时发生系统错误: {e}"
             raise SystemException(message=error_message, original_error=e)
 
-    def create(self, record_data: InspectionRecordsCreate) -> InspectionRecordsResponse:
+    async def create(
+        self, record_data: InspectionRecordsCreate, image_file: Optional[UploadFile]
+    ) -> InspectionRecordsResponse:
         """
         创建检查记录
         """
@@ -170,6 +177,17 @@ class InspectionRecordsService(
             if not scale_id:
                 raise ValidationException(f"找不到标度编码: {record_data.scale_code}")
 
+            # 处理图片上传
+            image_url = None
+            if image_file and image_file.filename:
+                file_service = get_file_upload_service()
+                success, message, url = await file_service.save_image(image_file)
+
+                if not success:
+                    raise ValidationException(f"图片上传失败: {message}")
+
+                image_url = url
+
             # 创建检查记录
             inspection_record = InspectionRecords(
                 category_id=record_data.category_id,
@@ -183,7 +201,7 @@ class InspectionRecordsService(
                 scale_id=scale_id,
                 damage_location=record_data.damage_location,
                 damage_description=record_data.damage_description,
-                image_url=record_data.image_url,
+                image_url=image_url,
                 component_name=record_data.component_name,
             )
 
@@ -839,6 +857,210 @@ class InspectionRecordsService(
                 qualities=[],
                 quantities=[],
             )
+
+    def export_template(self, path_request: PathValidationRequest) -> bytes:
+        """
+        导出检查记录Excel模板
+
+        Args:
+            path_request: 路径验证请求
+
+        Returns:
+            Excel文件的字节内容
+        """
+        try:
+
+            # 验证路径是否存在
+            if not self._validate_path_exists(path_request):
+                raise ValidationException("指定的路径组合在系统中不存在")
+
+            # 获取该路径下的表单选项
+            form_options = self.get_form_options_by_path(path_request)
+
+            # 创建工作薄
+            wb = Workbook()
+
+            # 创建主工作表
+            ws_main = wb.active
+            ws_main.title = "检查记录数据"
+
+            # 定义表头
+            headers = [
+                "构件名称",
+                "病害类型",
+                "标度值",
+                "病害位置",
+                "病害程度",
+                "图片URL",
+            ]
+
+            # 写入表头
+            for col, header in enumerate(headers, 1):
+                cell = ws_main.cell(row=1, column=col, value=header)
+                # 设置表头样式
+                cell.font = Font(bold=True)
+                cell.fill = PatternFill(
+                    start_color="CCCCCC", end_color="CCCCCC", fill_type="solid"
+                )
+
+            # 添加填写说明
+            instruction = "说明：构件名称、病害位置、病害程度、图片URL可选；病害类型和标度值请参考对应的参考数据表"
+            ws_main.cell(row=2, column=1, value=instruction)
+            ws_main.merge_cells("A2:F2")
+            ws_main.cell(row=2, column=1).font = Font(color="FF0000", italic=True)
+
+            # 调整列宽
+            column_widths = [15, 20, 15, 25, 25, 30]
+            for col, width in enumerate(column_widths, 1):
+                ws_main.column_dimensions[
+                    ws_main.cell(row=1, column=col).column_letter
+                ].width = width
+
+            # 创建病害类型参考数据表
+            self._create_damage_reference_sheet(wb, form_options)
+
+            # 创建使用说明表
+            self._create_help_sheet_for_inspection(wb)
+
+            # 保存到字节流
+            buffer = BytesIO()
+            wb.save(buffer)
+            buffer.seek(0)
+
+            return buffer.getvalue()
+
+        except ValidationException:
+            raise
+        except Exception as e:
+            print(f"导出检查记录模板时出错: {e}")
+            import traceback
+
+            traceback.print_exc()
+            raise Exception(f"导出模板失败: {str(e)}")
+
+    def _create_damage_reference_sheet(self, wb, form_options: FormOptionsResponse):
+        """创建病害类型参考数据工作表"""
+        try:
+            ws_ref = wb.create_sheet(title="病害参考数据")
+
+            # 写入列标题
+            headers = ["病害类型编码", "病害类型名称", "标度编码", "标度名称"]
+            for col, header in enumerate(headers, 1):
+                cell = ws_ref.cell(row=1, column=col, value=header)
+                cell.font = Font(bold=True)
+                cell.fill = PatternFill(
+                    start_color="E6F3FF", end_color="E6F3FF", fill_type="solid"
+                )
+
+            # 写入数据
+            row = 2
+            for damage_type in form_options.damage_types:
+                damage_code = damage_type.code
+                damage_name = damage_type.name
+
+                # 获取该病害类型对应的标度选项
+                scales = form_options.scales_by_damage.get(damage_code, [])
+
+                if scales:
+                    for scale in scales:
+                        ws_ref.cell(row=row, column=1, value=damage_code)
+                        ws_ref.cell(row=row, column=2, value=damage_name)
+                        ws_ref.cell(row=row, column=3, value=scale.code)
+                        ws_ref.cell(row=row, column=4, value=scale.name)
+                        row += 1
+                else:
+                    # 如果没有标度选项，只显示病害类型
+                    ws_ref.cell(row=row, column=1, value=damage_code)
+                    ws_ref.cell(row=row, column=2, value=damage_name)
+                    ws_ref.cell(row=row, column=3, value="")
+                    ws_ref.cell(row=row, column=4, value="")
+                    row += 1
+
+            # 调整列宽
+            for col in range(1, 5):
+                ws_ref.column_dimensions[
+                    ws_ref.cell(row=1, column=col).column_letter
+                ].width = 20
+
+        except Exception as e:
+            print(f"创建病害参考数据表时出错: {e}")
+
+    def _create_help_sheet_for_inspection(self, wb):
+        """创建检查记录使用说明工作表"""
+        try:
+            ws_help = wb.create_sheet(title="填写说明")
+            help_content = [
+                ["检查记录数据导入模板使用说明", ""],
+                ["", ""],
+                ["1. 数据填写要求", ""],
+                ["• 构件名称：可自由填写，用于标识具体构件", ""],
+                ["• 病害类型：必须从'病害参考数据'表中选择对应的编码或名称", ""],
+                ["• 标度值：必须与病害类型匹配，参考'病害参考数据'表", ""],
+                ["• 病害位置：可自由填写，描述病害的具体位置", ""],
+                ["• 病害程度：可自由填写，描述病害的详细情况", ""],
+                ["• 图片URL：可填写图片的网络地址", ""],
+                ["", ""],
+                ["2. 注意事项", ""],
+                ["• 病害类型和标度值必须匹配，系统会验证组合的有效性", ""],
+                ["• 建议使用复制粘贴方式从参考数据表中选择", ""],
+                ["• 所有数据都可以为空，但病害类型和标度值必须必须填写", ""],
+                ["", ""],
+                ["3. 导入流程", ""],
+                ["• 填写完数据后保存Excel文件", ""],
+                ["• 在系统中选择相同的路径", ""],
+                ["• 上传Excel文件进行导入", ""],
+                ["• 系统会验证数据并生成导入报告", ""],
+            ]
+
+            for row, (content1, content2) in enumerate(help_content, 1):
+                ws_help.cell(row=row, column=1, value=content1)
+                ws_help.cell(row=row, column=2, value=content2)
+
+                # 设置样式
+                if "说明" in content1:
+                    ws_help.cell(row=row, column=1).font = Font(bold=True, size=14)
+                elif any(
+                    keyword in content1
+                    for keyword in ["路径信息", "填写要求", "注意事项", "导入流程"]
+                ):
+                    ws_help.cell(row=row, column=1).font = Font(
+                        bold=True, color="0066CC"
+                    )
+
+            # 调整列宽
+            ws_help.column_dimensions["A"].width = 40
+            ws_help.column_dimensions["B"].width = 50
+
+        except Exception as e:
+            print(f"创建使用说明工作表时出错: {e}")
+
+    # def _get_path_display_info(
+    #     self, path_request: PathValidationRequest
+    # ) -> Dict[str, str]:
+    #     """获取路径显示信息"""
+    #     try:
+    #         path_info = {}
+
+    #         # 这里可以根据需要获取路径的显示名称
+    #         # 暂时返回ID信息
+    #         path_info["category"] = str(path_request.category_id)
+    #         path_info["assessment_unit"] = (
+    #             str(path_request.assessment_unit_id)
+    #             if path_request.assessment_unit_id
+    #             else "无"
+    #         )
+    #         path_info["bridge_type"] = str(path_request.bridge_type_id)
+    #         path_info["part"] = str(path_request.part_id)
+    #         path_info["structure"] = (
+    #             str(path_request.structure_id) if path_request.structure_id else "无"
+    #         )
+    #         path_info["component_type"] = str(path_request.component_type_id)
+    #         path_info["component_form"] = str(path_request.component_form_id)
+
+    #         return path_info
+    #     except Exception as e:
+    #         print(f"获取路径显示信息时出错: {e}")
+    #         return {}
 
 
 def get_inspection_records_service(session: Session) -> InspectionRecordsService:

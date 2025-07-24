@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Form, File, UploadFile
 from sqlmodel import Session
+from typing import Optional
 
 from config.database import get_db
 from services.inspection_records import get_inspection_records_service
@@ -18,11 +19,42 @@ router = APIRouter(prefix="/inspection_records", tags=["检查记录管理"])
 
 @router.post("", summary="创建检查记录")
 async def create_inspection_record(
-    record_data: InspectionRecordsCreate, session: Session = Depends(get_db)
+    # 表单数据
+    category_id: int = Form(..., description="桥梁类别ID"),
+    bridge_type_id: int = Form(..., description="桥梁类型ID"),
+    part_id: int = Form(..., description="部位ID"),
+    component_type_id: int = Form(..., description="部件类型ID"),
+    component_form_id: int = Form(..., description="构件形式ID"),
+    damage_type_code: str = Form(..., description="病害类型编码"),
+    scale_code: str = Form(..., description="标度编码"),
+    assessment_unit_id: Optional[int] = Form(..., description="评定单元ID"),
+    structure_id: Optional[int] = Form(..., description="结构类型ID"),
+    damage_location: Optional[str] = Form(None, description="病害位置"),
+    damage_description: Optional[str] = Form(None, description="病害程度"),
+    component_name: Optional[str] = Form(None, description="构件名称"),
+    # 文件上传
+    image: Optional[UploadFile] = File(None, description="病害图片"),
+    session: Session = Depends(get_db),
 ):
     """创建新的检查记录"""
     service = get_inspection_records_service(session)
-    result = service.create(record_data)
+    # 表单数据
+    form_data = InspectionRecordsCreate(
+        category_id=category_id,
+        assessment_unit_id=assessment_unit_id,
+        bridge_type_id=bridge_type_id,
+        part_id=part_id,
+        structure_id=structure_id,
+        component_type_id=component_type_id,
+        component_form_id=component_form_id,
+        damage_type_code=damage_type_code,
+        scale_code=scale_code,
+        damage_location=damage_location,
+        damage_description=damage_description,
+        component_name=component_name,
+    )
+
+    result = await service.create(form_data, image)
     return success(result.model_dump(), "创建检查记录成功")
 
 

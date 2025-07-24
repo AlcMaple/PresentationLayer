@@ -1,6 +1,7 @@
 from typing import Dict, List, Tuple
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from config.settings import settings
 from middleware import add_exception_handlers
@@ -33,6 +34,8 @@ class AppFactory:
 
         self._setup_exception_handling(app)
 
+        self._setup_static_files(app)
+
         # 包含模块路由
         app.include_router(module["router"], prefix="/api")
         return app
@@ -52,6 +55,9 @@ class AppFactory:
 
         # 异常处理
         self._setup_exception_handling(app)
+
+        # 静态文件配置
+        self._setup_static_files(app)
 
         # 包含所有模块路由
         for module in self.modules.values():
@@ -96,6 +102,14 @@ class AppFactory:
     def _setup_exception_handling(self, app: FastAPI):
         """配置异常处理"""
         add_exception_handlers(app)
+
+    def _setup_static_files(self, app: FastAPI):
+        """配置静态文件"""
+        app.mount(
+            "/static",
+            StaticFiles(directory="static", html=True),
+            name="static",
+        )
 
 
 # 工厂实例
