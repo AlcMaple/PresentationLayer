@@ -903,7 +903,6 @@ class InspectionRecordsService(
                 "标度值",
                 "病害位置",
                 "病害程度",
-                "图片URL",
             ]
 
             # 写入表头
@@ -916,7 +915,7 @@ class InspectionRecordsService(
                 )
 
             # 添加填写说明
-            instruction = "说明：构件名称、病害位置、病害程度、图片URL可选；病害类型和标度值请参考对应的参考数据表"
+            instruction = "说明：构件名称、病害位置、病害程度可选；病害类型和标度值请参考对应的参考数据表"
             ws_main.cell(row=2, column=1, value=instruction)
             ws_main.merge_cells("A2:F2")
             ws_main.cell(row=2, column=1).font = Font(color="FF0000", italic=True)
@@ -1010,7 +1009,6 @@ class InspectionRecordsService(
                 ["• 标度值：必须与病害类型匹配，参考'病害参考数据'表", ""],
                 ["• 病害位置：可自由填写，描述病害的具体位置", ""],
                 ["• 病害程度：可自由填写，描述病害的详细情况", ""],
-                ["• 图片URL：可填写图片的网络地址", ""],
                 ["", ""],
                 ["2. 注意事项", ""],
                 ["• 病害类型和标度值必须匹配，系统会验证组合的有效性", ""],
@@ -1045,34 +1043,6 @@ class InspectionRecordsService(
 
         except Exception as e:
             print(f"创建使用说明工作表时出错: {e}")
-
-    # def _get_path_display_info(
-    #     self, path_request: PathValidationRequest
-    # ) -> Dict[str, str]:
-    #     """获取路径显示信息"""
-    #     try:
-    #         path_info = {}
-
-    #         # 这里可以根据需要获取路径的显示名称
-    #         # 暂时返回ID信息
-    #         path_info["category"] = str(path_request.category_id)
-    #         path_info["assessment_unit"] = (
-    #             str(path_request.assessment_unit_id)
-    #             if path_request.assessment_unit_id
-    #             else "无"
-    #         )
-    #         path_info["bridge_type"] = str(path_request.bridge_type_id)
-    #         path_info["part"] = str(path_request.part_id)
-    #         path_info["structure"] = (
-    #             str(path_request.structure_id) if path_request.structure_id else "无"
-    #         )
-    #         path_info["component_type"] = str(path_request.component_type_id)
-    #         path_info["component_form"] = str(path_request.component_form_id)
-
-    #         return path_info
-    #     except Exception as e:
-    #         print(f"获取路径显示信息时出错: {e}")
-    #         return {}
 
 
 def get_inspection_records_service(session: Session) -> InspectionRecordsService:
