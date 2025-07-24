@@ -159,12 +159,12 @@ async def update_path(
     return success(response_item, "更新成功")
 
 
-@router.delete("/{path_id}", summary="删除路径")
-async def delete_path(path_id: int, session: Session = Depends(get_db)):
-    """删除路径"""
-    service = get_paths_service(session)
-    success_result = service.delete(path_id, cascade=False)
-    return success(None, "删除成功")
+# @router.delete("/{path_id}", summary="删除路径")
+# async def delete_path(path_id: int, session: Session = Depends(get_db)):
+#     """删除路径"""
+#     service = get_paths_service(session)
+#     success_result = service.delete(path_id, cascade=False)
+#     return success(None, "删除成功")
 
 
 @router.get("/by-code/{code}", summary="根据编码获取路径")

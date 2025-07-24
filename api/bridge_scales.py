@@ -81,16 +81,16 @@ async def create_bridge_scales(
     return success(response_item.model_dump(), "创建成功")
 
 
-@router.delete("/{id}", summary="删除标度")
-async def delete_bridge_scales(id: int, session: Session = Depends(get_db)):
-    """删除标度"""
-    # 创建服务实例
-    service = get_bridge_scales_service(session)
+# @router.delete("/{id}", summary="删除标度")
+# async def delete_bridge_scales(id: int, session: Session = Depends(get_db)):
+#     """删除标度"""
+#     # 创建服务实例
+#     service = get_bridge_scales_service(session)
     
-    # 删除标度
-    service.delete(id)
+#     # 删除标度
+#     service.delete(id)
     
-    return success(None, "删除成功")
+#     return success(None, "删除成功")
 
 
 @router.put("/{id}", summary="更新标度")

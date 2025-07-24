@@ -70,13 +70,13 @@ async def update_bridge_qualities(
     return success(response_item.model_dump(), "更新成功")
 
 
-@router.delete("/{id}", summary="删除定性描述")
-async def delete_bridge_qualities(id: int, session: Session = Depends(get_db)):
-    """删除定性描述"""
-    service = get_base_crud_service(BridgeQualities, session)
-    success_flag = service.delete(id)
+# @router.delete("/{id}", summary="删除定性描述")
+# async def delete_bridge_qualities(id: int, session: Session = Depends(get_db)):
+#     """删除定性描述"""
+#     service = get_base_crud_service(BridgeQualities, session)
+#     success_flag = service.delete(id)
 
-    if not success_flag:
-        raise NotFoundException(resource="BridgeQualities", identifier=str(id))
+#     if not success_flag:
+#         raise NotFoundException(resource="BridgeQualities", identifier=str(id))
 
-    return success(None, "删除成功")
+#     return success(None, "删除成功")

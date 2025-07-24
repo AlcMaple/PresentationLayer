@@ -68,13 +68,13 @@ async def update_category(
     return success(response_item.model_dump(), "更新成功")
 
 
-@router.delete("/{id}", summary="删除分类")
-async def delete_category(id: int, session: Session = Depends(get_db)):
-    """删除分类"""
-    service = get_base_crud_service(Categories, session)
-    success_flag = service.delete(id)
+# @router.delete("/{id}", summary="删除分类")
+# async def delete_category(id: int, session: Session = Depends(get_db)):
+#     """删除分类"""
+#     service = get_base_crud_service(Categories, session)
+#     success_flag = service.delete(id)
 
-    if not success_flag:
-        raise NotFoundException(resource="Categories", identifier=str(id))
+#     if not success_flag:
+#         raise NotFoundException(resource="Categories", identifier=str(id))
 
-    return success(None, "删除成功")
+#     return success(None, "删除成功")
