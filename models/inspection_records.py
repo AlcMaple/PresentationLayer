@@ -49,6 +49,11 @@ class InspectionRecords(BaseModel, table=True):
         description="图片URL", default=None, max_length=500
     )
 
+    # 构件名称字段
+    component_name: Optional[str] = Field(
+        description="构件名称", default=None, max_length=100
+    )
+
     # 状态字段
     is_active: bool = Field(description="是否启用", default=True)
 

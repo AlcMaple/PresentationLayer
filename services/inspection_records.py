@@ -89,7 +89,9 @@ class InspectionRecordsService(
         """
         try:
             # 通过code获取ID
-            damage_type_id = get_id_by_code(BridgeDiseases, damage_type_code,self.session)
+            damage_type_id = get_id_by_code(
+                BridgeDiseases, damage_type_code, self.session
+            )
             scale_id = get_id_by_code(BridgeScales, scale_code, self.session)
 
             if not damage_type_id or not scale_id:
@@ -182,6 +184,7 @@ class InspectionRecordsService(
                 damage_location=record_data.damage_location,
                 damage_description=record_data.damage_description,
                 image_url=record_data.image_url,
+                component_name=record_data.component_name,
             )
 
             self.session.add(inspection_record)
@@ -273,6 +276,7 @@ class InspectionRecordsService(
                 updated_at=record.updated_at,
                 is_active=record.is_active,
                 form_options=form_options,
+                component_name=record.component_name,
             )
 
         except NotFoundException:
@@ -468,6 +472,8 @@ class InspectionRecordsService(
                 existing_record.damage_description = update_data.damage_description
             if update_data.image_url is not None:
                 existing_record.image_url = update_data.image_url
+            if update_data.component_name is not None:
+                existing_record.component_name = update_data.component_name
 
             # 更新时间
             existing_record.updated_at = datetime.now(timezone.utc)

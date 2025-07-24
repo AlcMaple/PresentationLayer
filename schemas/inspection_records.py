@@ -24,6 +24,9 @@ class InspectionRecordsCreate(BaseModel):
     damage_description: Optional[str] = Field(None, description="病害描述")
     image_url: Optional[str] = Field(None, description="图片URL")
 
+    # 构件名称字段
+    component_name: Optional[str] = Field(None, description="构件名称", max_length=100)
+
 
 class InspectionRecordsUpdate(BaseModel):
     """检查记录更新模型"""
@@ -36,6 +39,9 @@ class InspectionRecordsUpdate(BaseModel):
     damage_location: Optional[str] = Field(None, description="病害位置")
     damage_description: Optional[str] = Field(None, description="病害描述")
     image_url: Optional[str] = Field(None, description="图片URL")
+
+    # 构件名称字段
+    component_name: Optional[str] = Field(None, description="构件名称", max_length=100)
 
 
 class PathValidationRequest(BaseModel):
@@ -126,6 +132,9 @@ class InspectionRecordsResponse(BaseModel):
 
     # 表单信息
     form_options: Optional[FormOptionsResponse] = None
+
+    # 构件名称信息
+    component_name: Optional[str] = None
 
     class Config:
         from_attributes = True
