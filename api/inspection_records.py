@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, Query, Form, File, UploadFile
 from sqlmodel import Session
 from typing import Optional
+from io import BytesIO
+from fastapi.responses import StreamingResponse
 
 from config.database import get_db
 from services.inspection_records import get_inspection_records_service
@@ -160,6 +162,24 @@ async def delete_inspection_records_by_path(
 
     except Exception as e:
         return bad_request(f"批量删除检查记录失败: {str(e)}")
+
+
+@router.get("/export", summary="导出检查记录为Excel")
+async def export_inspection_records(
+    session: Session = Depends(get_db), data: PathValidationRequest = Depends()
+):
+    service = get_inspection_records_service(session)
+    excel_bytes = service.export_template(data)
+    buffer = BytesIO(excel_bytes)
+
+    # 文件名
+    filename = "inspection_records_template.xlsx"
+
+    return StreamingResponse(
+        buffer,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
 
 
 @router.get("/{record_id}", summary="获取检查记录详情")
