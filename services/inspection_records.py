@@ -955,7 +955,7 @@ class InspectionRecordsService(
             ws_ref = wb.create_sheet(title="病害参考数据")
 
             # 写入列标题
-            headers = ["病害类型编码", "病害类型名称", "标度编码", "标度名称"]
+            headers = ["病害类型名称", "标度名称"]
             for col, header in enumerate(headers, 1):
                 cell = ws_ref.cell(row=1, column=col, value=header)
                 cell.font = Font(bold=True)
@@ -974,21 +974,12 @@ class InspectionRecordsService(
 
                 if scales:
                     for scale in scales:
-                        ws_ref.cell(row=row, column=1, value=damage_code)
-                        ws_ref.cell(row=row, column=2, value=damage_name)
-                        ws_ref.cell(row=row, column=3, value=scale.code)
-                        ws_ref.cell(row=row, column=4, value=scale.name)
+                        ws_ref.cell(row=row, column=1, value=damage_name)
+                        ws_ref.cell(row=row, column=2, value=scale.name)
                         row += 1
-                else:
-                    # 如果没有标度选项，只显示病害类型
-                    ws_ref.cell(row=row, column=1, value=damage_code)
-                    ws_ref.cell(row=row, column=2, value=damage_name)
-                    ws_ref.cell(row=row, column=3, value="")
-                    ws_ref.cell(row=row, column=4, value="")
-                    row += 1
 
             # 调整列宽
-            for col in range(1, 5):
+            for col in range(1, 3):
                 ws_ref.column_dimensions[
                     ws_ref.cell(row=1, column=col).column_letter
                 ].width = 20
@@ -1005,7 +996,7 @@ class InspectionRecordsService(
                 ["", ""],
                 ["1. 数据填写要求", ""],
                 ["• 构件名称：可自由填写，用于标识具体构件", ""],
-                ["• 病害类型：必须从'病害参考数据'表中选择对应的编码或名称", ""],
+                ["• 病害类型：必须从'病害参考数据'表中选择对应的名称", ""],
                 ["• 标度值：必须与病害类型匹配，参考'病害参考数据'表", ""],
                 ["• 病害位置：可自由填写，描述病害的具体位置", ""],
                 ["• 病害程度：可自由填写，描述病害的详细情况", ""],
