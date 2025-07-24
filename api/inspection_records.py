@@ -60,9 +60,9 @@ async def create_inspection_record(
     return success(result.model_dump(), "创建检查记录成功")
 
 
-@router.post("/form-options", summary="根据路径获取表单选项")
+@router.get("/form-options", summary="根据路径获取表单选项")
 async def get_form_options_by_path(
-    path_request: PathValidationRequest,
+    path_request: PathValidationRequest = Depends(),
     session: Session = Depends(get_db),
 ):
     """获取病害类型和对应的标度选项"""
@@ -113,9 +113,9 @@ async def get_inspection_records_list(
         return bad_request(f"查询检查记录列表失败: {str(e)}")
 
 
-@router.post("/damage-reference", summary="获取病害参考信息")
+@router.get("/damage-reference", summary="获取病害参考信息")
 async def get_damage_reference_info(
-    request: DamageReferenceRequest,
+    request: DamageReferenceRequest = Depends(),
     session: Session = Depends(get_db),
 ):
     """根据病害类型获取参考信息"""

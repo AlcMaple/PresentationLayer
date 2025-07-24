@@ -115,36 +115,6 @@ class FileUploadService:
         except Exception as e:
             return False, f"保存图片失败：{str(e)}", None
 
-    # def delete_image(self, image_url: str) -> tuple[bool, str]:
-    #     """
-    #     删除图片文件
-
-    #     Args:
-    #         image_url: 图片URL
-
-    #     Returns:
-    #         (是否成功, 消息)
-    #     """
-    #     try:
-    #         # 从URL提取文件名
-    #         if not image_url.startswith("/static/uploads/images/"):
-    #             return False, "无效的图片URL"
-
-    #         filename = image_url.replace("/static/uploads/images/", "")
-    #         file_path = os.path.join(self.image_upload_dir, filename)
-
-    #         # 检查文件是否存在
-    #         if not os.path.exists(file_path):
-    #             return False, "图片文件不存在"
-
-    #         # 删除文件
-    #         os.remove(file_path)
-
-    #         return True, "图片删除成功"
-
-    #     except Exception as e:
-    #         return False, f"删除图片失败：{str(e)}"
-
     def get_file_info(self, image_url: str) -> Optional[dict]:
         """
         获取文件信息
