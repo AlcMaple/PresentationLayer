@@ -95,6 +95,21 @@ async def get_damage_reference_info(
         return bad_request(f"获取病害参考信息失败: {str(e)}")
 
 
+@router.delete("/", summary="批量删除检查记录")
+async def delete_all_inspection_records(session: Session = Depends(get_db)):
+    """批量软删除所有检查记录"""
+    try:
+        service = get_inspection_records_service(session)
+        deleted_count = service.delete_all()
+
+        return success(
+            {"deleted_count": deleted_count}, f"成功删除 {deleted_count} 条检查记录"
+        )
+
+    except Exception as e:
+        return bad_request(f"批量删除检查记录失败: {str(e)}")
+
+
 @router.get("/{record_id}", summary="获取检查记录详情")
 async def get_inspection_record(
     record_id: int,

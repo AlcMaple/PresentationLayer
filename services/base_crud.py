@@ -1,6 +1,6 @@
 from typing import TypeVar, Generic, Type, Optional, List, Dict, Any
 from sqlmodel import SQLModel, Session, select, and_
-from sqlalchemy import func, desc, asc
+from sqlalchemy import func, desc, asc, update
 from abc import ABC
 from datetime import datetime
 from pydantic import BaseModel, Field
@@ -381,6 +381,49 @@ class BaseCRUDService(Generic[ModelType, CreateSchemaType, UpdateSchemaType], AB
         except Exception as e:
             print(f"级联删除时出错: {e}")
             pass
+
+    def delete_all(self, filters: Optional[Dict[str, Any]] = None) -> int:
+        """
+        批量软删除记录
+        Args:
+            filters: 删除条件过滤器，如果为None则删除所有记录
+        Returns:
+            删除的记录数量
+        Raises:
+            Exception: 删除失败
+        """
+        try:
+            # 构建更新条件
+            conditions = []
+
+            # 只删除活跃记录
+            if hasattr(self.model, "is_active"):
+                conditions.append(self.model.is_active == True)
+            else:
+                raise Exception(f"模型 {self.model.__name__} 不支持软删除")
+
+            # 添加过滤条件
+            if filters:
+                filter_conditions = self._build_filter_conditions(filters)
+                conditions.extend(filter_conditions)
+
+            # 更新
+            update_values = {"is_active": False}
+            if hasattr(self.model, "updated_at"):
+                update_values["updated_at"] = datetime.utcnow()
+
+            stmt = update(self.model).where(and_(*conditions)).values(**update_values)
+            result = self.session.execute(stmt)
+            affected_rows = result.rowcount
+
+            self.session.commit()
+
+            return affected_rows
+
+        except Exception as e:
+            self.session.rollback()
+            print(f"批量删除记录时出错: {e}")
+            raise Exception(f"批量删除失败: {str(e)}")
 
 
 def get_base_crud_service(
