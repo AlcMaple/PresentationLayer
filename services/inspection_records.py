@@ -412,8 +412,11 @@ class InspectionRecordsService(
 
         return details
 
-    def update(
-        self, record_id: int, update_data: InspectionRecordsUpdate
+    async def update(
+        self,
+        record_id: int,
+        update_data: InspectionRecordsUpdate,
+        image_file: Optional[UploadFile],
     ) -> InspectionRecordsResponse:
         """
         更新检查记录
@@ -492,6 +495,15 @@ class InspectionRecordsService(
                 existing_record.image_url = update_data.image_url
             if update_data.component_name is not None:
                 existing_record.component_name = update_data.component_name
+            if image_file and image_file.filename:
+                file_service = get_file_upload_service()
+                success, message, url = await file_service.save_image(image_file)
+
+                if not success:
+                    raise ValidationException(f"图片上传失败: {message}")
+
+            # 更新图片URL
+            existing_record.image_url = url
 
             # 更新时间
             existing_record.updated_at = datetime.now(timezone.utc)

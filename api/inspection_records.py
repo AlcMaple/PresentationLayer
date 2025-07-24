@@ -27,13 +27,13 @@ async def create_inspection_record(
     component_form_id: int = Form(..., description="构件形式ID"),
     damage_type_code: str = Form(..., description="病害类型编码"),
     scale_code: str = Form(..., description="标度编码"),
-    assessment_unit_id: Optional[int] = Form(..., description="评定单元ID"),
-    structure_id: Optional[int] = Form(..., description="结构类型ID"),
+    assessment_unit_id: int = Form(..., description="评定单元ID"),
+    structure_id: int = Form(..., description="结构类型ID"),
     damage_location: Optional[str] = Form(None, description="病害位置"),
     damage_description: Optional[str] = Form(None, description="病害程度"),
     component_name: Optional[str] = Form(None, description="构件名称"),
     # 文件上传
-    image: Optional[UploadFile] = File(None, description="病害图片"),
+    image: UploadFile = File(default=None, description="病害图片"),
     session: Session = Depends(get_db),
 ):
     """创建新的检查记录"""
@@ -183,20 +183,28 @@ async def get_inspection_record(
 @router.put("/{record_id}", summary="更新检查记录")
 async def update_inspection_record(
     record_id: int,
-    update_data: InspectionRecordsUpdate,
+    # 表单数据
+    damage_type_code: str = Form(None, description="病害类型编码"),
+    scale_code: str = Form(None, description="标度编码"),
+    damage_location: str = Form(None, description="病害位置"),
+    damage_description: str = Form(None, description="病害程度"),
+    component_name: str = Form(None, description="构件名称"),
+    # 文件上传
+    image: UploadFile = File(default=None, description="病害图片"),
     session: Session = Depends(get_db),
 ):
     """更新检查记录"""
-    try:
-        service = get_inspection_records_service(session)
-        result = service.update(record_id, update_data)
+    service = get_inspection_records_service(session)
+    update_data = InspectionRecordsUpdate(
+        damage_type_code=damage_type_code,
+        scale_code=scale_code,
+        damage_location=damage_location,
+        damage_description=damage_description,
+        component_name=component_name,
+    )
+    result = await service.update(record_id, update_data, image)
 
-        return success(result.model_dump(), "更新检查记录成功")
-
-    except (NotFoundException, ValidationException) as e:
-        return bad_request(str(e))
-    except Exception as e:
-        return bad_request(f"更新检查记录失败: {str(e)}")
+    return success(result.model_dump(), "更新检查记录成功")
 
 
 @router.delete("/{record_id}", summary="删除检查记录")
