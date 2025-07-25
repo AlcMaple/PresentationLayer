@@ -870,7 +870,7 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
             all_options = self.get_options()
             reference_data = get_reference_data(all_options)
 
-            # 创建匹配函数的包装器，传入session
+            # 匹配函数包装器
             def match_func(
                 input_name: str, ref_key: str, ref_data: Dict[str, Dict[str, str]]
             ) -> Dict[str, Any]:

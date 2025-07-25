@@ -184,7 +184,13 @@ async def export_inspection_records(
 
 @router.post("/import", summary="导入检查记录 Excel")
 async def import_inspection_records_excel(
-    path_request: PathValidationRequest,
+    category_id: int = Form(..., description="桥梁类别ID"),
+    bridge_type_id: int = Form(..., description="桥梁类型ID"),
+    part_id: int = Form(..., description="部位ID"),
+    component_type_id: int = Form(..., description="部件类型ID"),
+    component_form_id: int = Form(..., description="构件形式ID"),
+    assessment_unit_id: int = Form(..., description="评定单元ID"),
+    structure_id: int = Form(..., description="结构类型ID"),
     file: UploadFile = File(..., description="检查记录 Excel 文件"),
     session: Session = Depends(get_db),
 ):
@@ -197,9 +203,20 @@ async def import_inspection_records_excel(
     # 读取 Excel 文件内容
     file_content = await file.read()
 
+    # 表单数据
+    form_data = PathValidationRequest(
+        category_id=category_id,
+        assessment_unit_id=assessment_unit_id,
+        bridge_type_id=bridge_type_id,
+        part_id=part_id,
+        structure_id=structure_id,
+        component_type_id=component_type_id,
+        component_form_id=component_form_id,
+    )
+
     service = get_inspection_records_service(session)
     import_result = await service.import_from_excel(
-        file_content, path_request, file.filename
+        file_content, form_data, file.filename
     )
     return success(import_result, "导入检查记录成功")
 

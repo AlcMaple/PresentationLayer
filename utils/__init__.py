@@ -16,6 +16,10 @@ from .base import (
     match_scale_name_to_code,
     parse_range_value,
     get_id_by_code,
+    get_damage_type_id_by_name,
+    get_scale_id_by_value,
+    get_damage_code_by_id,
+    get_scale_code_by_id,
 )
 
 __all__ = [
@@ -32,4 +36,8 @@ __all__ = [
     "match_scale_name_to_code",
     "parse_range_value",
     "get_id_by_code",
+    "get_damage_type_id_by_name",
+    "get_scale_id_by_value",
+    "get_damage_code_by_id",
+    "get_scale_code_by_id",
 ]

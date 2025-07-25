@@ -1,7 +1,7 @@
 from typing import Optional, Dict, Any
 from sqlmodel import Session, select, and_
 
-from models import BridgeScales
+from models import BridgeScales, BridgeDiseases
 from models.enums import ScalesType
 
 
@@ -206,6 +206,47 @@ def get_id_by_code(model_class, code: str, session: Session) -> Optional[int]:
         stmt = select(model_class.id).where(
             and_(model_class.code == code, model_class.is_active == True)
         )
+        return session.exec(stmt).first()
+    except:
+        return None
+
+
+def get_damage_type_id_by_name(name: str, session: Session) -> Optional[int]:
+    """通过病害类型名称获取ID"""
+    try:
+        stmt = select(BridgeDiseases.id).where(
+            and_(BridgeDiseases.name == name, BridgeDiseases.is_active == True)
+        )
+        return session.exec(stmt).first()
+    except:
+        return None
+
+
+def get_scale_id_by_value(value_str: str, session: Session) -> Optional[int]:
+    """通过标度值获取ID"""
+    match_result = match_scale_name_to_code(value_str, session)
+
+    if match_result.get("matched"):
+        # 通过编码获取ID
+        scale_code = match_result["code"]
+        return get_id_by_code(BridgeScales, scale_code, session)
+
+    return None
+
+
+def get_damage_code_by_id(damage_id: int, session: Session) -> Optional[str]:
+    """通过病害ID获取编码"""
+    try:
+        stmt = select(BridgeDiseases.code).where(BridgeDiseases.id == damage_id)
+        return session.exec(stmt).first()
+    except:
+        return None
+
+
+def get_scale_code_by_id(scale_id: int, session: Session) -> Optional[str]:
+    """通过标度ID获取编码"""
+    try:
+        stmt = select(BridgeScales.code).where(BridgeScales.id == scale_id)
         return session.exec(stmt).first()
     except:
         return None

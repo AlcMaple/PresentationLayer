@@ -6,6 +6,7 @@ from openpyxl.styles import Font, PatternFill
 from io import BytesIO
 from fastapi import UploadFile
 import traceback
+import pandas as pd
 
 from services.file_upload import get_file_upload_service
 from models import (
@@ -37,7 +38,13 @@ from schemas.inspection_records import (
 )
 from services.base_crud import BaseCRUDService, PageParams
 from exceptions import ValidationException, NotFoundException, SystemException
-from utils import get_id_by_code
+from utils import (
+    get_id_by_code,
+    get_damage_type_id_by_name,
+    get_scale_id_by_value,
+    get_damage_code_by_id,
+    get_scale_code_by_id,
+)
 
 
 class InspectionRecordsService(
@@ -1030,7 +1037,7 @@ class InspectionRecordsService(
         except Exception as e:
             print(f"创建使用说明工作表时出错: {e}")
 
-    def import_from_excel(
+    async def import_from_excel(
         self, file_content: bytes, path_request: PathValidationRequest, filename: str
     ) -> Dict[str, Any]:
         """
@@ -1049,7 +1056,130 @@ class InspectionRecordsService(
             if not self._validate_path_exists(path_request):
                 raise ValidationException("指定的路径组合在系统中不存在")
 
-            pass
+            # 读取Excel文件
+            buffer = BytesIO(file_content)
+            df = pd.read_excel(buffer, sheet_name="检查记录数据", header=0)
+            df = df.iloc[1:].reset_index(drop=True)  # 去除说明行
+
+            # 删除空白行
+            df = df.dropna(how="all").reset_index(drop=True)
+
+            print(f"读取到 {len(df)} 行数据")
+
+            if len(df) == 0:
+                return {
+                    "message": "Excel文件中没有数据",
+                    "imported_count": 0,
+                    "failed_count": 0,
+                    "total_rows": 0,
+                    "errors": [],
+                }
+
+            # 验证表头
+            expected_columns = [
+                "构件名称",
+                "病害类型",
+                "标度值",
+                "病害位置",
+                "病害程度",
+            ]
+            if list(df.columns[:5]) != expected_columns:
+                raise ValidationException("Excel文件表头格式不正确")
+
+            # 逐行验证和处理数据
+            imported_count = 0
+            errors = []
+
+            for index, row in df.iterrows():
+                row_number = index + 3
+
+                try:
+                    # 验证病害类型和标度值
+                    damage_type_name = str(row.get("病害类型", "")).strip()
+                    scale_value_str = str(row.get("标度值", "")).strip()
+
+                    if not damage_type_name or damage_type_name == "nan":
+                        errors.append({"row": row_number, "error": "病害类型不能为空"})
+                        continue
+
+                    if not scale_value_str or scale_value_str == "nan":
+                        errors.append({"row": row_number, "error": "标度值不能为空"})
+                        continue
+
+                    # 通过病害类型名称查找ID
+                    damage_type_id = get_damage_type_id_by_name(
+                        damage_type_name, self.session
+                    )
+                    if not damage_type_id:
+                        errors.append(
+                            {
+                                "row": row_number,
+                                "error": f"找不到病害类型: {damage_type_name}",
+                            }
+                        )
+                        continue
+
+                    # 通过标度值查找ID
+                    scale_id = get_scale_id_by_value(scale_value_str, self.session)
+                    if not scale_id:
+                        errors.append(
+                            {
+                                "row": row_number,
+                                "error": f"找不到标度值: {scale_value_str}",
+                            }
+                        )
+                        continue
+
+                    # 验证病害类型和标度的组合是否有效
+                    if not self._validate_damage_scale_combination(
+                        path_request,
+                        get_damage_code_by_id(damage_type_id, self.session),
+                        get_scale_code_by_id(scale_id, self.session),
+                    ):
+                        errors.append(
+                            {
+                                "row": row_number,
+                                "error": f"病害类型 {damage_type_name} 和标度值 {scale_value_str} 的组合无效",
+                            }
+                        )
+                        continue
+
+                    # 创建检查记录
+                    inspection_record = InspectionRecords(
+                        category_id=path_request.category_id,
+                        assessment_unit_id=path_request.assessment_unit_id,
+                        bridge_type_id=path_request.bridge_type_id,
+                        part_id=path_request.part_id,
+                        structure_id=path_request.structure_id,
+                        component_type_id=path_request.component_type_id,
+                        component_form_id=path_request.component_form_id,
+                        damage_type_id=damage_type_id,
+                        scale_id=scale_id,
+                        component_name=str(row.get("构件名称", "")).strip() or None,
+                        damage_location=str(row.get("病害位置", "")).strip() or None,
+                        damage_description=str(row.get("病害程度", "")).strip() or None,
+                    )
+
+                    self.session.add(inspection_record)
+                    self.session.commit()
+                    imported_count += 1
+                except Exception as e:
+                    errors.append({"row": row_number, "error": f"处理失败: {str(e)}"})
+
+            failed_count = len(errors)
+            message = (
+                f"导入完成，共导入 {imported_count} 条记录，失败 {failed_count} 条"
+            )
+
+            return {
+                "message": message,
+                "imported_count": imported_count,
+                "failed_count": failed_count,
+                "total_rows": len(df),
+                "errors": errors,
+            }
+        except ValidationException:
+            raise
         except Exception as e:
             print(f"导入检查记录数据时出错: {e}")
             traceback.print_exc()

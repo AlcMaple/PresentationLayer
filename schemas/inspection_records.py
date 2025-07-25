@@ -8,10 +8,10 @@ class InspectionRecordsCreate(BaseModel):
 
     # 前7层路径字段
     category_id: int = Field(..., description="桥梁ID")
-    assessment_unit_id: Optional[int] = Field(None, description="评定单元ID")
+    assessment_unit_id: int = Field(None, description="评定单元ID")
     bridge_type_id: int = Field(..., description="桥梁类型ID")
     part_id: int = Field(..., description="部位ID")
-    structure_id: Optional[int] = Field(..., description="结构类型ID")
+    structure_id: int = Field(..., description="结构类型ID")
     component_type_id: int = Field(..., description="部件类型ID")
     component_form_id: int = Field(..., description="构件形式ID")
 
