@@ -5,6 +5,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 from io import BytesIO
 from fastapi import UploadFile
+import traceback
 
 from services.file_upload import get_file_upload_service
 from models import (
@@ -682,8 +683,6 @@ class InspectionRecordsService(
 
         except Exception as e:
             print(f"获取表单选项时出错: {e}")
-            import traceback
-
             traceback.print_exc()
             return FormOptionsResponse(damage_types=[], scales_by_damage={})
 
@@ -859,8 +858,6 @@ class InspectionRecordsService(
 
         except Exception as e:
             print(f"获取病害参考信息时出错: {e}")
-            import traceback
-
             traceback.print_exc()
             return DamageDetailInfo(
                 damage_type_code=request.damage_type_code,
@@ -944,8 +941,6 @@ class InspectionRecordsService(
             raise
         except Exception as e:
             print(f"导出检查记录模板时出错: {e}")
-            import traceback
-
             traceback.print_exc()
             raise Exception(f"导出模板失败: {str(e)}")
 
@@ -1034,6 +1029,31 @@ class InspectionRecordsService(
 
         except Exception as e:
             print(f"创建使用说明工作表时出错: {e}")
+
+    def import_from_excel(
+        self, file_content: bytes, path_request: PathValidationRequest, filename: str
+    ) -> Dict[str, Any]:
+        """
+        从 Excel 文件中导入记录数据
+
+        Args:
+            file_content: Excel 文件内容
+            path_request: 路径验证请求
+            filename: 文件名
+
+        Returns:
+            导入结果报告
+        """
+        try:
+            # 验证路径是否存在
+            if not self._validate_path_exists(path_request):
+                raise ValidationException("指定的路径组合在系统中不存在")
+
+            pass
+        except Exception as e:
+            print(f"导入检查记录数据时出错: {e}")
+            traceback.print_exc()
+            raise Exception(f"导入检查记录数据失败: {str(e)}")
 
 
 def get_inspection_records_service(session: Session) -> InspectionRecordsService:

@@ -182,6 +182,28 @@ async def export_inspection_records(
     )
 
 
+@router.post("/import", summary="导入检查记录 Excel")
+async def import_inspection_records_excel(
+    path_request: PathValidationRequest,
+    file: UploadFile = File(..., description="检查记录 Excel 文件"),
+    session: Session = Depends(get_db),
+):
+    """
+    导入检查记录 Excel
+    """
+    if not file.filename.endswith((".xlsx", ".xls")):
+        return bad_request("文件类型错误，请上传Excel文件(.xlsx或.xls格式)")
+
+    # 读取 Excel 文件内容
+    file_content = await file.read()
+
+    service = get_inspection_records_service(session)
+    import_result = await service.import_from_excel(
+        file_content, path_request, file.filename
+    )
+    return success(import_result, "导入检查记录成功")
+
+
 @router.get("/{record_id}", summary="获取检查记录详情")
 async def get_inspection_record(
     record_id: int,

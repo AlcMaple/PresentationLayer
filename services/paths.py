@@ -965,8 +965,6 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
 
         except Exception as e:
             print(f"导入Excel数据时出错: {e}")
-            import traceback
-
             traceback.print_exc()
             raise Exception(f"文件处理失败: {str(e)}")
 
