@@ -16,6 +16,7 @@ from models import (
     AssessmentUnit,
     Paths,
     InspectionRecords,
+    Scores,
 )
 
 # 数据库引擎
