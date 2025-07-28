@@ -2,7 +2,7 @@ from typing import Optional, Dict, Any
 from sqlmodel import Session, select, and_
 
 from models import BridgeScales, BridgeDiseases
-from models.enums import ScalesType
+from models.enums import ScalesType, Rating
 
 
 def get_reference_data(all_options: Dict[str, Any]) -> Dict[str, Dict[str, str]]:
@@ -250,3 +250,20 @@ def get_scale_code_by_id(scale_id: int, session: Session) -> Optional[str]:
         return session.exec(stmt).first()
     except:
         return None
+
+
+def get_rating_by_score(score: float) -> Optional[Rating]:
+    """通过分数获取评级"""
+    if not 0 <= score <= 100:
+        return None
+
+    if score >= Rating.LEVEL_1.get_min_score:
+        return Rating.LEVEL_1
+    elif score >= Rating.LEVEL_2.get_min_score:
+        return Rating.LEVEL_2
+    elif score >= Rating.LEVEL_3.get_min_score:
+        return Rating.LEVEL_3
+    elif score >= Rating.LEVEL_4.get_min_score:
+        return Rating.LEVEL_4
+    else:
+        return Rating.LEVEL_5

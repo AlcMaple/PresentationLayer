@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Optional
 
 
 class ScalesType(str, Enum):
@@ -27,3 +28,25 @@ class CodePrefix(str, Enum):
     ASSESSMENT_UNITS = "AU"
     SCORES = "SCR"
     WEIGHT_REFERENCES = "WR"
+
+
+class Rating(Enum):
+    """评定等级枚举"""
+
+    LEVEL_1 = ("1类", 95, 100)  # (评定等级, 最低分, 最高分)
+    LEVEL_2 = ("2类", 80, 95)
+    LEVEL_3 = ("3类", 60, 80)
+    LEVEL_4 = ("4类", 40, 60)
+    LEVEL_5 = ("5类", 0, 40)
+
+    @property
+    def get_name(self) -> str:
+        return self.value[0]
+
+    @property
+    def get_min_score(self) -> int:
+        return self.value[1]
+
+    @property
+    def get_max_score(self) -> int:
+        return self.value[2]
