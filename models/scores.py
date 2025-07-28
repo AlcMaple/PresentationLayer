@@ -21,6 +21,9 @@ class Scores(BaseModel, table=True):
     )
     bridge_type_id: int = Field(foreign_key="bridge_types.id", description="桥梁类型ID")
     part_id: int = Field(foreign_key="bridge_parts.id", description="部位ID")
+    structure_id: Optional[int] = Field(
+        default=None, foreign_key="bridge_structures.id", description="结构类型ID"
+    )
     component_type_id: int = Field(
         foreign_key="bridge_component_types.id", description="部件类型ID"
     )
@@ -71,6 +74,7 @@ class Scores(BaseModel, table=True):
         Index("idx_scores_category", "category_id"),
         Index("idx_scores_bridge_type", "bridge_type_id"),
         Index("idx_scores_part", "part_id"),
+        Index("idx_scores_structure", "structure_id"),
         Index("idx_scores_component_type", "component_type_id"),
         Index("idx_scores_active", "is_active"),
         # 按桥梁分组
@@ -87,6 +91,7 @@ class Scores(BaseModel, table=True):
             "assessment_unit_id",
             "bridge_type_id",
             "part_id",
+            "structure_id",
             "component_type_id",
         ),
     )
