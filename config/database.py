@@ -17,6 +17,7 @@ from models import (
     Paths,
     InspectionRecords,
     Scores,
+    WeightReferences,
 )
 
 # 数据库引擎

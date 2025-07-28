@@ -16,6 +16,7 @@ from .paths import Paths
 from .assessment_units import AssessmentUnit
 from .inspection_records import InspectionRecords
 from .scores import Scores
+from .weight_references import WeightReferences
 
 __all__ = [
     "BaseModel",
@@ -34,4 +35,5 @@ __all__ = [
     "AssessmentUnit",
     "InspectionRecords",
     "Scores",
+    "WeightReferences",
 ]

@@ -25,3 +25,5 @@ class CodePrefix(str, Enum):
     BRIDGE_QUANTITIES = "BQT"
     PATHS = "P"
     ASSESSMENT_UNITS = "AU"
+    SCORES = "SCR"
+    WEIGHT_REFERENCES = "WR"
