@@ -17,7 +17,7 @@ from .assessment_units import AssessmentUnit
 from .inspection_records import InspectionRecords
 from .scores import Scores
 from .weight_references import WeightReferences
-from .users_paths import UserPaths
+from .user_paths import UserPaths
 
 __all__ = [
     "BaseModel",
