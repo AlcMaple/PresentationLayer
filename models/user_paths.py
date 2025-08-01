@@ -15,7 +15,7 @@ class UserPaths(BaseModel, table=True):
     user_id: Optional[int] = Field(
         default=None, description="创建该路径的用户ID, 为空时代表管理员创建的公共路径"
     )
-    instance_name: str = Field(
+    bridge_instance_name: str = Field(
         max_length=200, description="用户定义的实例名称, 例如: G65高速K123特大桥"
     )
     assessment_unit_instance_name: Optional[str] = Field(
@@ -39,14 +39,6 @@ class UserPaths(BaseModel, table=True):
     )
     component_form_id: Optional[int] = Field(
         default=None, foreign_key="bridge_component_forms.id", description="构件形式ID"
-    )
-    disease_id: int = Field(foreign_key="bridge_diseases.id", description="病害类型ID")
-    scale_id: int = Field(foreign_key="bridge_scales.id", description="标度ID")
-    quality_id: Optional[int] = Field(
-        default=None, foreign_key="bridge_qualities.id", description="定性描述ID"
-    )
-    quantity_id: Optional[int] = Field(
-        default=None, foreign_key="bridge_quantities.id", description="定量描述ID"
     )
 
     # 关联的基础路径ID
