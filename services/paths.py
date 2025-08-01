@@ -121,6 +121,9 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
 
         for field_name, model_class, prefix in field_mappings:
             field_id = getattr(path_result, field_name, None)
+
+            # 返回各个字段对应的 id
+            related_data[field_name] = field_id
             if field_id:
                 try:
                     # 标度表处理

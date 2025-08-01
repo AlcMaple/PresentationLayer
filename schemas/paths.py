@@ -79,26 +79,49 @@ class PathsResponse(PathsBase):
     """路径响应模型"""
 
     id: int = Field(description="路径ID")
+
+    # 关联字段
+    category_id: Optional[int] = None
     category_code: Optional[str] = None
     category_name: Optional[str] = None
+
+    assessment_unit_id: Optional[int] = None
     assessment_unit_code: Optional[str] = None
     assessment_unit_name: Optional[str] = None
+
+    bridge_type_id: Optional[int] = None
     bridge_type_code: Optional[str] = None
     bridge_type_name: Optional[str] = None
+
+    part_id: Optional[int] = None
     part_code: Optional[str] = None
     part_name: Optional[str] = None
+
+    structure_id: Optional[int] = None
     structure_code: Optional[str] = None
     structure_name: Optional[str] = None
+
+    component_type_id: Optional[int] = None
     component_type_code: Optional[str] = None
     component_type_name: Optional[str] = None
+
+    component_form_id: Optional[int] = None
     component_form_code: Optional[str] = None
     component_form_name: Optional[str] = None
+
+    disease_id: Optional[int] = None
     disease_code: Optional[str] = None
     disease_name: Optional[str] = None
+
+    scale_id: Optional[int] = None
     scale_code: Optional[str] = None
     scale_name: Optional[str] = None
+
+    quality_id: Optional[int] = None
     quality_code: Optional[str] = None
     quality_name: Optional[str] = None
+
+    quantity_id: Optional[int] = None
     quantity_code: Optional[str] = None
     quantity_name: Optional[str] = None
 

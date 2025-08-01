@@ -50,7 +50,7 @@ class UserPaths(BaseModel, table=True):
     __table_args__ = (
         Index("idx_user_paths_user_id", "user_id"),
         Index("idx_user_paths_user_active", "user_id", "is_active"),
-        Index("idx_user_paths_instance_name", "instance_name"),
+        Index("idx_user_paths_bridge_instance_name", "bridge_instance_name"),
         Index("idx_user_paths_paths_id", "paths_id"),
         Index("idx_user_paths_active", "is_active"),
         # 业务查询索引

@@ -41,27 +41,13 @@ class UserPathsUpdate(BaseModel):
         None, max_length=200, description="评定单元实例名称"
     )
 
-    @model_validator(mode="after")
-    @classmethod
-    def check_required_fields(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """检查必填字段"""
-        required_fields = [
-            "category_id",
-            "bridge_type_id",
-            "part_id",
-        ]
-        for field in required_fields:
-            if values.get(field) is None:
-                raise ValueError(f"{field}字段不能为空")
-        return values
-
 
 class UserPathsResponse(BaseModel):
     """用户路径响应模型"""
 
     id: int
     user_id: Optional[int]
-    instance_name: str
+    bridge_instance_name: str
     assessment_unit_instance_name: Optional[str]
 
     # 基础路径字段
@@ -95,8 +81,8 @@ class UserPathsResponse(BaseModel):
 class CascadeOptionsRequest(BaseModel):
     """级联选项请求模型"""
 
-    bridge_type_id: int = Field(..., description="桥梁类型ID")
-    part_id: int = Field(..., description="部位ID")
+    bridge_type_id: Optional[int] = Field(None, description="桥梁类型ID")
+    part_id: Optional[int] = Field(None, description="部位ID")
     structure_id: Optional[int] = Field(None, description="结构类型ID")
     component_type_id: Optional[int] = Field(None, description="部件类型ID")
     component_form_id: Optional[int] = Field(None, description="构件形式ID")

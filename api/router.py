@@ -13,6 +13,7 @@ from .bridge_quantities import router as bridge_quantities_router
 from .bridge_scales import router as bridge_scales_router
 from .paths import router as paths_router
 from .inspection_records import router as inspection_records_router
+from .user_paths import router as user_paths_router
 
 router = APIRouter()
 router.include_router(categories_router)
@@ -26,7 +27,8 @@ router.include_router(bridge_diseases_router)
 router.include_router(bridge_qualities_router)
 router.include_router(bridge_quantities_router)
 router.include_router(bridge_scales_router)
+router.include_router(paths_router)
 
 router_paths = APIRouter()
-router_paths.include_router(paths_router)
 router_paths.include_router(inspection_records_router)
+router_paths.include_router(user_paths_router)
