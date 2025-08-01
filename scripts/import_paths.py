@@ -137,7 +137,7 @@ class PathImporter:
 
     def get_id_by_name(self, table_type: str, name: str) -> Optional[int]:
         """通过名称获取ID"""
-        if name == "-" or name is None or name == "":
+        if name is None or name == "":
             return None
         return self.name_to_id_cache[table_type].get(name)
 
@@ -316,7 +316,6 @@ class PathImporter:
                             self.get_id_by_name("qualities", qualitative_desc)
                             if qualitative_desc
                             and qualitative_desc.strip()
-                            and qualitative_desc != "-"
                             else None
                         )
 
@@ -327,7 +326,6 @@ class PathImporter:
                             self.get_id_by_name("quantities", quantitative_desc)
                             if quantitative_desc
                             and quantitative_desc.strip()
-                            and quantitative_desc != "-"
                             else None
                         )
 
