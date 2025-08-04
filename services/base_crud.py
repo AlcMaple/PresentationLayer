@@ -288,9 +288,9 @@ class BaseCRUDService(Generic[ModelType, CreateSchemaType, UpdateSchemaType], AB
                     db_obj.updated_at = datetime.utcnow()
                 self.session.commit()
 
-                # 级联删除paths表中的相关记录
-                if cascade and self._should_cascade_delete():
-                    self._perform_cascade_delete(id)
+                # # 级联删除paths表中的相关记录
+                # if cascade and self._should_cascade_delete():
+                #     self._perform_cascade_delete(id)
             else:
                 self.session.delete(db_obj)
                 self.session.commit()
