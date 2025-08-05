@@ -309,11 +309,6 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
                     "未找到匹配的基础路径，请检查选择的路径组合是否正确"
                 )
 
-            # 检查实例名称是否重复
-            self._check_instance_name_duplicate(
-                obj_in.bridge_instance_name, obj_in.user_id
-            )
-
             # 创建用户路径记录
             user_path = UserPaths(
                 user_id=obj_in.user_id,
@@ -402,34 +397,6 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
         except Exception as e:
             print(f"获取默认ID时出错 {model_class.__name__}: {e}")
             return None
-
-    def _check_instance_name_duplicate(
-        self, instance_name: str, user_id: Optional[int]
-    ):
-        """检查实例名称是否重复"""
-        try:
-            conditions = [
-                UserPaths.bridge_instance_name == instance_name,
-                UserPaths.is_active == True,
-            ]
-
-            # 根据用户 id 来检查记录
-            if user_id is not None:
-                conditions.append(UserPaths.user_id == user_id)
-            else:
-                # 管理员
-                conditions.append(UserPaths.user_id.is_(None))
-
-            stmt = select(UserPaths.id).where(and_(*conditions)).limit(1)
-            existing = self.session.exec(stmt).first()
-
-            if existing:
-                raise ValidationException(f"实例名称 '{instance_name}' 已存在")
-
-        except ValidationException:
-            raise
-        except Exception as e:
-            print(f"检查实例名称重复时出错: {e}")
 
     def _get_user_path_with_details(self, user_path_id: int) -> UserPathsResponse:
         """获取包含详细信息的用户路径"""
@@ -529,14 +496,6 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
             # 获取更新数据
             update_data = obj_in.model_dump(exclude_unset=True)
 
-            # 检查实例名称重复
-            if "bridge_instance_name" in update_data:
-                new_instance_name = update_data["bridge_instance_name"]
-                if new_instance_name != existing_user_path.bridge_instance_name:
-                    self._check_instance_name_duplicate_for_update(
-                        new_instance_name, existing_user_path.user_id, user_path_id
-                    )
-
             # 检查是否需要重新查找基础路径ID
             path_fields_changed = any(
                 field in update_data
@@ -610,34 +569,6 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
         except Exception as e:
             self.session.rollback()
             raise Exception(f"更新用户路径失败: {str(e)}")
-
-    def _check_instance_name_duplicate_for_update(
-        self, instance_name: str, user_id: Optional[int], exclude_id: int
-    ):
-        """检查更新时实例名称是否重复"""
-        try:
-            conditions = [
-                UserPaths.bridge_instance_name == instance_name,
-                UserPaths.is_active == True,
-                UserPaths.id != exclude_id,  # 排除当前记录
-            ]
-
-            # 根据用户 id 来检查记录
-            if user_id is not None:
-                conditions.append(UserPaths.user_id == user_id)
-            else:
-                conditions.append(UserPaths.user_id.is_(None))
-
-            stmt = select(UserPaths.id).where(and_(*conditions)).limit(1)
-            existing = self.session.exec(stmt).first()
-
-            if existing:
-                raise ValidationException(f"实例名称 '{instance_name}' 已存在")
-
-        except ValidationException:
-            raise
-        except Exception as e:
-            print(f"检查实例名称重复时出错: {e}")
 
 
 def get_user_paths_service(session: Session) -> UserPathsService:
