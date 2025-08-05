@@ -69,3 +69,15 @@ async def update_user_path(
     result = service.update(user_path_id, user_path_data)
 
     return success(result.model_dump(), "更新用户路径成功")
+
+
+@router.delete("/{user_path_id}", summary="删除用户路径")
+async def delete_user_path(
+    user_path_id: int,
+    session: Session = Depends(get_db),
+):
+    """删除用户路径"""
+    service = get_user_paths_service(session)
+    result = service.delete(user_path_id)
+
+    return success(result, "删除用户路径成功")

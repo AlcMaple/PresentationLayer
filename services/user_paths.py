@@ -20,8 +20,10 @@ from schemas.user_paths import (
     CascadeOptionsRequest,
     CascadeOptionsResponse,
 )
+from schemas.inspection_records import PathValidationRequest
 from services.base_crud import BaseCRUDService, PageParams
 from exceptions import NotFoundException, ValidationException
+from services.inspection_records import get_inspection_records_service
 
 
 class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpdate]):
@@ -569,6 +571,87 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
         except Exception as e:
             self.session.rollback()
             raise Exception(f"更新用户路径失败: {str(e)}")
+
+    def delete(self, user_path_id: int) -> bool:
+        """
+        删除用户路径
+
+        Args:
+            user_path_id: 用户路径ID
+
+        Returns:
+            删除是否成功
+
+        Raises:
+            NotFoundException: 用户路径不存在
+            Exception: 删除失败
+        """
+        try:
+            # 查询用户路径记录
+            existing_user_path = self.get_by_id(user_path_id)
+            if not existing_user_path:
+                raise NotFoundException(
+                    resource="UserPaths", identifier=str(user_path_id)
+                )
+
+            # 级联删除检查记录
+            path_request = PathValidationRequest(
+                user_id=existing_user_path.user_id,
+                bridge_instance_name=existing_user_path.bridge_instance_name,
+                assessment_unit_instance_name=existing_user_path.assessment_unit_instance_name,
+                bridge_type_id=existing_user_path.bridge_type_id,
+                part_id=existing_user_path.part_id,
+                structure_id=existing_user_path.structure_id,
+                component_type_id=existing_user_path.component_type_id,
+                component_form_id=existing_user_path.component_form_id,
+            )
+            inspection_service = get_inspection_records_service(self.session)
+
+            # 删除条件
+            filters = {
+                "bridge_instance_name": path_request.bridge_instance_name,
+                "bridge_type_id": path_request.bridge_type_id,
+                "part_id": path_request.part_id,
+                "component_type_id": path_request.component_type_id,
+                "component_form_id": path_request.component_form_id,
+            }
+
+            # 用户ID过滤
+            if path_request.user_id is not None:
+                filters["user_id"] = path_request.user_id
+            else:
+                # user_id为空代表管理员创建的记录
+                filters["user_id"] = None
+
+            if path_request.assessment_unit_instance_name is not None:
+                filters["assessment_unit_instance_name"] = (
+                    path_request.assessment_unit_instance_name
+                )
+
+            if path_request.structure_id is not None:
+                filters["structure_id"] = path_request.structure_id
+
+            # 批量软删除检查记录
+            deleted_records_count = inspection_service.delete_all(filters)
+
+            # 软删除用户路径
+            existing_user_path.is_active = False
+            existing_user_path.updated_at = datetime.now(timezone.utc)
+
+            self.session.commit()
+
+            print(
+                f"成功删除用户路径 ID: {user_path_id}, 级联删除检查记录: {deleted_records_count} 条"
+            )
+
+            return True
+
+        except NotFoundException:
+            self.session.rollback()
+            raise
+        except Exception as e:
+            self.session.rollback()
+            raise Exception(f"删除用户路径失败: {str(e)}")
 
 
 def get_user_paths_service(session: Session) -> UserPathsService:

@@ -68,14 +68,10 @@ async def get_form_options_by_path(
     session: Session = Depends(get_db),
 ):
     """获取病害类型和对应的标度选项"""
-    try:
-        service = get_inspection_records_service(session)
-        options = service.get_form_options_by_path(path_request)
+    service = get_inspection_records_service(session)
+    options = service.get_form_options_by_path(path_request)
 
-        return success(options.model_dump(), "获取表单选项成功")
-
-    except Exception as e:
-        return bad_request(f"获取表单选项失败: {str(e)}")
+    return success(options.model_dump(), "获取表单选项成功")
 
 
 @router.get("", summary="分页查询检查记录")
@@ -142,14 +138,10 @@ async def get_damage_reference_info(
     session: Session = Depends(get_db),
 ):
     """根据病害类型获取参考信息"""
-    try:
-        service = get_inspection_records_service(session)
-        result = service.get_damage_reference_info(request)
+    service = get_inspection_records_service(session)
+    result = service.get_damage_reference_info(request)
 
-        return success(result.model_dump(), "获取病害参考信息成功")
-
-    except Exception as e:
-        return bad_request(f"获取病害参考信息失败: {str(e)}")
+    return success(result.model_dump(), "获取病害参考信息成功")
 
 
 @router.delete("", summary="按路径批量删除检查记录")
@@ -157,43 +149,39 @@ async def delete_inspection_records_by_path(
     path_request: PathValidationRequest, session: Session = Depends(get_db)
 ):
     """批量软删除检查记录"""
-    try:
-        service = get_inspection_records_service(session)
+    service = get_inspection_records_service(session)
 
-        # 过滤条件
-        filters = {
-            "bridge_instance_name": path_request.bridge_instance_name,
-            "bridge_type_id": path_request.bridge_type_id,
-            "part_id": path_request.part_id,
-            "component_type_id": path_request.component_type_id,
-            "component_form_id": path_request.component_form_id,
-        }
+    # 过滤条件
+    filters = {
+        "bridge_instance_name": path_request.bridge_instance_name,
+        "bridge_type_id": path_request.bridge_type_id,
+        "part_id": path_request.part_id,
+        "component_type_id": path_request.component_type_id,
+        "component_form_id": path_request.component_form_id,
+    }
 
-        # 添加用户ID过滤条件，防止删除其他用户的数据
-        if path_request.user_id is not None:
-            filters["user_id"] = path_request.user_id
-        else:
-            # user_id为空代表管理员创建的记录
-            filters["user_id"] = None
+    # 添加用户ID过滤条件，防止删除其他用户的数据
+    if path_request.user_id is not None:
+        filters["user_id"] = path_request.user_id
+    else:
+        # user_id为空代表管理员创建的记录
+        filters["user_id"] = None
 
-        if path_request.assessment_unit_instance_name is not None:
-            filters["assessment_unit_instance_name"] = (
-                path_request.assessment_unit_instance_name
-            )
-
-        if path_request.structure_id is not None:
-            filters["structure_id"] = path_request.structure_id
-
-        # 批量删除
-        deleted_count = service.delete_all(filters)
-
-        return success(
-            {"deleted_count": deleted_count},
-            f"成功删除 {deleted_count} 条检查记录",
+    if path_request.assessment_unit_instance_name is not None:
+        filters["assessment_unit_instance_name"] = (
+            path_request.assessment_unit_instance_name
         )
 
-    except Exception as e:
-        return bad_request(f"批量删除检查记录失败: {str(e)}")
+    if path_request.structure_id is not None:
+        filters["structure_id"] = path_request.structure_id
+
+    # 批量删除
+    deleted_count = service.delete_all(filters)
+
+    return success(
+        {"deleted_count": deleted_count},
+        f"成功删除 {deleted_count} 条检查记录",
+    )
 
 
 @router.get("/export", summary="导出检查记录为Excel")
@@ -260,14 +248,10 @@ async def get_inspection_records_filter_options(
     session: Session = Depends(get_db),
 ):
     """获取检查记录分页查询的过滤选项"""
-    try:
-        service = get_inspection_records_service(session)
-        options = service.get_filter_options()
+    service = get_inspection_records_service(session)
+    options = service.get_filter_options()
 
-        return success(options, "获取过滤选项成功")
-
-    except Exception as e:
-        return bad_request(f"获取过滤选项失败: {str(e)}")
+    return success(options, "获取过滤选项成功")
 
 
 @router.get("/{record_id}", summary="获取检查记录详情")
@@ -276,16 +260,10 @@ async def get_inspection_record(
     session: Session = Depends(get_db),
 ):
     """根据ID获取检查记录详情"""
-    try:
-        service = get_inspection_records_service(session)
-        result = service.get_record_with_details(record_id)
+    service = get_inspection_records_service(session)
+    result = service.get_record_with_details(record_id)
 
-        return success(result.model_dump(), "获取检查记录详情成功")
-
-    except NotFoundException as e:
-        return bad_request(str(e))
-    except Exception as e:
-        return bad_request(f"获取检查记录详情失败: {str(e)}")
+    return success(result.model_dump(), "获取检查记录详情成功")
 
 
 @router.put("/{record_id}", summary="更新检查记录")
@@ -318,18 +296,10 @@ async def update_inspection_record(
 @router.delete("/{record_id}", summary="删除检查记录")
 async def delete_inspection_record(record_id: int, session: Session = Depends(get_db)):
     """删除检查记录"""
-    try:
-        service = get_inspection_records_service(session)
-        success_flag = service.delete(record_id, cascade=False)
+    service = get_inspection_records_service(session)
+    success_flag = service.delete(record_id, cascade=False)
 
-        if not success_flag:
-            raise NotFoundException(
-                resource="InspectionRecords", identifier=str(record_id)
-            )
+    if not success_flag:
+        raise NotFoundException(resource="InspectionRecords", identifier=str(record_id))
 
-        return success(None, "删除检查记录成功")
-
-    except NotFoundException as e:
-        return bad_request(str(e))
-    except Exception as e:
-        return bad_request(f"删除检查记录失败: {str(e)}")
+    return success(None, "删除检查记录成功")
