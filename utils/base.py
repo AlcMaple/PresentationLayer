@@ -1,7 +1,7 @@
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from sqlmodel import Session, select, and_
 
-from models import BridgeScales, BridgeDiseases
+from models import BridgeScales, BridgeDiseases, Paths, AssessmentUnit
 from models.enums import ScalesType, Rating
 
 
@@ -267,3 +267,56 @@ def get_rating_by_score(score: float) -> Optional[Rating]:
         return Rating.LEVEL_4
     else:
         return Rating.LEVEL_5
+
+
+def get_assessment_units_by_category(
+    category_id: int, session: Session
+) -> List[Dict[str, Any]]:
+    """
+    获取指定类别下所有可用的评定单元列表
+
+    Args:
+        category_id: 桥梁类别ID
+        session: 数据库会话
+
+    Returns:
+        评定单元列表，包含id和name
+    """
+    try:
+
+        # 查询该类别下存在的评定单元ID
+        existing_ids_stmt = (
+            select(Paths.assessment_unit_id)
+            .where(
+                and_(
+                    Paths.category_id == category_id,
+                    Paths.assessment_unit_id.is_not(None),
+                    Paths.is_active == True,
+                )
+            )
+            .distinct()
+        )
+        existing_ids = session.exec(existing_ids_stmt).all()
+
+        if not existing_ids:
+            return []
+
+        # 查询评定单元详细信息
+        stmt = (
+            select(AssessmentUnit.id, AssessmentUnit.name)
+            .where(
+                and_(
+                    AssessmentUnit.id.in_(existing_ids),
+                    AssessmentUnit.is_active == True,
+                )
+            )
+            .order_by(AssessmentUnit.name)
+        )
+
+        results = session.exec(stmt).all()
+
+        return [{"id": r[0], "name": r[1]} for r in results]
+
+    except Exception as e:
+        print(f"获取评定单元列表时出错: {e}")
+        return []

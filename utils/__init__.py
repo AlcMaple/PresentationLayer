@@ -20,6 +20,7 @@ from .base import (
     get_scale_id_by_value,
     get_damage_code_by_id,
     get_scale_code_by_id,
+    get_assessment_units_by_category,
 )
 
 __all__ = [
@@ -40,4 +41,5 @@ __all__ = [
     "get_scale_id_by_value",
     "get_damage_code_by_id",
     "get_scale_code_by_id",
+    "get_assessment_units_by_category",
 ]

@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict, Any, Tuple
+from typing import List, Optional, Dict, Any
 from sqlmodel import Session, select, and_
 from datetime import datetime, timezone
 from openpyxl import Workbook
@@ -13,8 +13,6 @@ from models import (
     InspectionRecords,
     Paths,
     UserPaths,
-    Categories,
-    AssessmentUnit,
     BridgeTypes,
     BridgeParts,
     BridgeStructures,
@@ -58,7 +56,7 @@ class InspectionRecordsService(
 
     def _validate_path_exists(self, path_request: PathValidationRequest) -> bool:
         """
-        验证前7层路径是否在user_paths表中存在，并且验证用户权限
+        验证路径是否在user_paths表中存在
         """
         try:
             # 查询条件
@@ -84,11 +82,11 @@ class InspectionRecordsService(
             else:
                 conditions.append(UserPaths.structure_id.is_(None))
 
-            # 添加用户ID验证
+            # 用户ID验证
             if path_request.user_id is not None:
                 conditions.append(UserPaths.user_id == path_request.user_id)
             else:
-                # user_id为空代表管理员，可以访问所有路径（包括管理员创建的公共路径）
+                # user_id为空代表管理员
                 conditions.append(UserPaths.user_id.is_(None))
 
             stmt = select(UserPaths.id).where(and_(*conditions)).limit(1)
