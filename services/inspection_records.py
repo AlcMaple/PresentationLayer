@@ -12,6 +12,7 @@ from services.file_upload import get_file_upload_service
 from models import (
     InspectionRecords,
     Paths,
+    UserPaths,
     Categories,
     AssessmentUnit,
     BridgeTypes,
@@ -57,32 +58,40 @@ class InspectionRecordsService(
 
     def _validate_path_exists(self, path_request: PathValidationRequest) -> bool:
         """
-        验证前7层路径是否在paths表中存在
+        验证前7层路径是否在user_paths表中存在，并且验证用户权限
         """
         try:
             # 查询条件
             conditions = [
-                Paths.category_id == path_request.category_id,
-                Paths.bridge_type_id == path_request.bridge_type_id,
-                Paths.part_id == path_request.part_id,
-                Paths.component_type_id == path_request.component_type_id,
-                Paths.component_form_id == path_request.component_form_id,
-                Paths.is_active == True,
+                UserPaths.bridge_instance_name == path_request.bridge_instance_name,
+                UserPaths.bridge_type_id == path_request.bridge_type_id,
+                UserPaths.part_id == path_request.part_id,
+                UserPaths.component_type_id == path_request.component_type_id,
+                UserPaths.component_form_id == path_request.component_form_id,
+                UserPaths.is_active == True,
             ]
 
-            if path_request.assessment_unit_id:
+            if path_request.assessment_unit_instance_name:
                 conditions.append(
-                    Paths.assessment_unit_id == path_request.assessment_unit_id
+                    UserPaths.assessment_unit_instance_name
+                    == path_request.assessment_unit_instance_name
                 )
             else:
-                conditions.append(Paths.assessment_unit_id.is_(None))
+                conditions.append(UserPaths.assessment_unit_instance_name.is_(None))
 
             if path_request.structure_id:
-                conditions.append(Paths.structure_id == path_request.structure_id)
+                conditions.append(UserPaths.structure_id == path_request.structure_id)
             else:
-                conditions.append(Paths.structure_id.is_(None))
+                conditions.append(UserPaths.structure_id.is_(None))
 
-            stmt = select(Paths.id).where(and_(*conditions)).limit(1)
+            # 添加用户ID验证
+            if path_request.user_id is not None:
+                conditions.append(UserPaths.user_id == path_request.user_id)
+            else:
+                # user_id为空代表管理员，可以访问所有路径（包括管理员创建的公共路径）
+                conditions.append(UserPaths.user_id.is_(None))
+
+            stmt = select(UserPaths.id).where(and_(*conditions)).limit(1)
             result = self.session.exec(stmt).first()
 
             return result is not None
@@ -91,6 +100,53 @@ class InspectionRecordsService(
             print(f"验证路径时出错: {e}")
             return False
 
+    def _get_matching_user_path(
+        self, path_request: PathValidationRequest
+    ) -> Optional[UserPaths]:
+        """
+        获取匹配的用户路径记录
+        """
+        try:
+            conditions = [
+                # UserPaths.user_id == path_request.user_id,
+                UserPaths.bridge_instance_name == path_request.bridge_instance_name,
+                UserPaths.bridge_type_id == path_request.bridge_type_id,
+                UserPaths.part_id == path_request.part_id,
+                UserPaths.component_type_id == path_request.component_type_id,
+                UserPaths.component_form_id == path_request.component_form_id,
+                UserPaths.is_active == True,
+            ]
+
+            # 处理可选字段
+            if path_request.assessment_unit_instance_name:
+                conditions.append(
+                    UserPaths.assessment_unit_instance_name
+                    == path_request.assessment_unit_instance_name
+                )
+            else:
+                conditions.append(UserPaths.assessment_unit_instance_name.is_(None))
+
+            if path_request.structure_id:
+                conditions.append(UserPaths.structure_id == path_request.structure_id)
+            else:
+                conditions.append(UserPaths.structure_id.is_(None))
+
+            # 添加用户ID验证
+            if path_request.user_id is not None:
+                conditions.append(UserPaths.user_id == path_request.user_id)
+            else:
+                # user_id为空代表管理员，可以访问所有路径（包括管理员创建的公共路径）
+                conditions.append(UserPaths.user_id.is_(None))
+
+            stmt = select(UserPaths).where(and_(*conditions)).limit(1)
+            result = self.session.exec(stmt).first()
+
+            return result
+
+        except Exception as e:
+            print(f"获取匹配用户路径时出错: {e}")
+            return None
+
     def _validate_damage_scale_combination(
         self,
         path_request: PathValidationRequest,
@@ -98,9 +154,24 @@ class InspectionRecordsService(
         scale_code: str,
     ) -> bool:
         """
-        验证病害类型和标度的组合是否在paths表中存在
+        验证病害类型和标度的组合是否有效
+        通过 user_paths 关联的 paths_id 来验证
         """
         try:
+
+            # 获取匹配的 user_paths 记录
+            user_path = self._get_matching_user_path(path_request)
+            if not user_path:
+                return False
+
+            # 通过 user_paths 的 paths_id 查询对应的 paths 记录
+            paths_stmt = select(Paths).where(
+                and_(Paths.id == user_path.paths_id, Paths.is_active == True)
+            )
+            paths_record = self.session.exec(paths_stmt).first()
+            if not paths_record:
+                return False
+
             # 通过code获取ID
             damage_type_id = get_id_by_code(
                 BridgeDiseases, damage_type_code, self.session
@@ -110,29 +181,19 @@ class InspectionRecordsService(
             if not damage_type_id or not scale_id:
                 return False
 
-            # 查询条件
+            # 查询 paths 表中是否存在对应的病害和标度组合，基于 paths_record 的基础路径信息，加上病害和标度信息
             conditions = [
-                Paths.category_id == path_request.category_id,
-                Paths.bridge_type_id == path_request.bridge_type_id,
-                Paths.part_id == path_request.part_id,
-                Paths.component_type_id == path_request.component_type_id,
-                Paths.component_form_id == path_request.component_form_id,
+                Paths.category_id == user_path.category_id,
+                Paths.assessment_unit_id == user_path.assessment_unit_id,
+                Paths.bridge_type_id == user_path.bridge_type_id,
+                Paths.part_id == user_path.part_id,
+                Paths.structure_id == user_path.structure_id,
+                Paths.component_type_id == user_path.component_type_id,
+                Paths.component_form_id == user_path.component_form_id,
                 Paths.disease_id == damage_type_id,
                 Paths.scale_id == scale_id,
                 Paths.is_active == True,
             ]
-
-            if path_request.assessment_unit_id:
-                conditions.append(
-                    Paths.assessment_unit_id == path_request.assessment_unit_id
-                )
-            else:
-                conditions.append(Paths.assessment_unit_id.is_(None))
-
-            if path_request.structure_id:
-                conditions.append(Paths.structure_id == path_request.structure_id)
-            else:
-                conditions.append(Paths.structure_id.is_(None))
 
             stmt = select(Paths.id).where(and_(*conditions)).limit(1)
             result = self.session.exec(stmt).first()
@@ -152,8 +213,9 @@ class InspectionRecordsService(
         try:
             # 验证路径是否存在
             path_request = PathValidationRequest(
-                category_id=record_data.category_id,
-                assessment_unit_id=record_data.assessment_unit_id,
+                user_id=record_data.user_id,
+                bridge_instance_name=record_data.bridge_instance_name,
+                assessment_unit_instance_name=record_data.assessment_unit_instance_name,
                 bridge_type_id=record_data.bridge_type_id,
                 part_id=record_data.part_id,
                 structure_id=record_data.structure_id,
@@ -162,7 +224,7 @@ class InspectionRecordsService(
             )
 
             if not self._validate_path_exists(path_request):
-                raise ValidationException("指定的路径组合在系统中不存在")
+                raise ValidationException("指定的路径组合在系统中不存在 或者 用户没有创建路径数据")
 
             # 验证病害类型和标度的组合是否有效
             if not self._validate_damage_scale_combination(
@@ -198,8 +260,9 @@ class InspectionRecordsService(
 
             # 创建检查记录
             inspection_record = InspectionRecords(
-                category_id=record_data.category_id,
-                assessment_unit_id=record_data.assessment_unit_id,
+                user_id=record_data.user_id,
+                bridge_instance_name=record_data.bridge_instance_name,
+                assessment_unit_instance_name=record_data.assessment_unit_instance_name,
                 bridge_type_id=record_data.bridge_type_id,
                 part_id=record_data.part_id,
                 structure_id=record_data.structure_id,
@@ -254,8 +317,9 @@ class InspectionRecordsService(
 
             # 获取表单选项
             path_request = PathValidationRequest(
-                category_id=record.category_id,
-                assessment_unit_id=record.assessment_unit_id,
+                user_id=record.user_id,
+                bridge_instance_name=record.bridge_instance_name,
+                assessment_unit_instance_name=record.assessment_unit_instance_name,
                 bridge_type_id=record.bridge_type_id,
                 part_id=record.part_id,
                 structure_id=record.structure_id,
@@ -267,12 +331,9 @@ class InspectionRecordsService(
             # 构建响应
             return InspectionRecordsResponse(
                 id=record.id,
-                category_id=record.category_id,
-                category_code=details.get("category_code"),
-                category_name=details.get("category_name"),
-                assessment_unit_id=record.assessment_unit_id,
-                assessment_unit_code=details.get("assessment_unit_code"),
-                assessment_unit_name=details.get("assessment_unit_name"),
+                user_id=record.user_id,
+                bridge_instance_name=record.bridge_instance_name,
+                assessment_unit_instance_name=record.assessment_unit_instance_name,
                 bridge_type_id=record.bridge_type_id,
                 bridge_type_code=details.get("bridge_type_code"),
                 bridge_type_name=details.get("bridge_type_name"),
@@ -318,8 +379,6 @@ class InspectionRecordsService(
 
         # 定义查询映射
         field_mappings = [
-            ("category_id", Categories, "category"),
-            ("assessment_unit_id", AssessmentUnit, "assessment_unit"),
             ("bridge_type_id", BridgeTypes, "bridge_type"),
             ("part_id", BridgeParts, "part"),
             ("structure_id", BridgeStructures, "structure"),
@@ -441,8 +500,9 @@ class InspectionRecordsService(
             if update_data.damage_type_code or update_data.scale_code:
                 # 构建路径验证请求
                 path_request = PathValidationRequest(
-                    category_id=existing_record.category_id,
-                    assessment_unit_id=existing_record.assessment_unit_id,
+                    user_id=existing_record.user_id,
+                    bridge_instance_name=existing_record.bridge_instance_name,
+                    assessment_unit_instance_name=existing_record.assessment_unit_instance_name,
                     bridge_type_id=existing_record.bridge_type_id,
                     part_id=existing_record.part_id,
                     structure_id=existing_record.structure_id,
@@ -510,8 +570,8 @@ class InspectionRecordsService(
                 if not success:
                     raise ValidationException(f"图片上传失败: {message}")
 
-            # 更新图片URL
-            existing_record.image_url = url
+                # 更新图片URL
+                existing_record.image_url = url
 
             # 更新时间
             existing_record.updated_at = datetime.now(timezone.utc)
@@ -537,27 +597,30 @@ class InspectionRecordsService(
         根据路径获取表单选项
         """
         try:
+            # 获取匹配的用户路径记录
+            user_path = self._get_matching_user_path(path_request)
+            if not user_path:
+                return FormOptionsResponse(damage_types=[], scales_by_damage={})
+
+            # 通过用户路径的 paths_id 获取基础路径信息
+            paths_stmt = select(Paths).where(
+                and_(Paths.id == user_path.paths_id, Paths.is_active == True)
+            )
+            paths_record = self.session.exec(paths_stmt).first()
+            if not paths_record:
+                return FormOptionsResponse(damage_types=[], scales_by_damage={})
+
             # 查询条件
             base_conditions = [
-                Paths.category_id == path_request.category_id,
-                Paths.bridge_type_id == path_request.bridge_type_id,
-                Paths.part_id == path_request.part_id,
-                Paths.component_type_id == path_request.component_type_id,
-                Paths.component_form_id == path_request.component_form_id,
+                Paths.category_id == paths_record.category_id,
+                Paths.assessment_unit_id == paths_record.assessment_unit_id,
+                Paths.bridge_type_id == paths_record.bridge_type_id,
+                Paths.part_id == paths_record.part_id,
+                Paths.structure_id == paths_record.structure_id,
+                Paths.component_type_id == paths_record.component_type_id,
+                Paths.component_form_id == paths_record.component_form_id,
                 Paths.is_active == True,
             ]
-
-            if path_request.assessment_unit_id:
-                base_conditions.append(
-                    Paths.assessment_unit_id == path_request.assessment_unit_id
-                )
-            else:
-                base_conditions.append(Paths.assessment_unit_id.is_(None))
-
-            if path_request.structure_id:
-                base_conditions.append(Paths.structure_id == path_request.structure_id)
-            else:
-                base_conditions.append(Paths.structure_id.is_(None))
 
             # 查询符合条件的paths记录，只查询有disease_id和scale_id的记录
             paths_stmt = (
@@ -700,6 +763,42 @@ class InspectionRecordsService(
         根据路径和病害类型获取参考信息
         """
         try:
+
+            # 获取匹配的用户路径记录
+            path_request = PathValidationRequest(
+                bridge_instance_name=request.bridge_instance_name,
+                assessment_unit_instance_name=request.assessment_unit_instance_name,
+                bridge_type_id=request.bridge_type_id,
+                part_id=request.part_id,
+                structure_id=request.structure_id,
+                component_type_id=request.component_type_id,
+                component_form_id=request.component_form_id,
+            )
+
+            user_path = self._get_matching_user_path(path_request)
+            if not user_path:
+                return DamageDetailInfo(
+                    damage_type_code=request.damage_type_code,
+                    damage_type_name="",
+                    scales=[],
+                    qualities=[],
+                    quantities=[],
+                )
+
+            # 通过用户路径的 paths_id 获取基础路径信息
+            paths_stmt = select(Paths).where(
+                and_(Paths.id == user_path.paths_id, Paths.is_active == True)
+            )
+            paths_record = self.session.exec(paths_stmt).first()
+            if not paths_record:
+                return DamageDetailInfo(
+                    damage_type_code=request.damage_type_code,
+                    damage_type_name="",
+                    scales=[],
+                    qualities=[],
+                    quantities=[],
+                )
+
             # 通过code获取病害类型ID
             damage_type_id = get_id_by_code(
                 BridgeDiseases, request.damage_type_code, self.session
@@ -715,26 +814,16 @@ class InspectionRecordsService(
 
             # 查询条件
             base_conditions = [
-                Paths.category_id == request.category_id,
-                Paths.bridge_type_id == request.bridge_type_id,
-                Paths.part_id == request.part_id,
-                Paths.component_type_id == request.component_type_id,
-                Paths.component_form_id == request.component_form_id,
+                Paths.category_id == paths_record.category_id,
+                Paths.assessment_unit_id == paths_record.assessment_unit_id,
+                Paths.bridge_type_id == paths_record.bridge_type_id,
+                Paths.part_id == paths_record.part_id,
+                Paths.structure_id == paths_record.structure_id,
+                Paths.component_type_id == paths_record.component_type_id,
+                Paths.component_form_id == paths_record.component_form_id,
                 Paths.disease_id == damage_type_id,
                 Paths.is_active == True,
             ]
-
-            if request.assessment_unit_id:
-                base_conditions.append(
-                    Paths.assessment_unit_id == request.assessment_unit_id
-                )
-            else:
-                base_conditions.append(Paths.assessment_unit_id.is_(None))
-
-            if request.structure_id:
-                base_conditions.append(Paths.structure_id == request.structure_id)
-            else:
-                base_conditions.append(Paths.structure_id.is_(None))
 
             # 查询该病害类型下的所有paths记录
             paths_stmt = (
@@ -761,17 +850,17 @@ class InspectionRecordsService(
                 )
 
             # 收集ID
-            scale_ids = set()
-            quality_ids = set()
-            quantity_ids = set()
+            scale_ids = []
+            quality_ids = []
+            quantity_ids = []
 
             for result in path_results:
                 if result.scale_id:
-                    scale_ids.add(result.scale_id)
+                    scale_ids.append(result.scale_id)
                 if result.quality_id:
-                    quality_ids.add(result.quality_id)
+                    quality_ids.append(result.quality_id)
                 if result.quantity_id:
-                    quantity_ids.add(result.quantity_id)
+                    quantity_ids.append(result.quantity_id)
 
             # 查询标度信息
             scales = []
@@ -823,37 +912,29 @@ class InspectionRecordsService(
 
             # 查询定性描述
             qualities = []
-            if quality_ids:
-                qualities_stmt = (
-                    select(BridgeQualities.name)
-                    .where(
-                        and_(
-                            BridgeQualities.id.in_(quality_ids),
-                            BridgeQualities.is_active == True,
-                        )
+            for quality_id in quality_ids:
+                quality_stmt = select(BridgeQualities.name).where(
+                    and_(
+                        BridgeQualities.id == quality_id,
+                        BridgeQualities.is_active == True,
                     )
-                    .order_by(BridgeQualities.name)
                 )
-
-                quality_results = self.session.exec(qualities_stmt).all()
-                qualities = [r for r in quality_results if r]
+                result = self.session.exec(quality_stmt).first()
+                if result:
+                    qualities.append(result)
 
             # 查询定量描述
             quantities = []
-            if quantity_ids:
-                quantities_stmt = (
-                    select(BridgeQuantities.name)
-                    .where(
-                        and_(
-                            BridgeQuantities.id.in_(quantity_ids),
-                            BridgeQuantities.is_active == True,
-                        )
+            for quantity_id in quantity_ids:
+                quantity_stmt = select(BridgeQuantities.name).where(
+                    and_(
+                        BridgeQuantities.id == quantity_id,
+                        BridgeQuantities.is_active == True,
                     )
-                    .order_by(BridgeQuantities.name)
                 )
-
-                quantity_results = self.session.exec(quantities_stmt).all()
-                quantities = [r for r in quantity_results if r]
+                result = self.session.exec(quantity_stmt).first()
+                if result:
+                    quantities.append(result)
 
             return DamageDetailInfo(
                 damage_type_code=request.damage_type_code,
@@ -1146,8 +1227,9 @@ class InspectionRecordsService(
 
                     # 创建检查记录
                     inspection_record = InspectionRecords(
-                        category_id=path_request.category_id,
-                        assessment_unit_id=path_request.assessment_unit_id,
+                        user_id=path_request.user_id,
+                        bridge_instance_name=path_request.bridge_instance_name,
+                        assessment_unit_instance_name=path_request.assessment_unit_instance_name,
                         bridge_type_id=path_request.bridge_type_id,
                         part_id=path_request.part_id,
                         structure_id=path_request.structure_id,

@@ -153,11 +153,11 @@ class PathImporter:
             bridge_types = sheet_data.get("bridge_types", {})
 
             for bridge_type_name, bridge_type_data in bridge_types.items():
-                print(f"  处理桥梁类型: {bridge_type_name}")
+                # print(f"  处理桥梁类型: {bridge_type_name}")
 
                 bridge_type_id = self.get_id_by_name("bridge_types", bridge_type_name)
                 if bridge_type_id is None:
-                    print(f"    ⚠️ 未找到桥梁类型: '{bridge_type_name}'，已跳过")
+                    # print(f"    ⚠️ 未找到桥梁类型: '{bridge_type_name}'，已跳过")
                     continue
 
                 # 递归处理部位
@@ -168,7 +168,7 @@ class PathImporter:
         """处理部位层级"""
         for part_name, part_data in parts.items():
             part_id = self.get_id_by_name("parts", part_name)
-            print(f"    处理部位: {part_name} (ID: {part_id})")
+            # print(f"    处理部位: {part_name} (ID: {part_id})")
 
             # 处理结构类型
             children = part_data.get("children", {})
@@ -180,7 +180,7 @@ class PathImporter:
         """处理结构类型层级"""
         for structure_name, structure_data in structures.items():
             structure_id = self.get_id_by_name("structures", structure_name)
-            print(f"      处理结构: {structure_name} (ID: {structure_id})")
+            # print(f"      处理结构: {structure_name} (ID: {structure_id})")
 
             # 处理部件类型
             children = structure_data.get("children", {})
@@ -200,9 +200,9 @@ class PathImporter:
             component_type_id = self.get_id_by_name(
                 "component_types", component_type_name
             )
-            print(
-                f"        处理部件类型: {component_type_name} (ID: {component_type_id})"
-            )
+            # print(
+            #     f"        处理部件类型: {component_type_name} (ID: {component_type_id})"
+            # )
 
             # 处理构件形式
             children = component_type_data.get("children", {})
@@ -223,9 +223,9 @@ class PathImporter:
             component_form_id = self.get_id_by_name(
                 "component_forms", component_form_name
             )
-            print(
-                f"          处理构件形式: {component_form_name} (ID: {component_form_id})"
-            )
+            # print(
+            #     f"          处理构件形式: {component_form_name} (ID: {component_form_id})"
+            # )
 
             # 处理病害类型
             damage_types = component_form_data.get("damage_types", {})
@@ -252,12 +252,12 @@ class PathImporter:
         for disease_name, scale_data_list in damage_types.items():
             disease_id = self.get_id_by_name("diseases", disease_name)
             if disease_id is None:
-                print(f"            ⚠️ 未找到病害类型: '{disease_name}'，已跳过")
+                # print(f"            ⚠️ 未找到病害类型: '{disease_name}'，已跳过")
                 continue
 
-            print(
-                f"            处理病害: {disease_name}, 标度数: {len(scale_data_list)}"
-            )
+            # print(
+            #     f"            处理病害: {disease_name}, 标度数: {len(scale_data_list)}"
+            # )
 
             # 如果标度数据为空数组，生成基础路径记录
             if not scale_data_list:
@@ -288,13 +288,13 @@ class PathImporter:
                     self.session.commit()
                     self.stats["success_paths"] += 1
 
-                    print(f"              创建基础路径记录: {path_name}")
+                    # print(f"              创建基础路径记录: {path_name}")
 
                 except Exception as e:
                     self.stats["error_paths"] += 1
                     error_msg = f"处理基础路径失败: {e}, 病害: {disease_name}"
                     self.stats["errors"].append(error_msg)
-                    print(f"              ❌ 错误: {error_msg}")
+                    # print(f"              ❌ 错误: {error_msg}")
                     self.session.rollback()
             else:
                 # 处理标度数据数组
@@ -328,6 +328,12 @@ class PathImporter:
                             and quantitative_desc.strip()
                             else None
                         )
+                        # print("标度：",scale_name)
+                        # print("定型描述：",qualitative_desc)
+                        # print("定量：",quantitative_desc)
+                        # 讲这些信息写入一个文件
+                        with open('static/json_output/path_data.txt', 'a', encoding='utf-8') as f:
+                            f.write(f"路径数据：{disease_name},{scale_name},{qualitative_desc},{quantitative_desc}\n")
 
                         # 生成路径的 code 和 name
                         path_code = self.code_generator.generate_code("paths")
@@ -431,10 +437,10 @@ class PathImporter:
                 for error in self.stats["errors"][:5]:
                     print(f"  {error}")
                 if len(self.stats["errors"]) > 5:
-                    print(f"  ... 还有 {len(self.stats['errors']) - 5} 个错误")
+                    print(f"  . ... 还有 {len(self.stats['errors']) - 5} 个错误")
 
         except Exception as e:
-            print(f"❌ 导入过程中发生严重错误: {e}")
+            # print(f"❌ 导入过程中发生严重错误: {e}")
             self.session.rollback()
             raise
         finally:

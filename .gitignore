@@ -44,3 +44,4 @@ ENV/
 
 # git相关
 .git/
+.DS_Store

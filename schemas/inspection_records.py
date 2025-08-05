@@ -6,9 +6,17 @@ from datetime import datetime
 class InspectionRecordsCreate(BaseModel):
     """检查记录创建模型"""
 
+    # 用户ID字段
+    user_id: Optional[int] = Field(None, description="创建记录的用户ID, 为空时代表管理员创建")
+
     # 前7层路径字段
-    category_id: int = Field(..., description="桥梁ID")
-    assessment_unit_id: int = Field(None, description="评定单元ID")
+
+    # 用户实例路径字段
+    bridge_instance_name: str = Field(..., max_length=200, description="桥梁实例名称")
+    assessment_unit_instance_name: Optional[str] = Field(
+        None, max_length=200, description="评定单元实例名称"
+    )
+
     bridge_type_id: int = Field(..., description="桥梁类型ID")
     part_id: int = Field(..., description="部位ID")
     structure_id: int = Field(..., description="结构类型ID")
@@ -32,8 +40,8 @@ class InspectionRecordsUpdate(BaseModel):
     """检查记录更新模型"""
 
     # 病害和标度数据
-    damage_type_code: str = Field(None, description="病害类型编码", max_length=50)
-    scale_code: str = Field(None, description="标度编码", max_length=50)
+    damage_type_code: Optional[str] = Field(None, description="病害类型编码", max_length=50)
+    scale_code: Optional[str] = Field(None, description="标度编码", max_length=50)
 
     # 检查数据字段
     damage_location: Optional[str] = Field(None, description="病害位置")
@@ -47,8 +55,12 @@ class InspectionRecordsUpdate(BaseModel):
 class PathValidationRequest(BaseModel):
     """路径验证请求模型"""
 
-    category_id: int = Field(..., description="桥梁ID")
-    assessment_unit_id: int = Field(..., description="评定单元ID")
+    user_id: Optional[int] = Field(None, description="用户ID, 为空时代表管理员")
+    bridge_instance_name: str = Field(..., max_length=200, description="桥梁实例名称")
+    assessment_unit_instance_name: Optional[str] = Field(
+        None, max_length=200, description="评定单元实例名称"
+    )
+
     bridge_type_id: int = Field(..., description="桥梁类型ID")
     part_id: int = Field(..., description="部位ID")
     structure_id: int = Field(..., description="结构类型ID")
@@ -94,12 +106,11 @@ class InspectionRecordsResponse(BaseModel):
     """检查记录响应模型"""
 
     id: int
+    user_id: Optional[int] = None
 
     # 路径信息
-    category_id: int
-    category_name: Optional[str] = None
-    assessment_unit_id: Optional[int] = None
-    assessment_unit_name: Optional[str] = None
+    bridge_instance_name: str
+    assessment_unit_instance_name: Optional[str] = None
     bridge_type_id: int
     bridge_type_name: Optional[str] = None
     part_id: int
@@ -143,8 +154,10 @@ class InspectionRecordsResponse(BaseModel):
 class DamageReferenceRequest(BaseModel):
     """病害参考信息请求"""
 
-    category_id: int = Field(..., description="桥梁ID")
-    assessment_unit_id: Optional[int] = Field(None, description="评定单元ID")
+    bridge_instance_name: str = Field(..., max_length=200, description="桥梁实例名称")
+    assessment_unit_instance_name: Optional[str] = Field(
+        None, max_length=200, description="评定单元实例名称"
+    )
     bridge_type_id: int = Field(..., description="桥梁类型ID")
     part_id: int = Field(..., description="部位ID")
     structure_id: Optional[int] = Field(None, description="结构类型ID")

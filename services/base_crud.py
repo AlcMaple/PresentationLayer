@@ -316,18 +316,30 @@ class BaseCRUDService(Generic[ModelType, CreateSchemaType, UpdateSchemaType], AB
         conditions = []
 
         for field, value in filters.items():
-            if value is None:
-                continue
-
             if not hasattr(self.model, field):
                 continue
 
             field_attr = getattr(self.model, field)
 
-            # 字符串模糊查询
-            if isinstance(value, str) and field in ["name"]:
-                conditions.append(field_attr.like(f"%{value}%"))
-            # ID字段匹配
+            # 特殊处理None值的字段（如user_id）
+            if value is None and field == "user_id":
+                conditions.append(field_attr.is_(None))
+                continue
+            elif value is None:
+                continue
+
+            # 字符串字段处理
+            if isinstance(value, str):
+                if field in ["name"]:
+                    # 名称字段使用模糊查询
+                    conditions.append(field_attr.like(f"%{value}%"))
+                elif field in ["bridge_instance_name", "assessment_unit_instance_name"]:
+                    # 实例名称字段使用精确匹配
+                    conditions.append(field_attr == value)
+                else:
+                    # 其他字符串字段使用精确匹配
+                    conditions.append(field_attr == value)
+            # ID字段精确匹配
             elif isinstance(value, int) and field.endswith("_id"):
                 conditions.append(field_attr == value)
 

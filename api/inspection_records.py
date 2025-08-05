@@ -22,14 +22,15 @@ router = APIRouter(prefix="/inspection_records", tags=["检查记录管理"])
 @router.post("", summary="创建检查记录")
 async def create_inspection_record(
     # 表单数据
-    category_id: int = Form(..., description="桥梁类别ID"),
+    user_id: Optional[int] = Form(None, description="用户ID"),
+    bridge_instance_name: str = Form(..., description="桥梁类别实例名称"),
     bridge_type_id: int = Form(..., description="桥梁类型ID"),
     part_id: int = Form(..., description="部位ID"),
     component_type_id: int = Form(..., description="部件类型ID"),
     component_form_id: int = Form(..., description="构件形式ID"),
     damage_type_code: str = Form(..., description="病害类型编码"),
     scale_code: str = Form(..., description="标度编码"),
-    assessment_unit_id: int = Form(..., description="评定单元ID"),
+    assessment_unit_instance_name: str = Form(None, description="评定单元实例名称"),
     structure_id: int = Form(..., description="结构类型ID"),
     damage_location: Optional[str] = Form(None, description="病害位置"),
     damage_description: Optional[str] = Form(None, description="病害程度"),
@@ -42,8 +43,9 @@ async def create_inspection_record(
     service = get_inspection_records_service(session)
     # 表单数据
     form_data = InspectionRecordsCreate(
-        category_id=category_id,
-        assessment_unit_id=assessment_unit_id,
+        user_id=user_id,
+        bridge_instance_name=bridge_instance_name,
+        assessment_unit_instance_name=assessment_unit_instance_name,
         bridge_type_id=bridge_type_id,
         part_id=part_id,
         structure_id=structure_id,
@@ -80,6 +82,7 @@ async def get_form_options_by_path(
 async def get_inspection_records_list(
     page: int = Query(1, ge=1, description="页码"),
     size: int = Query(20, ge=1, le=100, description="每页数量"),
+    user_id: Optional[int] = Query(None, description="用户ID，用于过滤指定用户的记录"),
     session: Session = Depends(get_db),
 ):
     """分页查询检查记录列表"""
@@ -89,6 +92,12 @@ async def get_inspection_records_list(
 
         # 过滤条件
         filters = {}
+        
+        # 添加用户ID过滤
+        if user_id is not None:
+            filters["user_id"] = user_id
+        # 注意：如果不传user_id参数，则返回所有用户的记录（包括管理员创建的）
+        
         items, total = service.get_list(page_params, filters)
 
         # 响应格式
@@ -139,15 +148,24 @@ async def delete_inspection_records_by_path(
 
         # 过滤条件
         filters = {
-            "category_id": path_request.category_id,
+            "bridge_instance_name": path_request.bridge_instance_name,
             "bridge_type_id": path_request.bridge_type_id,
             "part_id": path_request.part_id,
             "component_type_id": path_request.component_type_id,
             "component_form_id": path_request.component_form_id,
         }
 
-        if path_request.assessment_unit_id is not None:
-            filters["assessment_unit_id"] = path_request.assessment_unit_id
+        # 添加用户ID过滤条件，防止删除其他用户的数据
+        if path_request.user_id is not None:
+            filters["user_id"] = path_request.user_id
+        else:
+            # user_id为空代表管理员创建的记录
+            filters["user_id"] = None
+
+        if path_request.assessment_unit_instance_name is not None:
+            filters["assessment_unit_instance_name"] = (
+                path_request.assessment_unit_instance_name
+            )
 
         if path_request.structure_id is not None:
             filters["structure_id"] = path_request.structure_id
@@ -184,12 +202,13 @@ async def export_inspection_records(
 
 @router.post("/import", summary="导入检查记录 Excel")
 async def import_inspection_records_excel(
-    category_id: int = Form(..., description="桥梁类别ID"),
+    user_id: Optional[int] = Form(None, description="用户ID"),
+    bridge_instance_name: str = Form(..., description="桥梁类别实例名称"),
     bridge_type_id: int = Form(..., description="桥梁类型ID"),
     part_id: int = Form(..., description="部位ID"),
     component_type_id: int = Form(..., description="部件类型ID"),
     component_form_id: int = Form(..., description="构件形式ID"),
-    assessment_unit_id: int = Form(..., description="评定单元ID"),
+    assessment_unit_instance_name: str = Form(None, description="评定单元实例名称"),
     structure_id: int = Form(..., description="结构类型ID"),
     file: UploadFile = File(..., description="检查记录 Excel 文件"),
     session: Session = Depends(get_db),
@@ -205,8 +224,9 @@ async def import_inspection_records_excel(
 
     # 表单数据
     form_data = PathValidationRequest(
-        category_id=category_id,
-        assessment_unit_id=assessment_unit_id,
+        user_id=user_id,
+        bridge_instance_name=bridge_instance_name,
+        assessment_unit_instance_name=assessment_unit_instance_name,
         bridge_type_id=bridge_type_id,
         part_id=part_id,
         structure_id=structure_id,
