@@ -83,6 +83,11 @@ async def get_inspection_records_list(
     page: int = Query(1, ge=1, description="页码"),
     size: int = Query(20, ge=1, le=100, description="每页数量"),
     user_id: Optional[int] = Query(None, description="用户ID，用于过滤指定用户的记录"),
+    # 路径过滤条件
+    part_id: Optional[int] = Query(None, description="部位ID"),
+    structure_id: Optional[int] = Query(None, description="结构类型ID"),
+    component_type_id: Optional[int] = Query(None, description="部件类型ID"),
+    component_form_id: Optional[int] = Query(None, description="构件形式ID"),
     session: Session = Depends(get_db),
 ):
     """分页查询检查记录列表"""
@@ -92,12 +97,21 @@ async def get_inspection_records_list(
 
         # 过滤条件
         filters = {}
-        
-        # 添加用户ID过滤
+
+        # 用户ID过滤（没有表示返回所有的记录）
         if user_id is not None:
             filters["user_id"] = user_id
-        # 注意：如果不传user_id参数，则返回所有用户的记录（包括管理员创建的）
-        
+
+        # 路径过滤条件
+        if part_id is not None:
+            filters["part_id"] = part_id
+        if structure_id is not None:
+            filters["structure_id"] = structure_id
+        if component_type_id is not None:
+            filters["component_type_id"] = component_type_id
+        if component_form_id is not None:
+            filters["component_form_id"] = component_form_id
+
         items, total = service.get_list(page_params, filters)
 
         # 响应格式
@@ -239,6 +253,21 @@ async def import_inspection_records_excel(
         file_content, form_data, file.filename
     )
     return success(import_result, "导入检查记录成功")
+
+
+@router.get("/filter-options", summary="获取分页查询过滤选项")
+async def get_inspection_records_filter_options(
+    session: Session = Depends(get_db),
+):
+    """获取检查记录分页查询的过滤选项"""
+    try:
+        service = get_inspection_records_service(session)
+        options = service.get_filter_options()
+
+        return success(options, "获取过滤选项成功")
+
+    except Exception as e:
+        return bad_request(f"获取过滤选项失败: {str(e)}")
 
 
 @router.get("/{record_id}", summary="获取检查记录详情")

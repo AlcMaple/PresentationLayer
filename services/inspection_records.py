@@ -224,7 +224,9 @@ class InspectionRecordsService(
             )
 
             if not self._validate_path_exists(path_request):
-                raise ValidationException("指定的路径组合在系统中不存在 或者 用户没有创建路径数据")
+                raise ValidationException(
+                    "指定的路径组合在系统中不存在 或者 用户没有创建路径数据"
+                )
 
             # 验证病害类型和标度的组合是否有效
             if not self._validate_damage_scale_combination(
@@ -1266,6 +1268,84 @@ class InspectionRecordsService(
             print(f"导入检查记录数据时出错: {e}")
             traceback.print_exc()
             raise Exception(f"导入检查记录数据失败: {str(e)}")
+
+    def get_filter_options(self) -> Dict[str, List[Dict[str, Any]]]:
+        """
+        获取检查记录分页查询的过滤选项
+
+        Returns:
+            包含各层级选项的字典
+        """
+        try:
+            options = {}
+
+            # 定义字段映射
+            table_configs = [
+                ("parts", BridgeParts, "part", InspectionRecords.part_id),
+                (
+                    "structures",
+                    BridgeStructures,
+                    "structure",
+                    InspectionRecords.structure_id,
+                ),
+                (
+                    "component_types",
+                    BridgeComponentTypes,
+                    "component_type",
+                    InspectionRecords.component_type_id,
+                ),
+                (
+                    "component_forms",
+                    BridgeComponentForms,
+                    "component_form",
+                    InspectionRecords.component_form_id,
+                ),
+            ]
+
+            for table_name, model_class, option_key, record_field in table_configs:
+                try:
+                    # 查询在inspection_records表中存在的ID
+                    existing_ids_stmt = (
+                        select(record_field)
+                        .where(
+                            and_(
+                                record_field.is_not(None),
+                                InspectionRecords.is_active == True,
+                            )
+                        )
+                        .distinct()
+                    )
+                    existing_ids = self.session.exec(existing_ids_stmt).all()
+
+                    if existing_ids:
+                        # 查询对应的名称信息
+                        stmt = (
+                            select(model_class.id, model_class.name)
+                            .where(
+                                and_(
+                                    model_class.id.in_(existing_ids),
+                                    model_class.is_active == True,
+                                )
+                            )
+                            .order_by(model_class.name)
+                        )
+
+                        results = self.session.exec(stmt).all()
+                        options[option_key] = [
+                            {"id": row[0], "name": row[1]} for row in results
+                        ]
+                    else:
+                        options[option_key] = []
+
+                except Exception as e:
+                    print(f"查询表 {table_name} 选项时出错: {e}")
+                    options[option_key] = []
+
+            return options
+
+        except Exception as e:
+            print(f"获取过滤选项时出错: {e}")
+            return {}
 
 
 def get_inspection_records_service(session: Session) -> InspectionRecordsService:
