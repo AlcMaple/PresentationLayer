@@ -315,7 +315,12 @@ def get_assessment_units_by_category(
 
         results = session.exec(stmt).all()
 
-        return [{"id": r[0], "name": r[1]} for r in results]
+        # 如果只有一个评定单元，且name 为“-”，则返回空列表
+        if len(results) == 1 and results[0][1] == "-":
+            return []
+
+        # 如果有多个评定单元，且name 为“-”，则过滤掉
+        return [{"id": r[0], "name": r[1]} for r in results if r[1] != "-"]
 
     except Exception as e:
         print(f"获取评定单元列表时出错: {e}")

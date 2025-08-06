@@ -210,6 +210,10 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
 
             results = self.session.exec(stmt).all()
 
+            # 如果有多个结构类型，过滤掉名称为“-”的记录
+            if len(results) > 1:
+                return [{"id": r[0], "name": r[1]} for r in results if r[1] != "-"]
+
             return [{"id": r[0], "name": r[1]} for r in results]
 
         except Exception as e:
@@ -256,6 +260,10 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
             )
 
             results = self.session.exec(stmt).all()
+
+            if len(results) > 1:
+                return [{"id": r[0], "name": r[1]} for r in results if r[1] != "-"]
+
             return [{"id": r[0], "name": r[1]} for r in results]
 
         except Exception as e:
@@ -312,6 +320,10 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
             )
 
             results = self.session.exec(stmt).all()
+
+            if len(results) > 1:
+                return [{"id": r[0], "name": r[1]} for r in results if r[1] != "-"]
+
             return [{"id": r[0], "name": r[1]} for r in results]
 
         except Exception as e:
