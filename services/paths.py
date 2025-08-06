@@ -52,19 +52,16 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
             conditions: 查询条件
         """
         try:
-            # 构建基础查询
+            # 基础查询
             statement = select(Paths)
             count_statement = select(func.count(Paths.id))
 
-            # 构建过滤条件
+            # 过滤条件
             filter_conditions = []
             if hasattr(Paths, "is_active"):
                 filter_conditions.append(Paths.is_active == True)
-
             if conditions:
                 filter_conditions.extend(self._build_path_filter_conditions(conditions))
-
-            # 应用过滤条件
             if filter_conditions:
                 statement = statement.where(and_(*filter_conditions))
                 count_statement = count_statement.where(and_(*filter_conditions))
@@ -74,12 +71,10 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
 
             # 分页
             statement = statement.offset(page_params.offset).limit(page_params.size)
-
-            # 执行查询
             results = self.session.exec(statement).all()
             total = self.session.exec(count_statement).first() or 0
 
-            # 转换为PathsResponse格式
+            # 转换为PathsResponse
             paths_list = []
             for result in results:
                 path_data = {

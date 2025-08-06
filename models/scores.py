@@ -14,11 +14,12 @@ class Scores(BaseModel, table=True):
         default=None, primary_key=True, description="评分记录主键ID"
     )
 
-    # 路径表
-    category_id: int = Field(foreign_key="categories.id", description="桥梁类别ID")
-    assessment_unit_id: Optional[int] = Field(
-        default=None, foreign_key="assessment_units.id", description="评定单元ID"
+    bridge_instance_name: str = Field(max_length=200, description="桥梁实例名称")
+    assessment_unit_instance_name: Optional[str] = Field(
+        default=None, max_length=200, description="评定单元实例名称"
     )
+
+    # 路径表
     bridge_type_id: int = Field(foreign_key="bridge_types.id", description="桥梁类型ID")
     part_id: int = Field(foreign_key="bridge_parts.id", description="部位ID")
     structure_id: Optional[int] = Field(
@@ -71,27 +72,43 @@ class Scores(BaseModel, table=True):
     is_active: bool = Field(description="是否启用", default=True)
 
     __table_args__ = (
-        Index("idx_scores_category", "category_id"),
+        # 实例名称索引
+        Index("idx_scores_bridge_instance", "bridge_instance_name"),
+        Index("idx_scores_assessment_instance", "assessment_unit_instance_name"),
+        Index(
+            "idx_scores_bridge_assessment_instance",
+            "bridge_instance_name",
+            "assessment_unit_instance_name",
+        ),
+        # 基础路径索引
         Index("idx_scores_bridge_type", "bridge_type_id"),
         Index("idx_scores_part", "part_id"),
         Index("idx_scores_structure", "structure_id"),
         Index("idx_scores_component_type", "component_type_id"),
         Index("idx_scores_active", "is_active"),
-        # 按桥梁分组
+        # 实例桥梁分组
         Index(
-            "idx_scores_project",
-            "category_id",
-            "assessment_unit_id",
+            "idx_scores_instance_project",
+            "bridge_instance_name",
+            "assessment_unit_instance_name",
             "bridge_type_id",
         ),
         # 完整路径索引
         Index(
             "idx_scores_full_path",
-            "category_id",
-            "assessment_unit_id",
+            "bridge_instance_name",
+            "assessment_unit_instance_name",
             "bridge_type_id",
             "part_id",
             "structure_id",
+            "component_type_id",
+        ),
+        # 评分查询索引
+        Index(
+            "idx_scores_bridge_part_component",
+            "bridge_instance_name",
+            "bridge_type_id",
+            "part_id",
             "component_type_id",
         ),
     )

@@ -14,6 +14,7 @@ from .bridge_scales import router as bridge_scales_router
 from .paths import router as paths_router
 from .inspection_records import router as inspection_records_router
 from .user_paths import router as user_paths_router
+from .scores import router as scores_router
 
 router = APIRouter()
 router.include_router(categories_router)
@@ -32,3 +33,4 @@ router.include_router(paths_router)
 router_paths = APIRouter()
 router_paths.include_router(inspection_records_router)
 router_paths.include_router(user_paths_router)
+router_paths.include_router(scores_router)
