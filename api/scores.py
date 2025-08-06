@@ -48,3 +48,22 @@ async def get_scores_list(
     }
 
     return success(response_data, "查询评分列表成功")
+
+
+@router.get("/cascade-options", summary="获取评分分页查询级联下拉选项")
+async def get_scores_cascade_options(
+    bridge_instance_name: Optional[str] = Query(None, description="桥梁实例名称"),
+    assessment_unit_instance_name: Optional[str] = Query(
+        None, description="评定单元实例名称"
+    ),
+    session: Session = Depends(get_db),
+):
+    """获取评分分页查询的级联下拉选项"""
+    service = get_scores_service(session)
+
+    options = service.get_cascade_options(
+        bridge_instance_name=bridge_instance_name,
+        assessment_unit_instance_name=assessment_unit_instance_name,
+    )
+
+    return success(options, "获取级联下拉选项成功")

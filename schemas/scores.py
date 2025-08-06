@@ -34,3 +34,17 @@ class ScoreListPageResponse(BaseModel):
     total: int = Field(..., description="总数")
     # page: int = Field(..., description="当前页码")
     # size: int = Field(..., description="每页数量")
+
+
+class ScoresCascadeOptionsResponse(BaseModel):
+    """评分级联选项响应模型"""
+
+    bridge_instance_options: List[Dict[str, Any]] = Field(
+        default_factory=list, description="桥梁实例名称选项"
+    )
+    assessment_unit_instance_options: List[Dict[str, Any]] = Field(
+        default_factory=list, description="评定单元实例名称选项"
+    )
+    bridge_type_options: List[Dict[str, Any]] = Field(
+        default_factory=list, description="桥梁类型选项"
+    )

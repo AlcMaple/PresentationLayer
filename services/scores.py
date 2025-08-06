@@ -10,11 +10,14 @@ from models import (
     BridgeComponentTypes,
     BridgeComponentForms,
     BridgeTypes,
+    Scores,
+    UserPaths,
 )
 from schemas.scores import (
     ScoreListRequest,
     ScoreItemData,
     ScoreListPageResponse,
+    ScoresCascadeOptionsResponse,
 )
 from services.base_crud import PageParams
 from exceptions import NotFoundException
@@ -180,6 +183,132 @@ class ScoresService:
         except Exception as e:
             print(f"计算调整后权重失败: {e}")
             return Decimal("0.0000")
+
+    def get_cascade_options(
+        self,
+        bridge_instance_name: Optional[str] = None,
+        assessment_unit_instance_name: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        获取评分分页查询的级联下拉选项
+
+        Args:
+            bridge_instance_name: 桥梁实例名称（可选）
+            assessment_unit_instance_name: 评定单元实例名称（可选）
+
+        Returns:
+            级联选项字典
+        """
+        try:
+            bridge_instance_options = self._get_bridge_instance_options()
+
+            assessment_unit_instance_options = (
+                self._get_assessment_unit_instance_options(bridge_instance_name)
+            )
+
+            bridge_type_options = self._get_bridge_type_options_for_scores(
+                bridge_instance_name, assessment_unit_instance_name
+            )
+
+            return {
+                "bridge_instance_options": bridge_instance_options,
+                "assessment_unit_instance_options": assessment_unit_instance_options,
+                "bridge_type_options": bridge_type_options,
+            }
+
+        except Exception as e:
+            print(f"获取级联选项时出错: {e}")
+            raise Exception(f"获取级联选项失败: {str(e)}")
+
+    def _get_bridge_instance_options(self) -> List[Dict[str, Any]]:
+        """获取桥梁实例名称选项"""
+        try:
+            stmt = (
+                select(UserPaths.bridge_instance_name)
+                .where(and_(UserPaths.is_active == True))
+                .distinct()
+                .order_by(UserPaths.bridge_instance_name)
+            )
+
+            results = self.session.exec(stmt).all()
+            return [{"name": name} for name in results if name]
+
+        except Exception as e:
+            print(f"获取桥梁实例名称选项时出错: {e}")
+            return []
+
+    def _get_assessment_unit_instance_options(
+        self, bridge_instance_name: Optional[str]
+    ) -> List[Dict[str, Any]]:
+        """获取评定单元实例名称选项"""
+        try:
+            conditions = [UserPaths.is_active == True]
+
+            if bridge_instance_name:
+                conditions.append(
+                    UserPaths.bridge_instance_name == bridge_instance_name
+                )
+            else:
+                conditions.append(UserPaths.assessment_unit_instance_name.is_(None))
+
+            stmt = (
+                select(UserPaths.assessment_unit_instance_name)
+                .where(and_(*conditions))
+                .distinct()
+                .order_by(UserPaths.assessment_unit_instance_name)
+            )
+
+            results = self.session.exec(stmt).all()
+            return [{"name": name} for name in results if name is not None]
+
+        except Exception as e:
+            print(f"获取评定单元实例名称选项时出错: {e}")
+            return []
+
+    def _get_bridge_type_options_for_scores(
+        self,
+        bridge_instance_name: Optional[str],
+        assessment_unit_instance_name: Optional[str],
+    ) -> List[Dict[str, Any]]:
+        """获取桥梁类型选项"""
+        try:
+            conditions = [UserPaths.is_active == True]
+
+            if bridge_instance_name:
+                conditions.append(
+                    UserPaths.bridge_instance_name == bridge_instance_name
+                )
+            else:
+                conditions.append(UserPaths.bridge_type_id.is_(None))
+
+            if assessment_unit_instance_name:
+                conditions.append(
+                    UserPaths.assessment_unit_instance_name
+                    == assessment_unit_instance_name
+                )
+            else:
+                conditions.append(UserPaths.assessment_unit_id.is_(None))
+
+            # 查询桥梁类型ID并关联桥梁类型表获取名称
+            stmt = (
+                select(UserPaths.bridge_type_id, BridgeTypes.name)
+                .join(BridgeTypes, UserPaths.bridge_type_id == BridgeTypes.id)
+                .where(
+                    and_(
+                        *conditions,
+                        BridgeTypes.is_active == True,
+                    )
+                )
+                .distinct()
+                .order_by(BridgeTypes.name)
+            )
+
+            results = self.session.exec(stmt).all()
+            return [{"id": r[0], "name": r[1]} for r in results]
+
+        except Exception as e:
+            print(f"获取桥梁类型选项时出错: {e}")
+            return []
 
 
 def get_scores_service(session: Session) -> ScoresService:

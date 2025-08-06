@@ -348,6 +348,10 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
                     "未找到匹配的基础路径，请检查选择的路径组合是否正确"
                 )
 
+            # 如果用户不传评定单元id，则不能填写评定单元实例名称
+            if not obj_in.assessment_unit_id and obj_in.assessment_unit_instance_name:
+                raise ValidationException("评定单元实例名称不能填写，请选择评定单元")
+
             # 创建用户路径记录
             user_path = UserPaths(
                 user_id=obj_in.user_id,
