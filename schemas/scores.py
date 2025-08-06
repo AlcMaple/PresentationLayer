@@ -10,7 +10,7 @@ class ScoreListRequest(BaseModel):
     assessment_unit_instance_name: Optional[str] = Field(
         None, description="评定单元实例名称"
     )
-    assessment_unit_id: Optional[str] = Field(None, description="评定单元ID")
+    # assessment_unit_id: Optional[str] = Field(None, description="评定单元ID")
     bridge_type_id: int = Field(..., description="桥梁类型ID")
 
 
@@ -32,5 +32,5 @@ class ScoreListPageResponse(BaseModel):
 
     items: List[ScoreItemData] = Field(..., description="数据列表")
     total: int = Field(..., description="总数")
-    page: int = Field(..., description="当前页码")
-    size: int = Field(..., description="每页数量")
+    # page: int = Field(..., description="当前页码")
+    # size: int = Field(..., description="每页数量")

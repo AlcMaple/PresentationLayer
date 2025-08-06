@@ -56,18 +56,42 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
                 request.bridge_type_id, request.part_id
             )
 
+            # 如果只有一个元素，并且name是“-”，则结构类型返回空列表，并把 name 对应的 id 传递给部件类型选项
+            structure_null_id = -1
+            if len(structure_options) == 1 and structure_options[0]["name"] == "-":
+                structure_null_id = structure_options[0]["id"]
+                structure_options = []
+
             # 获取部件类型选项
+            if not request.structure_id:
+                request.structure_id = structure_null_id
             component_type_options = self._get_component_type_options(
                 request.bridge_type_id, request.part_id, request.structure_id
             )
 
+            component_null_id = -1
+            if (
+                len(component_type_options) == 1
+                and component_type_options[0]["name"] == "-"
+            ):
+                component_null_id = component_type_options[0]["id"]
+                component_type_options = []
+
             # 获取构件形式选项
+            if not request.component_type_id:
+                request.component_type_id = component_null_id
             component_form_options = self._get_component_form_options(
                 request.bridge_type_id,
                 request.part_id,
                 request.structure_id,
                 request.component_type_id,
             )
+
+            if (
+                len(component_form_options) == 1
+                and component_form_options[0]["name"] == "-"
+            ):
+                component_form_options = []
 
             return CascadeOptionsResponse(
                 bridge_type_options=bridge_type_options,
@@ -185,6 +209,7 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
             )
 
             results = self.session.exec(stmt).all()
+
             return [{"id": r[0], "name": r[1]} for r in results]
 
         except Exception as e:

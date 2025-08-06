@@ -27,14 +27,13 @@ class ScoresService:
         self.session = session
 
     def get_score_list(
-        self, request: ScoreListRequest, page_params: PageParams
+        self, request: ScoreListRequest
     ) -> Tuple[List[Dict[str, Any]], int]:
         """
         获取评分列表数据
 
         Args:
             request: 查询请求参数
-            page_params: 分页参数
 
         Returns:
             评分数据字典列表和总数的元组

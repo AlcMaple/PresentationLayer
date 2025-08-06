@@ -14,14 +14,14 @@ router = APIRouter(prefix="/scores", tags=["评分管理"])
 
 @router.get("", summary="分页查询评分列表")
 async def get_scores_list(
-    page: int = Query(1, ge=1, description="页码"),
-    size: int = Query(20, ge=1, le=100, description="每页数量"),
+    # page: int = Query(1, ge=1, description="页码"),
+    # size: int = Query(20, ge=1, le=100, description="每页数量"),
     bridge_instance_name: str = Query(..., description="桥梁实例名称"),
     bridge_type_id: int = Query(..., description="桥梁类型ID"),
     assessment_unit_instance_name: Optional[str] = Query(
         None, description="评定单元实例名称"
     ),
-    assessment_unit_id: Optional[str] = Query(None, description="评定单元ID"),
+    # assessment_unit_id: Optional[str] = Query(None, description="评定单元ID"),
     session: Session = Depends(get_db),
 ):
     """
@@ -32,19 +32,19 @@ async def get_scores_list(
     request = ScoreListRequest(
         bridge_instance_name=bridge_instance_name,
         assessment_unit_instance_name=assessment_unit_instance_name,
-        assessment_unit_id=assessment_unit_id,
+        # assessment_unit_id=assessment_unit_id,
         bridge_type_id=bridge_type_id,
     )
 
-    page_params = PageParams(page=page, size=size)
+    # page_params = PageParams(page=page, size=size)
 
-    items, total = service.get_score_list(request, page_params)
+    items, total = service.get_score_list(request)
 
     response_data = {
         "items": items,
         "total": total,
-        "page": page,
-        "size": size,
+        # "page": page,
+        # "size": size,
     }
 
     return success(response_data, "查询评分列表成功")
