@@ -96,3 +96,16 @@ class CascadeOptionsResponse(BaseModel):
     structure_options: List[Dict[str, Any]]
     component_type_options: List[Dict[str, Any]]
     component_form_options: List[Dict[str, Any]]
+
+
+class NestedPathNode(BaseModel):
+    """嵌套路径节点模型"""
+
+    id: Optional[int] = None
+    name: str
+    level: str  # 层级标识
+    children: Optional[List["NestedPathNode"]] = None
+
+
+# 启用递归模型
+NestedPathNode.model_rebuild()

@@ -58,6 +58,19 @@ async def get_assessment_units(
     return success(units, "获取评定单元成功")
 
 
+@router.get("/tree", summary="获取用户路径嵌套数据结构")
+async def get_nested_user_paths_data(
+    user_id: Optional[int] = Query(None, description="用户ID，为空返回所有用户数据"),
+    session: Session = Depends(get_db),
+):
+    """获取用户路径的嵌套数据"""
+    service = get_user_paths_service(session)
+
+    result = service.get_nested_user_paths_data(user_id=user_id)
+
+    return success(result, "获取嵌套用户路径数据成功")
+
+
 @router.put("/{user_path_id}", summary="更新用户路径")
 async def update_user_path(
     user_path_id: int,

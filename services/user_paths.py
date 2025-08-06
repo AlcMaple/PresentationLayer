@@ -19,6 +19,7 @@ from schemas.user_paths import (
     UserPathsResponse,
     CascadeOptionsRequest,
     CascadeOptionsResponse,
+    NestedPathNode,
 )
 from schemas.inspection_records import PathValidationRequest
 from services.base_crud import BaseCRUDService, PageParams
@@ -693,6 +694,443 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
         except Exception as e:
             self.session.rollback()
             raise Exception(f"删除用户路径失败: {str(e)}")
+
+    def get_nested_user_paths_data(
+        self, user_id: Optional[int] = None
+    ) -> List[NestedPathNode]:
+        """
+        获取用户路径的嵌套数据结构
+
+        Args:
+            user_id: 用户ID（可选，为空返回所有用户数据）
+
+        Returns:
+            嵌套结构数据，顶层是类别，然后是实例桥，评定单元，实例单元，桥类型等
+        """
+        try:
+            conditions = [UserPaths.is_active == True]
+
+            if user_id is not None:
+                conditions.append(UserPaths.user_id == user_id)
+
+            stmt = select(UserPaths).where(and_(*conditions))
+            user_paths = self.session.exec(stmt).all()
+
+            if not user_paths:
+                return []
+
+            return self._build_complete_nested_structure(user_paths)
+
+        except Exception as e:
+            print(f"获取嵌套用户路径数据时出错: {e}")
+            raise Exception(f"获取嵌套用户路径数据失败: {str(e)}")
+
+    def _build_complete_nested_structure(
+        self, user_paths: List[UserPaths]
+    ) -> List[NestedPathNode]:
+        """
+        构建完整的嵌套数据结构
+        层级顺序：类别 -> 实例桥 -> 评定单元 -> 实例单元 -> 桥类型 -> 部位 -> 结构类型 -> 部件类型 -> 构件形式
+
+        Args:
+            user_paths: 用户路径数据列表
+
+        Returns:
+            完整的嵌套结构
+        """
+        try:
+            # 按类别分组
+            category_groups = {}
+            for path in user_paths:
+                if path.category_id not in category_groups:
+                    category_groups[path.category_id] = []
+                category_groups[path.category_id].append(path)
+
+            # 类别层级
+            category_nodes = []
+            for category_id, category_paths in category_groups.items():
+                category_data = self._get_single_category_data(category_id)
+                if not category_data:
+                    continue
+
+                # 实例桥层级
+                bridge_instance_children = self._build_bridge_instance_level(
+                    category_paths
+                )
+
+                category_node = NestedPathNode(
+                    id=category_id,
+                    name=category_data["name"],
+                    level="category",
+                    children=(
+                        bridge_instance_children if bridge_instance_children else None
+                    ),
+                )
+                category_nodes.append(category_node)
+
+            return category_nodes
+
+        except Exception as e:
+            print(f"构建完整嵌套结构时出错: {e}")
+            return []
+
+    def _build_bridge_instance_level(
+        self, user_paths: List[UserPaths]
+    ) -> List[NestedPathNode]:
+        """实例桥层级"""
+        # 按实例桥名称分组
+        bridge_groups = {}
+        for path in user_paths:
+            bridge_name = path.bridge_instance_name
+            if bridge_name not in bridge_groups:
+                bridge_groups[bridge_name] = []
+            bridge_groups[bridge_name].append(path)
+
+        bridge_nodes = []
+        for bridge_name, bridge_paths in bridge_groups.items():
+            # 评定单元层级
+            assessment_unit_children = self._build_assessment_unit_level(bridge_paths)
+
+            bridge_node = NestedPathNode(
+                id=None,  # 实例桥没有ID
+                name=bridge_name,
+                level="bridge_instance",
+                children=assessment_unit_children if assessment_unit_children else None,
+            )
+            bridge_nodes.append(bridge_node)
+
+        return bridge_nodes
+
+    def _build_assessment_unit_level(
+        self, user_paths: List[UserPaths]
+    ) -> List[NestedPathNode]:
+        """评定单元层级，过滤掉'-'的数据"""
+        # 按评定单元分组
+        assessment_unit_groups = {}
+        for path in user_paths:
+            unit_id = path.assessment_unit_id
+            unit_name = path.assessment_unit_instance_name
+
+            # 获取评定单元的标准名称
+            if unit_id:
+                standard_name_data = self._get_single_assessment_unit_data(unit_id)
+                standard_name = (
+                    standard_name_data["name"] if standard_name_data else None
+                )
+
+                # 过滤掉名称为"-"的评定单元
+                if standard_name and standard_name != "-":
+                    key = (unit_id, unit_name)
+                    if key not in assessment_unit_groups:
+                        assessment_unit_groups[key] = {
+                            "standard_name": standard_name,
+                            "paths": [],
+                        }
+                    assessment_unit_groups[key]["paths"].append(path)
+
+        # 如果所有评定单元都是"-"，则跳过这一层，直接构建桥类型层级
+        if not assessment_unit_groups:
+            return self._build_bridge_type_level(user_paths)
+
+        unit_nodes = []
+        for (unit_id, unit_instance_name), unit_data in assessment_unit_groups.items():
+            # 实例单元层级
+            instance_unit_children = self._build_instance_unit_level(unit_data["paths"])
+
+            display_name = (
+                unit_instance_name if unit_instance_name else unit_data["standard_name"]
+            )
+
+            unit_node = NestedPathNode(
+                id=unit_id,
+                name=display_name,
+                level="assessment_unit",
+                children=instance_unit_children if instance_unit_children else None,
+            )
+            unit_nodes.append(unit_node)
+
+        return unit_nodes
+
+    def _build_instance_unit_level(
+        self, user_paths: List[UserPaths]
+    ) -> List[NestedPathNode]:
+        """实例单元层级"""
+        # 按实例单元名称分组
+        instance_groups = {}
+        for path in user_paths:
+            instance_name = path.assessment_unit_instance_name or "默认实例单元"
+            if instance_name not in instance_groups:
+                instance_groups[instance_name] = []
+            instance_groups[instance_name].append(path)
+
+        instance_nodes = []
+        for instance_name, instance_paths in instance_groups.items():
+            # 桥类型层级
+            bridge_type_children = self._build_bridge_type_level(instance_paths)
+
+            instance_node = NestedPathNode(
+                id=None,
+                name=instance_name,
+                level="instance_unit",
+                children=bridge_type_children if bridge_type_children else None,
+            )
+            instance_nodes.append(instance_node)
+
+        return instance_nodes
+
+    def _build_bridge_type_level(
+        self, user_paths: List[UserPaths]
+    ) -> List[NestedPathNode]:
+        """桥类型层级，过滤掉'-'的数据"""
+        # 按桥类型分组
+        bridge_type_groups = {}
+        for path in user_paths:
+            type_id = path.bridge_type_id
+            if type_id and type_id not in bridge_type_groups:
+                bridge_type_groups[type_id] = []
+            if type_id:
+                bridge_type_groups[type_id].append(path)
+
+        type_nodes = []
+        for type_id, type_paths in bridge_type_groups.items():
+            type_data = self._get_single_bridge_type_data(type_id)
+            if not type_data or type_data["name"] == "-":
+                # 如果桥类型为"-"，跳过该层级，直接构建下一层
+                type_nodes.extend(self._build_remaining_levels(type_paths))
+                continue
+
+            # 剩余层级
+            remaining_children = self._build_remaining_levels(type_paths)
+
+            type_node = NestedPathNode(
+                id=type_id,
+                name=type_data["name"],
+                level="bridge_type",
+                children=remaining_children if remaining_children else None,
+            )
+            type_nodes.append(type_node)
+
+        return type_nodes
+
+    def _build_remaining_levels(
+        self, user_paths: List[UserPaths]
+    ) -> List[NestedPathNode]:
+        """
+        构建剩余的层级（部位 -> 结构类型 -> 部件类型 -> 构件形式）
+        按照原有的递归逻辑，过滤掉'-'的数据
+        """
+        level_hierarchy = [
+            ("part", self._get_part_data_for_remaining),
+            ("structure", self._get_structure_data_for_remaining),
+            ("component_type", self._get_component_type_data_for_remaining),
+            ("component_form", self._get_component_form_data_for_remaining),
+        ]
+
+        return self._build_level_nodes_for_remaining(user_paths, level_hierarchy, 0)
+
+    def _build_level_nodes_for_remaining(
+        self,
+        user_paths: List[UserPaths],
+        level_hierarchy: List[tuple],
+        current_level: int,
+    ) -> List[NestedPathNode]:
+        """
+        递归剩余层级的节点
+        """
+        if current_level >= len(level_hierarchy) or not user_paths:
+            return []
+
+        level_name, data_getter = level_hierarchy[current_level]
+
+        # 获取当前层级的唯一数据
+        unique_items = data_getter(user_paths)
+
+        # 过滤掉 name 为 "-" 的项目
+        filtered_items = [item for item in unique_items if item.get("name") != "-"]
+
+        # 如果当前层级没有有效数据，跳到下一层级
+        if not filtered_items:
+            return self._build_level_nodes_for_remaining(
+                user_paths, level_hierarchy, current_level + 1
+            )
+
+        nodes = []
+        for item in filtered_items:
+            # 获取属于当前项目的用户路径数据
+            filtered_paths = self._filter_paths_by_level_for_remaining(
+                user_paths, level_name, item["id"]
+            )
+
+            # 递归构建子节点
+            children = self._build_level_nodes_for_remaining(
+                filtered_paths, level_hierarchy, current_level + 1
+            )
+
+            node = NestedPathNode(
+                id=item["id"],
+                name=item["name"],
+                level=level_name,
+                children=children if children else None,
+            )
+            nodes.append(node)
+
+        return nodes
+
+    def _filter_paths_by_level_for_remaining(
+        self, user_paths: List[UserPaths], level: str, item_id: int
+    ) -> List[UserPaths]:
+        """
+        根据层级和ID过滤用户路径数据
+        """
+        level_field_mapping = {
+            "part": "part_id",
+            "structure": "structure_id",
+            "component_type": "component_type_id",
+            "component_form": "component_form_id",
+        }
+
+        field_name = level_field_mapping.get(level)
+        if not field_name:
+            return []
+
+        return [path for path in user_paths if getattr(path, field_name) == item_id]
+
+    def _get_single_category_data(self, category_id: int) -> Optional[Dict[str, Any]]:
+        """获取单个类别数据"""
+        try:
+            stmt = select(Categories.id, Categories.name).where(
+                and_(Categories.id == category_id, Categories.is_active == True)
+            )
+            result = self.session.exec(stmt).first()
+            return {"id": result[0], "name": result[1]} if result else None
+        except Exception:
+            return None
+
+    def _get_single_assessment_unit_data(
+        self, unit_id: int
+    ) -> Optional[Dict[str, Any]]:
+        """获取单个评定单元数据"""
+        try:
+            stmt = select(AssessmentUnit.id, AssessmentUnit.name).where(
+                and_(AssessmentUnit.id == unit_id, AssessmentUnit.is_active == True)
+            )
+            result = self.session.exec(stmt).first()
+            return {"id": result[0], "name": result[1]} if result else None
+        except Exception:
+            return None
+
+    def _get_single_bridge_type_data(self, type_id: int) -> Optional[Dict[str, Any]]:
+        """获取单个桥类型数据"""
+        try:
+            stmt = select(BridgeTypes.id, BridgeTypes.name).where(
+                and_(BridgeTypes.id == type_id, BridgeTypes.is_active == True)
+            )
+            result = self.session.exec(stmt).first()
+            return {"id": result[0], "name": result[1]} if result else None
+        except Exception:
+            return None
+
+    # 剩余层级
+    def _get_part_data_for_remaining(
+        self, user_paths: List[UserPaths]
+    ) -> List[Dict[str, Any]]:
+        """获取部位数据"""
+        unique_ids = list(set([path.part_id for path in user_paths if path.part_id]))
+        if not unique_ids:
+            return []
+
+        stmt = (
+            select(BridgeParts.id, BridgeParts.name)
+            .where(and_(BridgeParts.id.in_(unique_ids), BridgeParts.is_active == True))
+            .order_by(BridgeParts.name)
+        )
+
+        results = self.session.exec(stmt).all()
+        return [{"id": r[0], "name": r[1]} for r in results]
+
+    def _get_structure_data_for_remaining(
+        self, user_paths: List[UserPaths]
+    ) -> List[Dict[str, Any]]:
+        """获取结构类型数据"""
+        unique_ids = list(
+            set([path.structure_id for path in user_paths if path.structure_id])
+        )
+        if not unique_ids:
+            return []
+
+        stmt = (
+            select(BridgeStructures.id, BridgeStructures.name)
+            .where(
+                and_(
+                    BridgeStructures.id.in_(unique_ids),
+                    BridgeStructures.is_active == True,
+                )
+            )
+            .order_by(BridgeStructures.name)
+        )
+
+        results = self.session.exec(stmt).all()
+        return [{"id": r[0], "name": r[1]} for r in results]
+
+    def _get_component_type_data_for_remaining(
+        self, user_paths: List[UserPaths]
+    ) -> List[Dict[str, Any]]:
+        """获取部件类型数"""
+        unique_ids = list(
+            set(
+                [
+                    path.component_type_id
+                    for path in user_paths
+                    if path.component_type_id
+                ]
+            )
+        )
+        if not unique_ids:
+            return []
+
+        stmt = (
+            select(BridgeComponentTypes.id, BridgeComponentTypes.name)
+            .where(
+                and_(
+                    BridgeComponentTypes.id.in_(unique_ids),
+                    BridgeComponentTypes.is_active == True,
+                )
+            )
+            .order_by(BridgeComponentTypes.name)
+        )
+
+        results = self.session.exec(stmt).all()
+        return [{"id": r[0], "name": r[1]} for r in results]
+
+    def _get_component_form_data_for_remaining(
+        self, user_paths: List[UserPaths]
+    ) -> List[Dict[str, Any]]:
+        """获取构件形式数据"""
+        unique_ids = list(
+            set(
+                [
+                    path.component_form_id
+                    for path in user_paths
+                    if path.component_form_id
+                ]
+            )
+        )
+        if not unique_ids:
+            return []
+
+        stmt = (
+            select(BridgeComponentForms.id, BridgeComponentForms.name)
+            .where(
+                and_(
+                    BridgeComponentForms.id.in_(unique_ids),
+                    BridgeComponentForms.is_active == True,
+                )
+            )
+            .order_by(BridgeComponentForms.name)
+        )
+
+        results = self.session.exec(stmt).all()
+        return [{"id": r[0], "name": r[1]} for r in results]
 
 
 def get_user_paths_service(session: Session) -> UserPathsService:
