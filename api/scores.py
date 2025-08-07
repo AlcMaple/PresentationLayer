@@ -9,6 +9,7 @@ from schemas.scores import (
     ScoreListRequest,
     WeightAllocationRequest,
     WeightAllocationResponse,
+    WeightAllocationSaveRequest,
 )
 from utils.responses import success, bad_request
 from exceptions import NotFoundException
@@ -92,3 +93,18 @@ async def calculate_weight_allocation(
     }
 
     return success(response_data, "权重分配计算成功")
+
+
+@router.post("/weight-allocation/save", summary="保存权重分配数据")
+async def save_weight_allocation(
+    request: WeightAllocationSaveRequest,
+    session: Session = Depends(get_db),
+):
+    """
+    保存权重分配数据
+    """
+    service = get_scores_service(session)
+
+    success_result = service.save_weight_allocation(request)
+
+    return success(None, "权重分配数据保存成功")

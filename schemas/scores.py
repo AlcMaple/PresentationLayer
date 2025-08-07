@@ -92,3 +92,30 @@ class WeightAllocationResponse(ScoreListPageResponse):
     """权重分配计算响应"""
 
     calculation_mode: CalculationMode = Field(..., description="计算方式")
+
+
+# 权重分配保存数据项
+class WeightAllocationSaveItem(BaseModel):
+    """权重分配保存数据项"""
+
+    part_id: int = Field(..., description="部位ID")
+    component_type_id: int = Field(..., description="部件类型ID")
+    weight: Decimal = Field(..., description="原始权重")
+    component_count: int = Field(..., description="默认构件数量")
+    custom_component_count: int = Field(..., description="自定义构件数量")
+    adjusted_weight: Decimal = Field(..., description="调整后权重")
+
+
+# 权重分配保存请求
+class WeightAllocationSaveRequest(BaseModel):
+    """权重分配保存请求"""
+
+    bridge_instance_name: str = Field(..., description="桥梁实例名称")
+    bridge_type_id: int = Field(..., description="桥梁类型ID")
+    assessment_unit_instance_name: Optional[str] = Field(
+        None, description="评定单元实例名称"
+    )
+    calculation_mode: CalculationMode = Field(..., description="计算方式")
+    items: List[WeightAllocationSaveItem] = Field(
+        ..., min_items=1, description="权重分配数据列表"
+    )

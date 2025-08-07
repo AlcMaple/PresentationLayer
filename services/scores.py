@@ -2,6 +2,7 @@ from typing import List, Optional, Dict, Any, Tuple
 from sqlmodel import Session, select, and_, func
 from decimal import Decimal
 from collections import defaultdict
+from sqlalchemy.exc import IntegrityError
 
 from models import (
     WeightReferences,
@@ -21,6 +22,7 @@ from schemas.scores import (
     ScoresCascadeOptionsResponse,
     CalculationMode,
     WeightAllocationRequest,
+    WeightAllocationSaveRequest,
 )
 from services.base_crud import PageParams
 from exceptions import NotFoundException
@@ -494,6 +496,185 @@ class ScoresService:
 
         except Exception as e:
             raise Exception(f"权重分配计算失败: {str(e)}")
+
+    def _is_first_save(self, request: WeightAllocationSaveRequest) -> bool:
+        """
+        检查是否为第一次保存
+
+        Args:
+            request: 保存请求参数
+
+        Returns:
+            是否为第一次保存
+        """
+        conditions = [
+            Scores.bridge_instance_name == request.bridge_instance_name,
+            Scores.bridge_type_id == request.bridge_type_id,
+            Scores.is_active == True,
+        ]
+
+        if request.assessment_unit_instance_name:
+            conditions.append(
+                Scores.assessment_unit_instance_name
+                == request.assessment_unit_instance_name
+            )
+        else:
+            conditions.append(Scores.assessment_unit_instance_name.is_(None))
+
+        stmt = select(func.count(Scores.id)).where(and_(*conditions))
+        count = self.session.exec(stmt).one()
+
+        return count == 0
+
+    def _get_structure_ids(
+        self, request: WeightAllocationSaveRequest
+    ) -> Dict[Tuple[int, int], Optional[int]]:
+        """
+        获取structure_id映射
+
+        Args:
+            request: 保存请求参数
+
+        Returns:
+            structure_id映射字典 {(part_id, component_type_id): structure_id}
+        """
+        # 从weight_references表获取structure_id
+        stmt = select(
+            WeightReferences.part_id,
+            WeightReferences.component_type_id,
+            WeightReferences.structure_id,
+        ).where(
+            and_(
+                WeightReferences.bridge_type_id == request.bridge_type_id,
+                WeightReferences.is_active == True,
+            )
+        )
+
+        results = self.session.exec(stmt).all()
+        structure_id_map = {}
+
+        for row in results:
+            key = (row.part_id, row.component_type_id)
+            structure_id_map[key] = row.structure_id
+
+        return structure_id_map
+
+    def _batch_insert_scores(
+        self,
+        request: WeightAllocationSaveRequest,
+        structure_id_map: Dict[Tuple[int, int], Optional[int]],
+    ) -> None:
+        """
+        批量插入scores记录
+
+        Args:
+            request: 保存请求参数
+            structure_id_map: structure_id映射
+        """
+        use_custom_count = request.calculation_mode == CalculationMode.CUSTOM
+
+        scores_list = []
+        for item in request.items:
+            key = (item.part_id, item.component_type_id)
+            structure_id = structure_id_map.get(key)
+
+            score_record = Scores(
+                bridge_instance_name=request.bridge_instance_name,
+                assessment_unit_instance_name=request.assessment_unit_instance_name,
+                bridge_type_id=request.bridge_type_id,
+                part_id=item.part_id,
+                structure_id=structure_id,
+                component_type_id=item.component_type_id,
+                weight=item.weight,
+                component_count=item.component_count,
+                custom_component_count=item.custom_component_count,
+                adjusted_weight=item.adjusted_weight,
+                use_custom_count=use_custom_count,
+                is_active=True,
+            )
+            scores_list.append(score_record)
+
+        # 批量插入
+        self.session.add_all(scores_list)
+
+    def _batch_update_scores(self, request: WeightAllocationSaveRequest) -> None:
+        """
+        批量更新scores记录
+
+        Args:
+            request: 保存请求参数
+        """
+        use_custom_count = request.calculation_mode == CalculationMode.CUSTOM
+
+        base_conditions = [
+            Scores.bridge_instance_name == request.bridge_instance_name,
+            Scores.bridge_type_id == request.bridge_type_id,
+            Scores.is_active == True,
+        ]
+
+        if request.assessment_unit_instance_name:
+            base_conditions.append(
+                Scores.assessment_unit_instance_name
+                == request.assessment_unit_instance_name
+            )
+        else:
+            base_conditions.append(Scores.assessment_unit_instance_name.is_(None))
+
+        # 更新
+        for item in request.items:
+            conditions = base_conditions + [
+                Scores.part_id == item.part_id,
+                Scores.component_type_id == item.component_type_id,
+            ]
+
+            update_data = {
+                "adjusted_weight": item.adjusted_weight,
+                "use_custom_count": use_custom_count,
+            }
+
+            # 自定义构件计算，更新自定义构件数量
+            if use_custom_count:
+                update_data["custom_component_count"] = item.custom_component_count
+
+            stmt = (
+                Scores.__table__.update().where(and_(*conditions)).values(**update_data)
+            )
+
+            self.session.execute(stmt)
+
+    def save_weight_allocation(self, request: WeightAllocationSaveRequest) -> bool:
+        """
+        保存权重分配数据
+
+        Args:
+            request: 权重分配保存请求参数
+
+        Returns:
+            保存是否成功
+        """
+        try:
+            # 检查是否为第一次保存
+            is_first_save = self._is_first_save(request)
+
+            # 获取structure_id映射
+            structure_id_map = self._get_structure_ids(request)
+
+            if is_first_save:
+                # 第一次保存批量插入所有记录
+                self._batch_insert_scores(request, structure_id_map)
+            else:
+                # 批量更新记录
+                self._batch_update_scores(request)
+
+            self.session.commit()
+            return True
+
+        except IntegrityError as e:
+            self.session.rollback()
+            raise Exception(f"数据完整性错误: {str(e)}")
+        except Exception as e:
+            self.session.rollback()
+            raise Exception(f"保存权重分配数据失败: {str(e)}")
 
 
 def get_scores_service(session: Session) -> ScoresService:
