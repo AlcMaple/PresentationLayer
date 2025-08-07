@@ -5,14 +5,18 @@ from typing import Optional
 from config.database import get_db
 from services.scores import get_scores_service
 from services.base_crud import PageParams
-from schemas.scores import ScoreListRequest
+from schemas.scores import (
+    ScoreListRequest,
+    WeightAllocationRequest,
+    WeightAllocationResponse,
+)
 from utils.responses import success, bad_request
 from exceptions import NotFoundException
 
 router = APIRouter(prefix="/scores", tags=["评分管理"])
 
 
-@router.get("", summary="分页查询评分列表")
+@router.get("", summary="查询评分列表")
 async def get_scores_list(
     # page: int = Query(1, ge=1, description="页码"),
     # size: int = Query(20, ge=1, le=100, description="每页数量"),
@@ -25,7 +29,7 @@ async def get_scores_list(
     session: Session = Depends(get_db),
 ):
     """
-    分页查询评分列表
+    查询评分列表
     """
     service = get_scores_service(session)
 
@@ -67,3 +71,24 @@ async def get_scores_cascade_options(
     )
 
     return success(options, "获取级联下拉选项成功")
+
+
+@router.post("/weight-allocation", summary="权重分配计算")
+async def calculate_weight_allocation(
+    request: WeightAllocationRequest,
+    session: Session = Depends(get_db),
+):
+    """
+    权重分配计算
+    """
+    service = get_scores_service(session)
+
+    items, total = service.calculate_weight_allocation(request)
+
+    response_data = {
+        "calculation_mode": request.calculation_mode,
+        "items": items,
+        "total": total,
+    }
+
+    return success(response_data, "权重分配计算成功")

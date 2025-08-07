@@ -1,6 +1,7 @@
 from typing import List, Optional, Dict, Any, Tuple
 from sqlmodel import Session, select, and_, func
 from decimal import Decimal
+from collections import defaultdict
 
 from models import (
     WeightReferences,
@@ -18,6 +19,8 @@ from schemas.scores import (
     ScoreItemData,
     ScoreListPageResponse,
     ScoresCascadeOptionsResponse,
+    CalculationMode,
+    WeightAllocationRequest,
 )
 from services.base_crud import PageParams
 from exceptions import NotFoundException
@@ -177,7 +180,7 @@ class ScoresService:
         目前暂时设为 0，后续会实现具体的计算逻辑
         """
         try:
-            # 暂时返回 0，等待后续实现计算逻辑
+            # 暂时返回 0，后续实现计算逻辑
             return Decimal("0.0000")
 
         except Exception as e:
@@ -309,6 +312,188 @@ class ScoresService:
         except Exception as e:
             print(f"获取桥梁类型选项时出错: {e}")
             return []
+
+    def _prepare_component_counts(
+        self,
+        score_request: ScoreListRequest,
+        weight_data: List[Dict[str, Any]],
+        allocation_request: WeightAllocationRequest,
+    ) -> Dict[Tuple[int, int], int]:
+        """
+        构件数量数据
+
+        Args:
+            score_request: 评分查询请求
+            weight_data: 权重数据
+            allocation_request: 权重分配请求
+
+        Returns:
+            构件数量字典 {(part_id, component_type_id): count}
+        """
+        component_counts = {}
+
+        if allocation_request.calculation_mode == CalculationMode.DEFAULT:
+            for item in weight_data:
+                key = (item["part_id"], item["component_type_id"])
+                count = self._count_components_from_paths(score_request, item)
+                component_counts[key] = count
+        else:
+            custom_counts = {
+                (item.part_id, item.component_type_id): item.custom_component_count
+                for item in allocation_request.custom_component_counts
+            }
+
+            for item in weight_data:
+                key = (item["part_id"], item["component_type_id"])
+                # 优先使用自定义数量，否则使用默认数量
+                if key in custom_counts:
+                    component_counts[key] = custom_counts[key]
+                else:
+                    count = self._count_components_from_paths(score_request, item)
+                    component_counts[key] = count
+
+        return component_counts
+
+    def _allocate_weights_for_part(
+        self, items: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        """
+        对单个部位的部件应用权重分配规则
+
+        Args:
+            items: 同一部位的部件列表
+
+        Returns:
+            应用权重分配规则后的部件列表
+        """
+        zero_count_items = [item for item in items if item["used_component_count"] == 0]
+        non_zero_count_items = [
+            item for item in items if item["used_component_count"] > 0
+        ]
+
+        # 所有构件数量都不为0，无需分配
+        if not zero_count_items:
+            return items
+
+        # 所有构件数量都为0，调整后权重都为0
+        if not non_zero_count_items:
+            for item in items:
+                item["adjusted_weight"] = Decimal("0")
+            return items
+
+        # 计算需要分配的权重总和（构件数量为0的部件权重之和）
+        zero_weight_sum = sum(item["original_weight"] for item in zero_count_items)
+
+        # 计算非0部件的原始权重总和
+        non_zero_weight_sum = sum(
+            item["original_weight"] for item in non_zero_count_items
+        )
+
+        # 对构件数量为0的部件，调整后权重设为0
+        for item in zero_count_items:
+            item["adjusted_weight"] = Decimal("0")
+
+        # 对构件数量非0的部件，重新计算权重
+        for item in non_zero_count_items:
+            current_weight = item["original_weight"]
+            if non_zero_weight_sum > 0:
+                # ((当前部件权重 / 非0部件权重总和) * 0部件权重总和) + 当前部件权重
+                allocation_factor = current_weight / non_zero_weight_sum
+                allocated_weight = allocation_factor * zero_weight_sum
+                item["adjusted_weight"] = current_weight + allocated_weight
+            else:
+                item["adjusted_weight"] = current_weight
+
+        return items
+
+    def _apply_weight_allocation_rules(
+        self,
+        weight_data: List[Dict[str, Any]],
+        component_counts: Dict[Tuple[int, int], int],
+    ) -> List[Dict[str, Any]]:
+        """
+        应用权重分配规则
+
+        Args:
+            weight_data: 权重数据
+            component_counts: 构件数量数据
+
+        Returns:
+            应用权重分配规则后的数据列表
+        """
+        # 按部位分组
+        parts_data = defaultdict(list)
+        for item in weight_data:
+            key = (item["part_id"], item["component_type_id"])
+            default_count = component_counts.get(key, 0)
+
+            enhanced_item = {
+                **item,
+                "default_component_count": default_count,
+                "used_component_count": default_count,
+                "original_weight": item["weight"],
+                "adjusted_weight": item["weight"],
+            }
+            parts_data[item["part_id"]].append(enhanced_item)
+
+        # 对每个部位应用权重分配规则
+        result_data = []
+        for part_id, items in parts_data.items():
+            allocated_items = self._allocate_weights_for_part(items)
+            result_data.extend(allocated_items)
+
+        return result_data
+
+    def calculate_weight_allocation(
+        self, request: WeightAllocationRequest
+    ) -> Tuple[List[Dict[str, Any]], int]:
+        """
+        权重分配计算
+
+        Args:
+            request: 权重分配计算请求参数
+
+        Returns:
+            权重分配结果（数据字典列表和总数）
+        """
+        try:
+            score_request = ScoreListRequest(
+                bridge_instance_name=request.bridge_instance_name,
+                bridge_type_id=request.bridge_type_id,
+                assessment_unit_instance_name=request.assessment_unit_instance_name,
+            )
+
+            weight_data = self._get_weight_data(score_request)
+            if not weight_data:
+                return [], 0
+
+            component_counts = self._prepare_component_counts(
+                score_request, weight_data, request
+            )
+
+            # 按部位分组
+            allocated_data = self._apply_weight_allocation_rules(
+                weight_data, component_counts
+            )
+
+            result_data = []
+            for item in allocated_data:
+                score_item = {
+                    "part_id": item["part_id"],
+                    "part_name": item["part_name"],
+                    "component_type_id": item["component_type_id"],
+                    "component_type_name": item["component_type_name"],
+                    "weight": float(item["original_weight"]),
+                    "component_count": item["default_component_count"],
+                    "custom_component_count": item["used_component_count"],
+                    "adjusted_weight": float(item["adjusted_weight"]),
+                }
+                result_data.append(score_item)
+
+            return result_data, len(result_data)
+
+        except Exception as e:
+            raise Exception(f"权重分配计算失败: {str(e)}")
 
 
 def get_scores_service(session: Session) -> ScoresService:

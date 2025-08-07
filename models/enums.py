@@ -50,3 +50,10 @@ class Rating(Enum):
     @property
     def get_max_score(self) -> int:
         return self.value[2]
+
+
+class CalculationMode(str, Enum):
+    """权重分配计算方式"""
+
+    DEFAULT = "default"  # 使用默认构件数量
+    CUSTOM = "custom"  # 使用自定义构件数量
