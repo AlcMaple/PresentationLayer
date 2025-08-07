@@ -34,6 +34,62 @@ class ScoresService:
     def __init__(self, session: Session):
         self.session = session
 
+    def _get_saved_scores_data(
+        self, request: ScoreListRequest
+    ) -> Optional[Dict[Tuple[int, int], Dict[str, Any]]]:
+        """
+        获取scores表中保存的数据
+
+        Args:
+            request: 查询请求参数
+
+        Returns:
+            保存的scores数据字典 {(part_id, component_type_id): {数据}}，如果没有数据返回None
+        """
+        try:
+            conditions = [
+                Scores.bridge_instance_name == request.bridge_instance_name,
+                Scores.bridge_type_id == request.bridge_type_id,
+                Scores.is_active == True,
+            ]
+
+            if request.assessment_unit_instance_name:
+                conditions.append(
+                    Scores.assessment_unit_instance_name
+                    == request.assessment_unit_instance_name
+                )
+            else:
+                conditions.append(Scores.assessment_unit_instance_name.is_(None))
+
+            stmt = select(
+                Scores.part_id,
+                Scores.component_type_id,
+                Scores.component_count,
+                Scores.custom_component_count,
+                Scores.adjusted_weight,
+            ).where(and_(*conditions))
+
+            results = self.session.exec(stmt).all()
+
+            if not results:
+                return None
+
+            saved_data = {}
+            for row in results:
+                key = (row.part_id, row.component_type_id)
+                saved_data[key] = {
+                    "component_count": row.component_count,
+                    "custom_component_count": row.custom_component_count
+                    or row.component_count,
+                    "adjusted_weight": row.adjusted_weight or Decimal("0"),
+                }
+
+            return saved_data
+
+        except Exception as e:
+            print(f"查询scores表保存数据失败: {e}")
+            return None
+
     def get_score_list(
         self, request: ScoreListRequest
     ) -> Tuple[List[Dict[str, Any]], int]:
@@ -52,14 +108,24 @@ class ScoresService:
             if not weight_data:
                 return [], 0
 
+            # 检查是否有保存的实例桥数据
+            saved_scores_data = self._get_saved_scores_data(request)
+
             score_data = []
             for item in weight_data:
-                component_count = self._count_components_from_paths(request, item)
+                key = (item["part_id"], item["component_type_id"])
 
-                custom_count = component_count
-                adjusted_weight = self._calculate_adjusted_weight(
-                    item["weight"], custom_count
-                )
+                if saved_scores_data and key in saved_scores_data:
+                    saved_item = saved_scores_data[key]
+                    component_count = saved_item["component_count"]
+                    custom_count = saved_item["custom_component_count"]
+                    adjusted_weight = saved_item["adjusted_weight"]
+                else:
+                    component_count = self._count_components_from_paths(request, item)
+                    custom_count = component_count
+                    adjusted_weight = self._calculate_adjusted_weight(
+                        item["weight"], custom_count
+                    )
 
                 score_item = {
                     "part_id": item["part_id"],
