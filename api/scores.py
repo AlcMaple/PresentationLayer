@@ -17,7 +17,7 @@ from exceptions import NotFoundException
 router = APIRouter(prefix="/scores", tags=["评分管理"])
 
 
-@router.get("", summary="查询评分列表")
+@router.get("/list-weight", summary="查询权重列表")
 async def get_scores_list(
     # page: int = Query(1, ge=1, description="页码"),
     # size: int = Query(20, ge=1, le=100, description="每页数量"),
@@ -108,3 +108,28 @@ async def save_weight_allocation(
     success_result = service.save_weight_allocation(request)
 
     return success(None, "权重分配数据保存成功")
+
+
+@router.get("", summary="查询评分列表")
+async def get_scores_table_data(
+    bridge_instance_name: str = Query(..., description="桥梁实例名称"),
+    bridge_type_id: int = Query(..., description="桥梁类型ID"),
+    assessment_unit_instance_name: Optional[str] = Query(
+        None, description="评定单元实例名称"
+    ),
+    session: Session = Depends(get_db),
+):
+    """
+    查询评分表格数据 - 嵌套结构格式
+    """
+    service = get_scores_service(session)
+
+    request = ScoreListRequest(
+        bridge_instance_name=bridge_instance_name,
+        assessment_unit_instance_name=assessment_unit_instance_name,
+        bridge_type_id=bridge_type_id,
+    )
+
+    table_data = service.get_score_table_data(request)
+
+    return success(table_data, "查询评分表格数据成功")

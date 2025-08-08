@@ -108,7 +108,6 @@ class ScoresService:
             if not weight_data:
                 return [], 0
 
-            # 检查是否有保存的实例桥数据
             saved_scores_data = self._get_saved_scores_data(request)
 
             score_data = []
@@ -741,6 +740,71 @@ class ScoresService:
         except Exception as e:
             self.session.rollback()
             raise Exception(f"保存权重分配数据失败: {str(e)}")
+
+    def get_score_table_data(self, request: ScoreListRequest) -> Dict[str, Any]:
+        """
+        获取评分表格数据
+
+        Args:
+            request: 查询请求参数
+
+        Returns:
+            评分表格数据
+        """
+        try:
+            weight_data = self._get_weight_data(request)
+            if not weight_data:
+                return {"总体评分": 0.00, "评定等级": "暂无", "部位": {}}
+
+            saved_scores_data = self._get_saved_scores_data(request)
+
+            # 按部位分组数据
+            parts_data = defaultdict(
+                lambda: {"部位权重": 0.00, "部位评分": 0.00, "部件": {}}
+            )
+
+            # 处理每个部件数据
+            for item in weight_data:
+                part_name = item["part_name"]
+                component_type_name = item["component_type_name"]
+                key = (item["part_id"], item["component_type_id"])
+
+                # 获取调整后权重
+                if saved_scores_data and key in saved_scores_data:
+                    adjusted_weight = saved_scores_data[key]["adjusted_weight"]
+                else:
+                    component_count = self._count_components_from_paths(request, item)
+                    custom_count = component_count
+                    adjusted_weight = self._calculate_adjusted_weight(
+                        item["weight"], custom_count
+                    )
+
+                # 部件数据
+                parts_data[part_name]["部件"][component_type_name] = {
+                    "权重": float(adjusted_weight),
+                    "部件评分": 0.00,
+                }
+
+            # 计算部位权重
+            for part_name, part_info in parts_data.items():
+                components = part_info["部件"]
+                if components:
+                    total_weight = sum(comp["权重"] for comp in components.values())
+                    parts_data[part_name]["部位权重"] = round(
+                        total_weight / len(components), 2
+                    )
+                parts_data[part_name]["部位评分"] = 0.00
+
+            result = {
+                "总体评分": 0.00,
+                "评定等级": "暂无",
+                "部位": dict(parts_data),
+            }
+
+            return result
+
+        except Exception as e:
+            raise Exception(f"获取评分表格数据失败: {str(e)}")
 
 
 def get_scores_service(session: Session) -> ScoresService:
