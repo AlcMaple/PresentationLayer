@@ -85,3 +85,34 @@ class BridgeMainComponents(str, Enum):
     ANCHORS = "锚碇"
     CABLE_SYS = "斜拉索系统（斜拉索、锚具、斜拉索护套、减震装置等）"
     MAIN_BEAMS = "主粱"
+
+
+class BridgePartWeight(Enum):
+    """桥梁部位权重枚举"""
+
+    SUPERSTRUCTURE = ("上部结构", 0.40)
+    SUBSTRUCTURE = ("下部结构", 0.40)
+    DECK_SYSTEM = ("桥面系", 0.20)
+
+    @property
+    def part_name(self) -> str:
+        """获取部位名称"""
+        return self.value[0]
+
+    @property
+    def weight(self) -> float:
+        """获取权重值"""
+        return self.value[1]
+
+    @classmethod
+    def get_weight_by_name(cls, part_name: str) -> Optional[float]:
+        """根据部位名称获取权重"""
+        for item in cls:
+            if item.part_name == part_name:
+                return item.weight
+        return None
+
+    @classmethod
+    def get_all_weights(cls) -> dict:
+        """获取所有部位权重字典"""
+        return {item.part_name: item.weight for item in cls}

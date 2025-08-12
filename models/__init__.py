@@ -1,6 +1,6 @@
 from .base import BaseModel
 from .categories import Categories
-from .enums import ScalesType, BridgeMainComponents
+from .enums import ScalesType, BridgeMainComponents, BridgePartWeight
 from .bridge_components import (
     BridgeTypes,
     BridgeParts,
@@ -39,4 +39,5 @@ __all__ = [
     "WeightReferences",
     "UserPaths",
     "BridgeMainComponents",
+    "BridgePartWeight",
 ]
