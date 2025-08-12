@@ -10,6 +10,10 @@ from config.database import engine
 def clear_all_tables():
     """清空所有基础表数据"""
     tables = [
+        "scores",
+        "inspection_records",
+        "user_paths",
+        "weight_references",
         "paths",
         "bridge_quantities",
         "bridge_qualities",

@@ -1,10 +1,10 @@
 {
   "metadata": {
     "original_file": "static/json_output/all_bridge_data.json",
-    "adjusted_time": "2025-07-18T10:45:55.452214",
+    "adjusted_time": "2025-08-12T11:21:27.860862",
     "original_metadata": {
       "source_file": "static/work.xls",
-      "export_time": "2025-07-18T10:45:11.595914",
+      "export_time": "2025-08-12T11:20:51.185380",
       "total_sheets": 5,
       "sheet_names": [
         "梁式桥—各类构件对应病害类型",
@@ -20,7 +20,7 @@
   "sheets": {
     "梁式桥—各类构件对应病害类型": {
       "metadata": {
-        "export_time": "2025-07-18T10:45:11.605668",
+        "export_time": "2025-08-12T11:20:51.194509",
         "total_records": 102,
         "columns": [
           "桥梁类型",
@@ -49,8 +49,8 @@
                   "level": "结构类型",
                   "record_count": 12,
                   "children": {
-                    "上部承重构件或上部一般构件": {
-                      "name": "上部承重构件或上部一般构件",
+                    "上部承重构件、上部一般构件": {
+                      "name": "上部承重构件、上部一般构件",
                       "level": "部件类型",
                       "record_count": 12,
                       "children": {
@@ -533,8 +533,8 @@
                   "level": "结构类型",
                   "record_count": 8,
                   "children": {
-                    "上部承重构件或上部一般构件": {
-                      "name": "上部承重构件或上部一般构件",
+                    "上部承重构件、上部一般构件": {
+                      "name": "上部承重构件、上部一般构件",
                       "level": "部件类型",
                       "record_count": 8,
                       "children": {
@@ -3636,7 +3636,7 @@
     },
     "拱式桥—各类构件对应病害类型": {
       "metadata": {
-        "export_time": "2025-07-18T10:45:11.646012",
+        "export_time": "2025-08-12T11:20:51.236124",
         "total_records": 213,
         "columns": [
           "桥梁类型",
@@ -10857,7 +10857,7 @@
     },
     "钢-混凝土组合拱桥—各类构件对应病害类型": {
       "metadata": {
-        "export_time": "2025-07-18T10:45:11.717757",
+        "export_time": "2025-08-12T11:20:51.308524",
         "total_records": 137,
         "columns": [
           "桥梁类型",
@@ -15608,7 +15608,7 @@
     },
     "悬索桥—各类构件对应病害类型": {
       "metadata": {
-        "export_time": "2025-07-18T10:45:11.765041",
+        "export_time": "2025-08-12T11:20:51.356345",
         "total_records": 115,
         "columns": [
           "桥梁类型",
@@ -19688,7 +19688,7 @@
     },
     "斜拉桥—各类构件对应病害类型": {
       "metadata": {
-        "export_time": "2025-07-18T10:45:11.806008",
+        "export_time": "2025-08-12T11:20:51.398646",
         "total_records": 136,
         "columns": [
           "桥梁类型",

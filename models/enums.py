@@ -57,3 +57,31 @@ class CalculationMode(str, Enum):
 
     DEFAULT = "default"  # 使用默认构件数量
     CUSTOM = "custom"  # 使用自定义构件数量
+
+
+class BridgeMainComponents(str, Enum):
+    """桥梁主要部件枚举"""
+
+    UPPER_COMPONENT = "上部承重构件"
+    PIER = "桥墩"
+    ABUTMENT = "桥台"
+    FOUNDATION = "基础"
+    BEARING = "支座"
+    MAIN_ARCH = "主拱圈"
+    ARCH_SUPERSTRUCTURE = "拱上结构"
+    DECK_SLAB = "桥面板"
+    RIGID_FRAME_ARCH = "刚架拱片"
+    TRUSS_ARCH = "桁架拱片"
+    H_CONN_SYS = "横向联结系"
+    ARCH_RIBS = "拱肋"
+    COLUMN = "立柱"
+    HANGERS = "吊杆"
+    TIE_RODS = "系杆"
+    ROADWAY_SLABS = "行车道板(梁)"
+    MAIN_CABLES = "主缆"
+    SLINGS = "吊索"
+    STIFFEN_BEAMS = "加劲梁"
+    TOWERS = "索塔"
+    ANCHORS = "锚碇"
+    CABLE_SYS = "斜拉索系统（斜拉索、锚具、斜拉索护套、减震装置等）"
+    MAIN_BEAMS = "主粱"

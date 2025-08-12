@@ -120,7 +120,7 @@ async def get_scores_table_data(
     session: Session = Depends(get_db),
 ):
     """
-    查询评分表格数据 - 嵌套结构格式
+    查询评分列表数据
     """
     service = get_scores_service(session)
 
