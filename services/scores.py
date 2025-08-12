@@ -14,6 +14,7 @@ from models import (
     BridgeTypes,
     Scores,
     UserPaths,
+    BridgePartWeight,
 )
 from schemas.scores import (
     ScoreListRequest,
@@ -787,13 +788,12 @@ class ScoresService:
 
             # 计算部位权重
             for part_name, part_info in parts_data.items():
-                components = part_info["部件"]
-                if components:
-                    total_weight = sum(comp["权重"] for comp in components.values())
-                    parts_data[part_name]["部位权重"] = round(
-                        total_weight / len(components), 2
-                    )
-                parts_data[part_name]["部位评分"] = 0.00
+                # 获取部位权重
+                part_weight = BridgePartWeight.get_weight_by_name(part_name)
+                if part_weight is not None:
+                    parts_data[part_name]["部位权重"] = part_weight
+                else:
+                    parts_data[part_name]["部位权重"] = 0.00
 
             result = {
                 "总体评分": 0.00,
