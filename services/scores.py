@@ -62,6 +62,11 @@ class ScoresService:
             else:
                 conditions.append(Scores.assessment_unit_instance_name.is_(None))
 
+            if request.user_id:
+                conditions.append(Scores.user_id == request.user_id)
+            else:
+                conditions.append(Scores.user_id.is_(None))
+
             stmt = select(
                 Scores.part_id,
                 Scores.component_type_id,
@@ -95,7 +100,7 @@ class ScoresService:
         self, request: ScoreListRequest
     ) -> Tuple[List[Dict[str, Any]], int]:
         """
-        获取评分列表数据
+        获取权重分配列表数据
 
         Args:
             request: 查询请求参数
@@ -142,7 +147,7 @@ class ScoresService:
             return score_data, len(score_data)
 
         except Exception as e:
-            raise Exception(f"获取评分列表失败: {str(e)}")
+            raise Exception(f"获取权重分配列表失败: {str(e)}")
 
     def _get_weight_data(self, request: ScoreListRequest) -> List[Dict[str, Any]]:
         """
@@ -259,6 +264,7 @@ class ScoresService:
         self,
         bridge_instance_name: Optional[str] = None,
         assessment_unit_instance_name: Optional[str] = None,
+        user_id: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         获取权重分配分页查询的级联下拉选项
@@ -271,14 +277,16 @@ class ScoresService:
             级联选项字典
         """
         try:
-            bridge_instance_options = self._get_bridge_instance_options()
+            bridge_instance_options = self._get_bridge_instance_options(user_id)
 
             assessment_unit_instance_options = (
-                self._get_assessment_unit_instance_options(bridge_instance_name)
+                self._get_assessment_unit_instance_options(
+                    bridge_instance_name, user_id
+                )
             )
 
             bridge_type_options = self._get_bridge_type_options_for_scores(
-                bridge_instance_name, assessment_unit_instance_name
+                bridge_instance_name, assessment_unit_instance_name, user_id
             )
 
             return {
@@ -291,12 +299,20 @@ class ScoresService:
             print(f"获取级联选项时出错: {e}")
             raise Exception(f"获取级联选项失败: {str(e)}")
 
-    def _get_bridge_instance_options(self) -> List[Dict[str, Any]]:
+    def _get_bridge_instance_options(
+        self, user_id: Optional[int] = None
+    ) -> List[Dict[str, Any]]:
         """获取桥梁实例名称选项"""
         try:
+            conditions = [UserPaths.is_active == True]
+            if user_id is not None:
+                conditions.append(UserPaths.user_id == user_id)
+            else:
+                conditions.append(UserPaths.user_id.is_(None))
+
             stmt = (
                 select(UserPaths.bridge_instance_name)
-                .where(and_(UserPaths.is_active == True))
+                .where(and_(*conditions))
                 .distinct()
                 .order_by(UserPaths.bridge_instance_name)
             )
@@ -309,11 +325,16 @@ class ScoresService:
             return []
 
     def _get_assessment_unit_instance_options(
-        self, bridge_instance_name: Optional[str]
+        self, bridge_instance_name: Optional[str], user_id: Optional[int] = None
     ) -> List[Dict[str, Any]]:
         """获取评定单元实例名称选项"""
         try:
             conditions = [UserPaths.is_active == True]
+
+            if user_id is not None:
+                conditions.append(UserPaths.user_id == user_id)
+            else:
+                conditions.append(UserPaths.user_id.is_(None))
 
             if bridge_instance_name:
                 conditions.append(
@@ -340,6 +361,7 @@ class ScoresService:
         self,
         bridge_instance_name: Optional[str],
         assessment_unit_instance_name: Optional[str],
+        user_id: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
         """获取桥梁类型选项"""
         try:
@@ -351,6 +373,11 @@ class ScoresService:
                 )
             else:
                 conditions.append(UserPaths.bridge_type_id.is_(None))
+
+            if user_id is not None:
+                conditions.append(UserPaths.user_id == user_id)
+            else:
+                conditions.append(UserPaths.user_id.is_(None))
 
             if assessment_unit_instance_name:
                 conditions.append(

@@ -26,6 +26,7 @@ async def get_scores_list(
     assessment_unit_instance_name: Optional[str] = Query(
         None, description="评定单元实例名称"
     ),
+    user_id: Optional[int] = Query(None, description="用户ID"),
     # assessment_unit_id: Optional[str] = Query(None, description="评定单元ID"),
     session: Session = Depends(get_db),
 ):
@@ -39,6 +40,7 @@ async def get_scores_list(
         assessment_unit_instance_name=assessment_unit_instance_name,
         # assessment_unit_id=assessment_unit_id,
         bridge_type_id=bridge_type_id,
+        user_id=user_id,
     )
 
     # page_params = PageParams(page=page, size=size)
@@ -57,6 +59,7 @@ async def get_scores_list(
 
 @router.get("/cascade-options", summary="获取权重分配分页查询级联下拉选项")
 async def get_scores_cascade_options(
+    user_id: Optional[int] = Query(None, description="用户ID"),
     bridge_instance_name: Optional[str] = Query(None, description="桥梁实例名称"),
     assessment_unit_instance_name: Optional[str] = Query(
         None, description="评定单元实例名称"
@@ -69,6 +72,7 @@ async def get_scores_cascade_options(
     options = service.get_cascade_options(
         bridge_instance_name=bridge_instance_name,
         assessment_unit_instance_name=assessment_unit_instance_name,
+        user_id=user_id,
     )
 
     return success(options, "获取级联下拉选项成功")
