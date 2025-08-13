@@ -17,7 +17,7 @@ from exceptions import NotFoundException
 router = APIRouter(prefix="/scores", tags=["评分管理"])
 
 
-@router.get("/list-weight", summary="查询权重列表")
+@router.get("/list-weight", summary="查询权重分配列表")
 async def get_scores_list(
     # page: int = Query(1, ge=1, description="页码"),
     # size: int = Query(20, ge=1, le=100, description="每页数量"),
@@ -30,7 +30,7 @@ async def get_scores_list(
     session: Session = Depends(get_db),
 ):
     """
-    查询评分列表
+    查询权重分配列表
     """
     service = get_scores_service(session)
 
@@ -52,10 +52,10 @@ async def get_scores_list(
         # "size": size,
     }
 
-    return success(response_data, "查询评分列表成功")
+    return success(response_data, "查询权重分配列表成功")
 
 
-@router.get("/cascade-options", summary="获取评分分页查询级联下拉选项")
+@router.get("/cascade-options", summary="获取权重分配分页查询级联下拉选项")
 async def get_scores_cascade_options(
     bridge_instance_name: Optional[str] = Query(None, description="桥梁实例名称"),
     assessment_unit_instance_name: Optional[str] = Query(
@@ -63,7 +63,7 @@ async def get_scores_cascade_options(
     ),
     session: Session = Depends(get_db),
 ):
-    """获取评分分页查询的级联下拉选项"""
+    """获取权重分配分页查询的级联下拉选项"""
     service = get_scores_service(session)
 
     options = service.get_cascade_options(
@@ -133,3 +133,30 @@ async def get_scores_table_data(
     table_data = service.get_score_table_data(request)
 
     return success(table_data, "查询评分表格数据成功")
+
+
+@router.post("/calculate-score", summary="计算评分")
+async def calculate_score(
+    user_id: Optional[int] = Query(None, description="用户ID"),
+    bridge_instance_name: str = Query(..., description="桥梁实例名称"),
+    bridge_type_id: int = Query(..., description="桥梁类型ID"),
+    assessment_unit_instance_name: Optional[str] = Query(
+        None, description="评定单元实例名称"
+    ),
+    session: Session = Depends(get_db),
+):
+    """
+    计算评分
+    """
+    service = get_scores_service(session)
+
+    request = ScoreListRequest(
+        bridge_instance_name=bridge_instance_name,
+        assessment_unit_instance_name=assessment_unit_instance_name,
+        bridge_type_id=bridge_type_id,
+        user_id=user_id,
+    )
+
+    result = service.calculate_score(request)
+
+    return success(result, "评分计算成功")

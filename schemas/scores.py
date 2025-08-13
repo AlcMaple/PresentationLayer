@@ -14,6 +14,7 @@ class ScoreListRequest(BaseModel):
     )
     # assessment_unit_id: Optional[str] = Field(None, description="评定单元ID")
     bridge_type_id: int = Field(..., description="桥梁类型ID")
+    user_id: Optional[int] = Field(None, description="用户ID")
 
 
 class ScoreItemData(BaseModel):

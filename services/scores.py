@@ -261,7 +261,7 @@ class ScoresService:
         assessment_unit_instance_name: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
-        获取评分分页查询的级联下拉选项
+        获取权重分配分页查询的级联下拉选项
 
         Args:
             bridge_instance_name: 桥梁实例名称（可选）
@@ -805,6 +805,17 @@ class ScoresService:
 
         except Exception as e:
             raise Exception(f"获取评分表格数据失败: {str(e)}")
+
+    def calculate_score(self, request: ScoreListRequest) -> Dict[str, Any]:
+        """
+        计算评分
+        """
+        try:
+            # 获取用户在该链路构件下录入的病害数据
+            pass
+
+        except Exception as e:
+            raise Exception(f"计算评分失败: {str(e)}")
 
 
 def get_scores_service(session: Session) -> ScoresService:
