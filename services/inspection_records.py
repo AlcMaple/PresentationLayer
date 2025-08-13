@@ -182,16 +182,31 @@ class InspectionRecordsService(
             # 查询 paths 表中是否存在对应的病害和标度组合，基于 paths_record 的基础路径信息，加上病害和标度信息
             conditions = [
                 Paths.category_id == user_path.category_id,
-                Paths.assessment_unit_id == user_path.assessment_unit_id,
+                # Paths.assessment_unit_id == user_path.assessment_unit_id,
                 Paths.bridge_type_id == user_path.bridge_type_id,
                 Paths.part_id == user_path.part_id,
-                Paths.structure_id == user_path.structure_id,
-                Paths.component_type_id == user_path.component_type_id,
-                Paths.component_form_id == user_path.component_form_id,
+                # Paths.structure_id == user_path.structure_id,
+                # Paths.component_type_id == user_path.component_type_id,
+                # Paths.component_form_id == user_path.component_form_id,
                 Paths.disease_id == damage_type_id,
                 Paths.scale_id == scale_id,
                 Paths.is_active == True,
             ]
+
+            if user_path.assessment_unit_id:
+                conditions.append(
+                    Paths.assessment_unit_id == user_path.assessment_unit_id
+                )
+            if user_path.component_type_id:
+                conditions.append(
+                    Paths.component_type_id == user_path.component_type_id
+                )
+            if user_path.component_form_id:
+                conditions.append(
+                    Paths.component_form_id == user_path.component_form_id
+                )
+            if user_path.structure_id:
+                conditions.append(Paths.structure_id == user_path.structure_id)
 
             stmt = select(Paths.id).where(and_(*conditions)).limit(1)
             result = self.session.exec(stmt).first()
@@ -298,7 +313,6 @@ class InspectionRecordsService(
         获取包含详细关联信息的检查记录
         """
         try:
-            # 查询基础记录
             stmt = select(InspectionRecords).where(
                 and_(
                     InspectionRecords.id == record_id,
@@ -328,7 +342,6 @@ class InspectionRecordsService(
             )
             form_options = self.get_form_options_by_path(path_request)
 
-            # 构建响应
             return InspectionRecordsResponse(
                 id=record.id,
                 user_id=record.user_id,

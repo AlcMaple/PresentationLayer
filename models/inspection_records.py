@@ -12,7 +12,7 @@ class InspectionRecords(BaseModel, table=True):
     id: Optional[int] = Field(
         default=None, primary_key=True, description="检查记录主键ID"
     )
-    
+
     # 用户ID字段
     user_id: Optional[int] = Field(
         default=None, description="创建该记录的用户ID, 为空时代表管理员创建"
@@ -29,11 +29,11 @@ class InspectionRecords(BaseModel, table=True):
     structure_id: Optional[int] = Field(
         default=None, foreign_key="bridge_structures.id", description="结构类型ID"
     )
-    component_type_id: int = Field(
-        foreign_key="bridge_component_types.id", description="部件类型ID"
+    component_type_id: Optional[int] = Field(
+        default=None, foreign_key="bridge_component_types.id", description="部件类型ID"
     )
-    component_form_id: int = Field(
-        foreign_key="bridge_component_forms.id", description="构件形式ID"
+    component_form_id: Optional[int] = Field(
+        default=None, foreign_key="bridge_component_forms.id", description="构件形式ID"
     )
 
     # 病害和标度数据

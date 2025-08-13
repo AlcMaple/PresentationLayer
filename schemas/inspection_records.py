@@ -7,7 +7,9 @@ class InspectionRecordsCreate(BaseModel):
     """检查记录创建模型"""
 
     # 用户ID字段
-    user_id: Optional[int] = Field(None, description="创建记录的用户ID, 为空时代表管理员创建")
+    user_id: Optional[int] = Field(
+        None, description="创建记录的用户ID, 为空时代表管理员创建"
+    )
 
     # 前7层路径字段
 
@@ -19,9 +21,9 @@ class InspectionRecordsCreate(BaseModel):
 
     bridge_type_id: int = Field(..., description="桥梁类型ID")
     part_id: int = Field(..., description="部位ID")
-    structure_id: int = Field(..., description="结构类型ID")
-    component_type_id: int = Field(..., description="部件类型ID")
-    component_form_id: int = Field(..., description="构件形式ID")
+    structure_id: Optional[int] = Field(None, description="结构类型ID")
+    component_type_id: Optional[int] = Field(None, description="部件类型ID")
+    component_form_id: Optional[int] = Field(None, description="构件形式ID")
 
     # 病害和标度数据
     damage_type_code: str = Field(..., description="病害类型编码", max_length=50)
@@ -40,7 +42,9 @@ class InspectionRecordsUpdate(BaseModel):
     """检查记录更新模型"""
 
     # 病害和标度数据
-    damage_type_code: Optional[str] = Field(None, description="病害类型编码", max_length=50)
+    damage_type_code: Optional[str] = Field(
+        None, description="病害类型编码", max_length=50
+    )
     scale_code: Optional[str] = Field(None, description="标度编码", max_length=50)
 
     # 检查数据字段
@@ -63,9 +67,9 @@ class PathValidationRequest(BaseModel):
 
     bridge_type_id: int = Field(..., description="桥梁类型ID")
     part_id: int = Field(..., description="部位ID")
-    structure_id: int = Field(..., description="结构类型ID")
-    component_type_id: int = Field(..., description="部件类型ID")
-    component_form_id: int = Field(..., description="构件形式ID")
+    structure_id: Optional[int] = Field(None, description="结构类型ID")
+    component_type_id: Optional[int] = Field(None, description="部件类型ID")
+    component_form_id: Optional[int] = Field(None, description="构件形式ID")
 
 
 class DamageTypeOption(BaseModel):
@@ -117,9 +121,9 @@ class InspectionRecordsResponse(BaseModel):
     part_name: Optional[str] = None
     structure_id: Optional[int] = None
     structure_name: Optional[str] = None
-    component_type_id: int
+    component_type_id: Optional[int] = None
     component_type_name: Optional[str] = None
-    component_form_id: int
+    component_form_id: Optional[int] = None
     component_form_name: Optional[str] = None
 
     # 病害和标度信息
@@ -161,6 +165,6 @@ class DamageReferenceRequest(BaseModel):
     bridge_type_id: int = Field(..., description="桥梁类型ID")
     part_id: int = Field(..., description="部位ID")
     structure_id: Optional[int] = Field(None, description="结构类型ID")
-    component_type_id: int = Field(..., description="部件类型ID")
-    component_form_id: int = Field(..., description="构件形式ID")
+    component_type_id: Optional[int] = Field(None, description="部件类型ID")
+    component_form_id: Optional[int] = Field(None, description="构件形式ID")
     damage_type_code: str = Field(..., description="病害类型编码")
