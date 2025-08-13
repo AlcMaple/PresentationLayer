@@ -26,12 +26,14 @@ async def create_inspection_record(
     bridge_instance_name: str = Form(..., description="桥梁类别实例名称"),
     bridge_type_id: int = Form(..., description="桥梁类型ID"),
     part_id: int = Form(..., description="部位ID"),
-    component_type_id: int = Form(..., description="部件类型ID"),
-    component_form_id: int = Form(..., description="构件形式ID"),
+    component_type_id: Optional[int] = Form(None, description="部件类型ID"),
+    component_form_id: Optional[int] = Form(None, description="构件形式ID"),
     damage_type_code: str = Form(..., description="病害类型编码"),
     scale_code: str = Form(..., description="标度编码"),
-    assessment_unit_instance_name: str = Form(None, description="评定单元实例名称"),
-    structure_id: int = Form(..., description="结构类型ID"),
+    assessment_unit_instance_name: Optional[str] = Form(
+        None, description="评定单元实例名称"
+    ),
+    structure_id: Optional[int] = Form(None, description="结构类型ID"),
     damage_location: Optional[str] = Form(None, description="病害位置"),
     damage_description: Optional[str] = Form(None, description="病害程度"),
     component_name: Optional[str] = Form(None, description="构件名称"),
@@ -78,7 +80,7 @@ async def get_form_options_by_path(
 async def get_inspection_records_list(
     page: int = Query(1, ge=1, description="页码"),
     size: int = Query(20, ge=1, le=100, description="每页数量"),
-    user_id: Optional[int] = Query(None, description="用户ID，用于过滤指定用户的记录"),
+    user_id: Optional[int] = Query(None, description="用户ID"),
     # 路径过滤条件
     part_id: Optional[int] = Query(None, description="部位ID"),
     structure_id: Optional[int] = Query(None, description="结构类型ID"),
