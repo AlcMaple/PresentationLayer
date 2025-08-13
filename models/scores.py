@@ -13,6 +13,7 @@ class Scores(BaseModel, table=True):
     id: Optional[int] = Field(
         default=None, primary_key=True, description="评分记录主键ID"
     )
+    user_id: Optional[int] = Field(default=None, description="用户ID")
 
     bridge_instance_name: str = Field(max_length=200, description="桥梁实例名称")
     assessment_unit_instance_name: Optional[str] = Field(

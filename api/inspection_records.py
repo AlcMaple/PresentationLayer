@@ -247,11 +247,12 @@ async def import_inspection_records_excel(
 
 @router.get("/filter-options", summary="获取分页查询过滤选项")
 async def get_inspection_records_filter_options(
+    user_id: Optional[int] = Query(None, description="用户ID"),
     session: Session = Depends(get_db),
 ):
     """获取检查记录分页查询的过滤选项"""
     service = get_inspection_records_service(session)
-    options = service.get_filter_options()
+    options = service.get_filter_options(user_id)
 
     return success(options, "获取过滤选项成功")
 

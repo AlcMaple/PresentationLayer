@@ -1280,7 +1280,9 @@ class InspectionRecordsService(
             traceback.print_exc()
             raise Exception(f"导入检查记录数据失败: {str(e)}")
 
-    def get_filter_options(self) -> Dict[str, List[Dict[str, Any]]]:
+    def get_filter_options(
+        self, user_id: Optional[int] = None
+    ) -> Dict[str, List[Dict[str, Any]]]:
         """
         获取检查记录分页查询的过滤选项
 
@@ -1315,16 +1317,20 @@ class InspectionRecordsService(
 
             for table_name, model_class, option_key, record_field in table_configs:
                 try:
+                    base_conditions = [
+                        record_field.is_not(None),
+                        InspectionRecords.is_active == True,
+                    ]
+
+                    # 用户ID过滤
+                    if user_id is not None:
+                        base_conditions.append(InspectionRecords.user_id == user_id)
+                    else:
+                        base_conditions.append(InspectionRecords.user_id.is_(None))
+
                     # 查询在inspection_records表中存在的ID
                     existing_ids_stmt = (
-                        select(record_field)
-                        .where(
-                            and_(
-                                record_field.is_not(None),
-                                InspectionRecords.is_active == True,
-                            )
-                        )
-                        .distinct()
+                        select(record_field).where(and_(*base_conditions)).distinct()
                     )
                     existing_ids = self.session.exec(existing_ids_stmt).all()
 
