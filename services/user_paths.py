@@ -23,7 +23,7 @@ from schemas.user_paths import (
 )
 from schemas.inspection_records import PathValidationRequest
 from services.base_crud import BaseCRUDService, PageParams
-from exceptions import NotFoundException, ValidationException
+from exceptions import NotFoundException, ValidationException, DuplicateException
 from services.inspection_records import get_inspection_records_service
 
 
@@ -331,6 +331,82 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
             print(f"获取构件形式选项时出错: {e}")
             return []
 
+    def _check_duplicate_user_path(
+        self, obj_in: UserPathsCreate, exclude_id: Optional[int] = None
+    ) -> None:
+        """
+        检查同一用户是否已创建相同路径
+
+        Args:
+            obj_in: 用户路径数据
+            exclude_id: 排除的用户路径ID（用于更新时排除当前记录）
+
+        Raises:
+            DuplicateException: 当检测到重复路径时抛出
+        """
+        try:
+            conditions = [
+                UserPaths.user_id == obj_in.user_id,
+                UserPaths.bridge_instance_name == obj_in.bridge_instance_name,
+                UserPaths.category_id == obj_in.category_id,
+                UserPaths.bridge_type_id == obj_in.bridge_type_id,
+                UserPaths.part_id == obj_in.part_id,
+                UserPaths.is_active == True,
+            ]
+
+            if obj_in.assessment_unit_id is not None:
+                conditions.append(
+                    UserPaths.assessment_unit_id == obj_in.assessment_unit_id
+                )
+            else:
+                conditions.append(UserPaths.assessment_unit_id.is_(None))
+
+            if obj_in.assessment_unit_instance_name is not None:
+                conditions.append(
+                    UserPaths.assessment_unit_instance_name
+                    == obj_in.assessment_unit_instance_name
+                )
+            else:
+                conditions.append(UserPaths.assessment_unit_instance_name.is_(None))
+
+            if obj_in.structure_id is not None:
+                conditions.append(UserPaths.structure_id == obj_in.structure_id)
+            else:
+                conditions.append(UserPaths.structure_id.is_(None))
+
+            if obj_in.component_type_id is not None:
+                conditions.append(
+                    UserPaths.component_type_id == obj_in.component_type_id
+                )
+            else:
+                conditions.append(UserPaths.component_type_id.is_(None))
+
+            if obj_in.component_form_id is not None:
+                conditions.append(
+                    UserPaths.component_form_id == obj_in.component_form_id
+                )
+            else:
+                conditions.append(UserPaths.component_form_id.is_(None))
+
+            # 如果是更新操作，排除当前记录
+            if exclude_id is not None:
+                conditions.append(UserPaths.id != exclude_id)
+
+            stmt = select(UserPaths).where(and_(*conditions)).limit(1)
+            existing_path = self.session.exec(stmt).first()
+
+            if existing_path:
+                print(
+                    f"发现重复路径，用户ID: {obj_in.user_id}, 桥梁: {obj_in.bridge_instance_name}"
+                )
+                raise ValidationException("该用户已创建相同的路径组合")
+
+        except (ValidationException, DuplicateException):
+            raise
+        except Exception as e:
+            print(f"检查重复用户路径时出错: {e}")
+            raise Exception(f"检查重复路径失败: {str(e)}")
+
     def create(self, obj_in: UserPathsCreate) -> UserPathsResponse:
         """
         创建用户路径
@@ -352,6 +428,9 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
             # 如果用户不传评定单元id，则不能填写评定单元实例名称
             if not obj_in.assessment_unit_id and obj_in.assessment_unit_instance_name:
                 raise ValidationException("评定单元实例名称不能填写，请选择评定单元")
+
+            # 检查同一用户是否已创建相同路径
+            self._check_duplicate_user_path(obj_in)
 
             # 创建用户路径记录
             user_path = UserPaths(
@@ -375,7 +454,7 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
 
             return self._get_user_path_with_details(user_path.id)
 
-        except ValidationException:
+        except (ValidationException, DuplicateException):
             self.session.rollback()
             raise
         except Exception as e:
@@ -540,60 +619,49 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
             # 获取更新数据
             update_data = obj_in.model_dump(exclude_unset=True)
 
-            # 检查是否需要重新查找基础路径ID
-            path_fields_changed = any(
-                field in update_data
-                for field in [
-                    "category_id",
-                    "assessment_unit_id",
-                    "bridge_type_id",
-                    "part_id",
-                    "structure_id",
-                    "component_type_id",
-                    "component_form_id",
-                ]
+            # 合并现有数据和更新数据
+            merged_data = UserPathsCreate(
+                category_id=update_data.get(
+                    "category_id", existing_user_path.category_id
+                ),
+                assessment_unit_id=update_data.get(
+                    "assessment_unit_id", existing_user_path.assessment_unit_id
+                ),
+                bridge_type_id=update_data.get(
+                    "bridge_type_id", existing_user_path.bridge_type_id
+                ),
+                part_id=update_data.get("part_id", existing_user_path.part_id),
+                structure_id=update_data.get(
+                    "structure_id", existing_user_path.structure_id
+                ),
+                component_type_id=update_data.get(
+                    "component_type_id", existing_user_path.component_type_id
+                ),
+                component_form_id=update_data.get(
+                    "component_form_id", existing_user_path.component_form_id
+                ),
+                user_id=existing_user_path.user_id,
+                bridge_instance_name=update_data.get(
+                    "bridge_instance_name", existing_user_path.bridge_instance_name
+                ),
+                assessment_unit_instance_name=update_data.get(
+                    "assessment_unit_instance_name",
+                    existing_user_path.assessment_unit_instance_name,
+                ),
             )
 
-            if path_fields_changed:
-                # 构建新的路径数据
-                new_path_data = UserPathsCreate(
-                    category_id=update_data.get(
-                        "category_id", existing_user_path.category_id
-                    ),
-                    assessment_unit_id=update_data.get(
-                        "assessment_unit_id", existing_user_path.assessment_unit_id
-                    ),
-                    bridge_type_id=update_data.get(
-                        "bridge_type_id", existing_user_path.bridge_type_id
-                    ),
-                    part_id=update_data.get("part_id", existing_user_path.part_id),
-                    structure_id=update_data.get(
-                        "structure_id", existing_user_path.structure_id
-                    ),
-                    component_type_id=update_data.get(
-                        "component_type_id", existing_user_path.component_type_id
-                    ),
-                    component_form_id=update_data.get(
-                        "component_form_id", existing_user_path.component_form_id
-                    ),
-                    user_id=existing_user_path.user_id,
-                    bridge_instance_name=update_data.get(
-                        "bridge_instance_name", existing_user_path.bridge_instance_name
-                    ),
-                    assessment_unit_instance_name=update_data.get(
-                        "assessment_unit_instance_name",
-                        existing_user_path.assessment_unit_instance_name,
-                    ),
+            # 查找基础路径ID
+            new_paths_id = self._find_matching_paths_id(merged_data)
+            if not new_paths_id:
+                raise ValidationException(
+                    "未找到匹配的基础路径，请检查选择的路径组合是否正确"
                 )
 
-                # 查找新的基础路径ID
-                new_paths_id = self._find_matching_paths_id(new_path_data)
-                if not new_paths_id:
-                    raise ValidationException(
-                        "未找到匹配的基础路径，请检查选择的路径组合是否正确"
-                    )
+            # 检查用户路径重复
+            self._check_duplicate_user_path(merged_data, exclude_id=user_path_id)
 
-                update_data["paths_id"] = new_paths_id
+            # 更新paths_id
+            update_data["paths_id"] = new_paths_id
 
             # 更新记录
             for field, value in update_data.items():
@@ -607,7 +675,7 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
 
             return self._get_user_path_with_details(user_path_id)
 
-        except (NotFoundException, ValidationException):
+        except (NotFoundException, ValidationException, DuplicateException):
             self.session.rollback()
             raise
         except Exception as e:
