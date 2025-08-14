@@ -19,6 +19,7 @@ from models import (
     InspectionRecords,
     BridgeScales,
     AssessmentUnit,
+    BridgeDiseases,
 )
 from schemas.scores import (
     ScoreListRequest,
@@ -851,6 +852,7 @@ class ScoresService:
             按构件分组的病害数据列表
         """
         try:
+            # 查找用户路径
             user_path_conditions = [
                 UserPaths.bridge_instance_name == request.bridge_instance_name,
                 UserPaths.bridge_type_id == request.bridge_type_id,
@@ -872,6 +874,7 @@ class ScoresService:
             else:
                 user_path_conditions.append(UserPaths.user_id.is_(None))
 
+            # 查询用户路径
             user_paths_stmt = select(UserPaths).where(and_(*user_path_conditions))
             user_paths = self.session.exec(user_paths_stmt).all()
 
@@ -934,11 +937,23 @@ class ScoresService:
                 else:
                     damage_conditions.append(InspectionRecords.user_id.is_(None))
 
+                # 查询病害记录
                 damage_stmt = select(InspectionRecords).where(and_(*damage_conditions))
                 records = self.session.exec(damage_stmt).all()
 
-                # 为每条记录添加构件信息
                 for record in records:
+                    mapped_component_type_id = record.component_type_id
+                    if mapped_component_type_id is None:
+                        mapped_component_type_id = self._get_default_id(
+                            BridgeComponentTypes
+                        )
+
+                    mapped_component_form_id = record.component_form_id
+                    if mapped_component_form_id is None:
+                        mapped_component_form_id = self._get_default_id(
+                            BridgeComponentForms
+                        )
+
                     damage_info = {
                         "record_id": record.id,
                         "bridge_instance_name": record.bridge_instance_name,
@@ -956,7 +971,7 @@ class ScoresService:
                         "image_url": record.image_url,
                         "created_at": record.created_at,
                         # 构件标识（用于分组）
-                        "component_key": f"{record.part_id}_{record.component_type_id}_{record.component_form_id}_{record.component_name or 'default'}",
+                        "component_key": f"{record.part_id}_{mapped_component_type_id or 'null'}_{mapped_component_form_id or 'null'}",
                     }
                     damage_records.append(damage_info)
 
@@ -1137,9 +1152,14 @@ class ScoresService:
         try:
             damage_scores = []
 
+            print(f"开始计算 {len(damage_records)} 条病害记录的分数:")
+
             for record in damage_records:
                 damage_type_id = record["damage_type_id"]
                 scale_id = record["scale_id"]
+
+                # # 获取病害类型名称
+                # damage_type_name = self._get_name_by_id(BridgeDiseases, damage_type_id)
 
                 # 获取该病害类型的最高标度
                 max_scale = self._get_max_scale_for_damage_type(damage_type_id, record)
@@ -1157,10 +1177,15 @@ class ScoresService:
                         or 0
                     )
 
+                # print(
+                #     f"  - {damage_type_name}: 最高标度={max_scale}, 当前标度={current_scale_value}, 分数={damage_score}"
+                # )
+
                 # 添加分数信息到记录中
                 score_record = record.copy()
                 score_record.update(
                     {
+                        # "damage_type_name": damage_type_name,
                         "max_scale": max_scale,
                         "current_scale_value": current_scale_value,
                         "damage_score": damage_score,
@@ -1210,6 +1235,7 @@ class ScoresService:
             for i, score in enumerate(damage_scores, 1):
                 # U_i = (score / (100 * √i)) * (100 - total_u)
                 u_i = (score / (100 * math.sqrt(i))) * (100 - total_u)
+                print("u_i", u_i)
                 total_u += u_i
 
             # 构件分数 = 100 - total_u

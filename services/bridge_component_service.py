@@ -1,7 +1,7 @@
 from typing import Optional, Set, Dict
 from sqlmodel import Session, select
 
-from models import BridgeTypes, BridgeParts, BridgeMainComponents
+from models import BridgeTypes, BridgeParts, BridgeMainComponents, BridgeComponentTypes
 from exceptions import NotFoundException
 
 
@@ -79,13 +79,15 @@ class BridgeComponentService:
         main_components = self.BRIDGE_TYPE_MAIN_COMPONENTS[bridge_type_name]
         return component_name in main_components
 
-    def is_main_component_by_id(self, bridge_type_id: int, part_id: int) -> bool:
+    def is_main_component_by_id(
+        self, bridge_type_id: int, component_type_id: int
+    ) -> bool:
         """
         通过ID判断指定部件是否为特定桥梁类型的主要部件
 
         Args:
             bridge_type_id (int): 桥梁类型ID
-            part_id (int): 部位ID
+            component_type_id (int): 部件ID
 
         Returns:
             bool: True表示是主要部件，False表示不是主要部件
@@ -99,9 +101,9 @@ class BridgeComponentService:
             raise NotFoundException("BridgeType", str(bridge_type_id))
 
         # 查询部位名称
-        part = self.session.get(BridgeParts, part_id)
+        part = self.session.get(BridgeComponentTypes, component_type_id)
         if not part:
-            raise NotFoundException("BridgePart", str(part_id))
+            raise NotFoundException("BridgeComponentTypes", str(component_type_id))
 
         return self.is_main_component(bridge_type.name, part.name)
 
