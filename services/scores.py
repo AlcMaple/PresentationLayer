@@ -32,6 +32,7 @@ from schemas.scores import (
 )
 from services.base_crud import PageParams
 from services.component_deduction import ComponentDeductionService
+from services.bridge_component_service import get_bridge_component_service
 from exceptions import NotFoundException
 
 
@@ -1392,6 +1393,116 @@ class ScoresService:
         except Exception as e:
             raise Exception(f"计算构件分数失败: {str(e)}")
 
+    def _calculate_main_component_scores(
+        self, component_scores: Dict[str, Dict[str, Any]], request: ScoreListRequest
+    ) -> Dict[int, Dict[str, Any]]:
+        """
+        计算主要部件的部件分
+
+        Args:
+            component_scores: 构件分数字典 {component_key: {component_info, damages, component_score}}
+            request: 评分请求参数
+
+        Returns:
+            主要部件分数字典 {component_type_id: {component_type_info, component_scores, component_part_score, is_special_case}}
+        """
+        try:
+            bridge_service = get_bridge_component_service(self.session)
+
+            # 按部件类型分组构件分数
+            component_types_components = defaultdict(list)
+
+            for component_key, component_data in component_scores.items():
+                component_info = component_data["component_info"]
+                component_type_id = component_info["component_type_id"]
+
+                # 只处理有component_type_id的构件
+                if component_type_id is not None:
+                    component_item = {
+                        "component_key": component_key,
+                        "component_info": component_info,
+                        "component_score": component_data["component_score"],
+                        "damage_count": component_data["damage_count"],
+                    }
+
+                    component_types_components[component_type_id].append(component_item)
+
+            main_component_scores = {}
+
+            print(f"\n开始计算主要部件的部件分:")
+
+            # 对每个部件类型进行处理
+            for component_type_id, components in component_types_components.items():
+                if not components:
+                    continue
+
+                # 获取部件类型信息
+                component_type_info = components[0]["component_info"]
+                component_type_name = component_type_info["component_type_name"]
+
+                # 判断是否为主要部件
+                is_main_component = bridge_service.is_main_component_by_id(
+                    request.bridge_type_id, component_type_id
+                )
+
+                if not is_main_component:
+                    print(
+                        f"  - {component_type_name} (ID: {component_type_id}): 非主要部件，跳过"
+                    )
+                    continue
+
+                print(f"  - {component_type_name} (ID: {component_type_id}): 主要部件")
+
+                # 提取该主要部件下所有构件的构件分
+                component_score_list = [comp["component_score"] for comp in components]
+
+                # 特殊情况：构件分在[0,60)区间
+                special_case_scores = [
+                    score for score in component_score_list if 0 <= score < 60
+                ]
+
+                if special_case_scores:
+                    # 特殊情况：取最小值作为该主要部件的部件分
+                    component_part_score = min(special_case_scores)
+                    is_special_case = True
+
+                    print(
+                        f"    满足特殊情况，该主要部件下有构件分在[0,60)区间: {special_case_scores}"
+                    )
+                    print(
+                        f"    该主要部件的部件分 = {component_part_score:.2f} (取最小值)"
+                    )
+
+                else:
+                    # 正常情况：公式计算
+                    component_part_score = 0.0  # 占位值
+                    is_special_case = False
+
+                    print(
+                        f"    不满足特殊情况，该主要部件需要使用公式计算部件分 (暂未实现)"
+                    )
+                    print(f"    该主要部件下构件分数: {component_score_list}")
+
+                main_component_scores[component_type_id] = {
+                    "component_type_info": component_type_info,
+                    "components": components,
+                    "component_scores": component_score_list,
+                    "component_part_score": component_part_score,  # 该主要部件的部件分
+                    "is_special_case": is_special_case,
+                    "special_case_scores": (
+                        special_case_scores if special_case_scores else []
+                    ),
+                }
+
+            print(
+                f"主要部件部件分计算完成，共处理 {len(main_component_scores)} 个主要部件\n"
+            )
+
+            return main_component_scores
+
+        except Exception as e:
+            raise Exception(f"计算主要部件部件分失败: {str(e)}")
+
     def calculate_score(self, request: ScoreListRequest) -> Dict[str, Any]:
         """
         计算评分
@@ -1406,10 +1517,16 @@ class ScoresService:
             # 计算构件分数
             component_scores = self._calculate_component_scores(damage_scores, request)
 
+            # 计算主要部件的部件分
+            main_component_scores = self._calculate_main_component_scores(
+                component_scores, request
+            )
+
             return {
                 "damage_records": damage_records,
                 "damage_scores": damage_scores,
                 "component_scores": component_scores,
+                "main_component_scores": main_component_scores,
                 "message": "评分计算成功",
             }
 

@@ -50,6 +50,7 @@ class BridgeComponentService:
                 BridgeMainComponents.ABUTMENT,
                 BridgeMainComponents.FOUNDATION,
                 BridgeMainComponents.BEARING,
+                BridgeMainComponents.MAIN_CABLES,
             },
             "斜拉桥": {
                 BridgeMainComponents.CABLE_SYS,
