@@ -22,6 +22,7 @@ from models import (
     BridgeScales,
     BridgeQualities,
     BridgeQuantities,
+    AssessmentUnit,
 )
 from models.enums import ScalesType
 from schemas.inspection_records import (
@@ -603,6 +604,20 @@ class InspectionRecordsService(
             self.session.rollback()
             raise Exception(f"更新检查记录失败: {str(e)}")
 
+    def _get_default_id(self, model_class) -> Optional[int]:
+        """获取名称为"-"的记录ID"""
+        try:
+            stmt = (
+                select(model_class.id)
+                .where(and_(model_class.name == "-", model_class.is_active == True))
+                .limit(1)
+            )
+            result = self.session.exec(stmt).first()
+            return result
+        except Exception as e:
+            print(f"获取默认ID时出错 {model_class.__name__}: {e}")
+            return None
+
     def get_form_options_by_path(
         self, path_request: PathValidationRequest
     ) -> FormOptionsResponse:
@@ -610,7 +625,7 @@ class InspectionRecordsService(
         根据路径获取表单选项
         """
         try:
-            # 获取匹配的用户路径记录
+            # 获取用户路径记录
             user_path = self._get_matching_user_path(path_request)
             if not user_path:
                 return FormOptionsResponse(damage_types=[], scales_by_damage={})
@@ -623,7 +638,22 @@ class InspectionRecordsService(
             if not paths_record:
                 return FormOptionsResponse(damage_types=[], scales_by_damage={})
 
-            # 查询条件
+            assessment_unit_id = paths_record.assessment_unit_id
+            if assessment_unit_id is None:
+                assessment_unit_id = self._get_default_id(AssessmentUnit)
+
+            structure_id = paths_record.structure_id
+            if structure_id is None:
+                structure_id = self._get_default_id(BridgeStructures)
+
+            component_type_id = paths_record.component_type_id
+            if component_type_id is None:
+                component_type_id = self._get_default_id(BridgeComponentTypes)
+
+            component_form_id = paths_record.component_form_id
+            if component_form_id is None:
+                component_form_id = self._get_default_id(BridgeComponentForms)
+
             base_conditions = [
                 Paths.category_id == paths_record.category_id,
                 Paths.assessment_unit_id == paths_record.assessment_unit_id,
@@ -635,7 +665,7 @@ class InspectionRecordsService(
                 Paths.is_active == True,
             ]
 
-            # 查询符合条件的paths记录，只查询有disease_id和scale_id的记录
+            # 查询符合条件的paths病害和标度记录
             paths_stmt = (
                 select(Paths.disease_id, Paths.scale_id)
                 .where(
@@ -702,7 +732,7 @@ class InspectionRecordsService(
             scale_map = {}
 
             for r in scale_results:
-                # 构建标度显示名称
+                # 标度显示名称
                 if r.scale_type == ScalesType.NUMERIC:
                     display_name = (
                         str(r.scale_value) if r.scale_value is not None else r.code
@@ -723,7 +753,7 @@ class InspectionRecordsService(
                     "value": r.scale_value,
                 }
 
-            # 按病害类型分组组织数据
+            # 按病害类型分组
             damage_scale_map = {}
 
             for disease_id, scale_id in disease_scale_pairs:

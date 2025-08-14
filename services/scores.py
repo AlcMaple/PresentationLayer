@@ -15,6 +15,8 @@ from models import (
     Scores,
     UserPaths,
     BridgePartWeight,
+    InspectionRecords,
+    BridgeScales,
 )
 from schemas.scores import (
     ScoreListRequest,
@@ -26,6 +28,7 @@ from schemas.scores import (
     WeightAllocationSaveRequest,
 )
 from services.base_crud import PageParams
+from services.component_deduction import ComponentDeductionService
 from exceptions import NotFoundException
 
 
@@ -833,13 +836,252 @@ class ScoresService:
         except Exception as e:
             raise Exception(f"获取评分表格数据失败: {str(e)}")
 
+    def _get_user_damage_records(
+        self, request: ScoreListRequest
+    ) -> List[Dict[str, Any]]:
+        """
+        获取用户在该链路构件下录入的病害数据，按构件分组
+
+        Args:
+            request: 评分列表查询请求
+
+        Returns:
+            按构件分组的病害数据列表
+        """
+        try:
+            user_path_conditions = [
+                UserPaths.bridge_instance_name == request.bridge_instance_name,
+                UserPaths.bridge_type_id == request.bridge_type_id,
+                UserPaths.is_active == True,
+            ]
+
+            if request.assessment_unit_instance_name:
+                user_path_conditions.append(
+                    UserPaths.assessment_unit_instance_name
+                    == request.assessment_unit_instance_name
+                )
+            else:
+                user_path_conditions.append(
+                    UserPaths.assessment_unit_instance_name.is_(None)
+                )
+
+            if request.user_id is not None:
+                user_path_conditions.append(UserPaths.user_id == request.user_id)
+            else:
+                user_path_conditions.append(UserPaths.user_id.is_(None))
+
+            user_paths_stmt = select(UserPaths).where(and_(*user_path_conditions))
+            user_paths = self.session.exec(user_paths_stmt).all()
+
+            if not user_paths:
+                return []
+
+            # 查找病害记录
+            damage_records = []
+
+            for user_path in user_paths:
+                damage_conditions = [
+                    InspectionRecords.bridge_instance_name
+                    == user_path.bridge_instance_name,
+                    InspectionRecords.bridge_type_id == user_path.bridge_type_id,
+                    InspectionRecords.part_id == user_path.part_id,
+                    InspectionRecords.is_active == True,
+                ]
+
+                if user_path.assessment_unit_instance_name:
+                    damage_conditions.append(
+                        InspectionRecords.assessment_unit_instance_name
+                        == user_path.assessment_unit_instance_name
+                    )
+                else:
+                    damage_conditions.append(
+                        InspectionRecords.assessment_unit_instance_name.is_(None)
+                    )
+
+                if user_path.structure_id:
+                    damage_conditions.append(
+                        InspectionRecords.structure_id == user_path.structure_id
+                    )
+                else:
+                    damage_conditions.append(InspectionRecords.structure_id.is_(None))
+
+                if user_path.component_type_id:
+                    damage_conditions.append(
+                        InspectionRecords.component_type_id
+                        == user_path.component_type_id
+                    )
+                else:
+                    damage_conditions.append(
+                        InspectionRecords.component_type_id.is_(None)
+                    )
+
+                if user_path.component_form_id:
+                    damage_conditions.append(
+                        InspectionRecords.component_form_id
+                        == user_path.component_form_id
+                    )
+                else:
+                    damage_conditions.append(
+                        InspectionRecords.component_form_id.is_(None)
+                    )
+
+                if request.user_id is not None:
+                    damage_conditions.append(
+                        InspectionRecords.user_id == request.user_id
+                    )
+                else:
+                    damage_conditions.append(InspectionRecords.user_id.is_(None))
+
+                damage_stmt = select(InspectionRecords).where(and_(*damage_conditions))
+                records = self.session.exec(damage_stmt).all()
+
+                # 为每条记录添加构件信息
+                for record in records:
+                    damage_info = {
+                        "record_id": record.id,
+                        "bridge_instance_name": record.bridge_instance_name,
+                        "assessment_unit_instance_name": record.assessment_unit_instance_name,
+                        "bridge_type_id": record.bridge_type_id,
+                        "part_id": record.part_id,
+                        "structure_id": record.structure_id,
+                        "component_type_id": record.component_type_id,
+                        "component_form_id": record.component_form_id,
+                        "component_name": record.component_name,
+                        "damage_type_id": record.damage_type_id,
+                        "scale_id": record.scale_id,
+                        "damage_location": record.damage_location,
+                        "damage_description": record.damage_description,
+                        "image_url": record.image_url,
+                        "created_at": record.created_at,
+                        # 构件标识（用于分组）
+                        "component_key": f"{record.part_id}_{record.component_type_id}_{record.component_form_id}_{record.component_name or 'default'}",
+                    }
+                    damage_records.append(damage_info)
+
+            return damage_records
+
+        except Exception as e:
+            raise Exception(f"获取用户病害数据失败: {str(e)}")
+
+    def _get_max_scale_for_damage_type(
+        self, damage_type_id: int, record: Dict[str, Any]
+    ) -> Optional[int]:
+        """
+        获取指定病害类型在特定路径下的最高标度值
+
+        Args:
+            damage_type_id: 病害类型ID
+            record: 病害记录（包含路径信息）
+
+        Returns:
+            最高标度值
+        """
+        try:
+            conditions = [
+                Paths.bridge_type_id == record["bridge_type_id"],
+                Paths.part_id == record["part_id"],
+                Paths.disease_id == damage_type_id,
+                Paths.scale_id.is_not(None),
+                Paths.is_active == True,
+            ]
+
+            # 处理可选字段
+            if record.get("structure_id"):
+                conditions.append(Paths.structure_id == record["structure_id"])
+
+            if record.get("component_type_id"):
+                conditions.append(
+                    Paths.component_type_id == record["component_type_id"]
+                )
+
+            if record.get("component_form_id"):
+                conditions.append(
+                    Paths.component_form_id == record["component_form_id"]
+                )
+
+            # 查询该病害类型下的所有标度
+            scales_stmt = (
+                select(BridgeScales.scale_value)
+                .join(Paths, Paths.scale_id == BridgeScales.id)
+                .where(and_(*conditions, BridgeScales.is_active == True))
+                .distinct()
+            )
+
+            scale_values = self.session.exec(scales_stmt).all()
+
+            if scale_values:
+                return max(scale_values)
+
+            return None
+
+        except Exception as e:
+            print(f"获取最高标度失败: {e}")
+            return None
+
+    def _calculate_damage_scores(
+        self, damage_records: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        """
+        计算病害分数
+
+        Args:
+            damage_records: 病害记录列表
+
+        Returns:
+            包含分数的病害记录列表
+        """
+        try:
+            damage_scores = []
+
+            for record in damage_records:
+                damage_type_id = record["damage_type_id"]
+                scale_id = record["scale_id"]
+
+                # 获取该病害类型的最高标度
+                max_scale = self._get_max_scale_for_damage_type(damage_type_id, record)
+
+                # 获取当前标度值
+                current_scale_value = self._get_scale_value(scale_id)
+
+                # 计算病害分数
+                damage_score = 0
+                if max_scale and current_scale_value:
+                    damage_score = (
+                        ComponentDeductionService.get_deduction_value(
+                            max_scale, current_scale_value
+                        )
+                        or 0
+                    )
+
+                # 添加分数信息到记录中
+                score_record = record.copy()
+                score_record.update(
+                    {
+                        "max_scale": max_scale,
+                        "current_scale_value": current_scale_value,
+                        "damage_score": damage_score,
+                    }
+                )
+
+                damage_scores.append(score_record)
+
+            return damage_scores
+
+        except Exception as e:
+            raise Exception(f"计算病害分数失败: {str(e)}")
+
     def calculate_score(self, request: ScoreListRequest) -> Dict[str, Any]:
         """
         计算评分
         """
         try:
             # 获取用户在该链路构件下录入的病害数据
-            pass
+            damage_records = self._get_user_damage_records(request)
+
+            # 计算病害分数
+            damage_scores = self._calculate_damage_scores(damage_records)
+
+            return {"damage_records": damage_records, "message": "获取病害数据成功"}
 
         except Exception as e:
             raise Exception(f"计算评分失败: {str(e)}")
