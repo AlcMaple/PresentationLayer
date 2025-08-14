@@ -3,6 +3,7 @@ from sqlmodel import Session, select, and_, func
 from decimal import Decimal
 from collections import defaultdict
 from sqlalchemy.exc import IntegrityError
+import math
 
 from models import (
     WeightReferences,
@@ -17,6 +18,7 @@ from models import (
     BridgePartWeight,
     InspectionRecords,
     BridgeScales,
+    AssessmentUnit,
 )
 from schemas.scores import (
     ScoreListRequest,
@@ -963,6 +965,20 @@ class ScoresService:
         except Exception as e:
             raise Exception(f"获取用户病害数据失败: {str(e)}")
 
+    def _get_default_id(self, model_class) -> Optional[int]:
+        """获取名称为"-"的记录ID"""
+        try:
+            stmt = (
+                select(model_class.id)
+                .where(and_(model_class.name == "-", model_class.is_active == True))
+                .limit(1)
+            )
+            result = self.session.exec(stmt).first()
+            return result
+        except Exception as e:
+            print(f"获取默认ID时出错 {model_class.__name__}: {e}")
+            return None
+
     def _get_max_scale_for_damage_type(
         self, damage_type_id: int, record: Dict[str, Any]
     ) -> Optional[int]:
@@ -977,29 +993,97 @@ class ScoresService:
             最高标度值
         """
         try:
+            # 获取用户路径信息
+            user_path_conditions = [
+                UserPaths.bridge_instance_name == record["bridge_instance_name"],
+                UserPaths.bridge_type_id == record["bridge_type_id"],
+                UserPaths.part_id == record["part_id"],
+                UserPaths.is_active == True,
+            ]
+
+            if record.get("assessment_unit_instance_name"):
+                user_path_conditions.append(
+                    UserPaths.assessment_unit_instance_name
+                    == record["assessment_unit_instance_name"]
+                )
+            else:
+                user_path_conditions.append(
+                    UserPaths.assessment_unit_instance_name.is_(None)
+                )
+
+            if record.get("structure_id"):
+                user_path_conditions.append(
+                    UserPaths.structure_id == record["structure_id"]
+                )
+            else:
+                user_path_conditions.append(UserPaths.structure_id.is_(None))
+
+            if record.get("component_type_id"):
+                user_path_conditions.append(
+                    UserPaths.component_type_id == record["component_type_id"]
+                )
+            else:
+                user_path_conditions.append(UserPaths.component_type_id.is_(None))
+
+            if record.get("component_form_id"):
+                user_path_conditions.append(
+                    UserPaths.component_form_id == record["component_form_id"]
+                )
+            else:
+                user_path_conditions.append(UserPaths.component_form_id.is_(None))
+
+            # 查询用户路径记录
+            user_path_stmt = select(UserPaths).where(and_(*user_path_conditions))
+            user_path = self.session.exec(user_path_stmt).first()
+
+            if not user_path:
+                return None
+
+            # 通过用户路径的 paths_id 获取基础路径信息
+            paths_stmt = select(Paths).where(
+                and_(Paths.id == user_path.paths_id, Paths.is_active == True)
+            )
+            paths_record = self.session.exec(paths_stmt).first()
+
+            if not paths_record:
+                return None
+
             conditions = [
-                Paths.bridge_type_id == record["bridge_type_id"],
-                Paths.part_id == record["part_id"],
+                Paths.category_id == paths_record.category_id,
+                Paths.bridge_type_id == paths_record.bridge_type_id,
+                Paths.part_id == paths_record.part_id,
                 Paths.disease_id == damage_type_id,
                 Paths.scale_id.is_not(None),
                 Paths.is_active == True,
             ]
 
-            # 处理可选字段
-            if record.get("structure_id"):
-                conditions.append(Paths.structure_id == record["structure_id"])
-
-            if record.get("component_type_id"):
+            if paths_record.assessment_unit_id is not None:
                 conditions.append(
-                    Paths.component_type_id == record["component_type_id"]
+                    Paths.assessment_unit_id == paths_record.assessment_unit_id
                 )
+            else:
+                conditions.append(Paths.assessment_unit_id.is_(None))
 
-            if record.get("component_form_id"):
+            if paths_record.structure_id is not None:
+                conditions.append(Paths.structure_id == paths_record.structure_id)
+            else:
+                conditions.append(Paths.structure_id.is_(None))
+
+            if paths_record.component_type_id is not None:
                 conditions.append(
-                    Paths.component_form_id == record["component_form_id"]
+                    Paths.component_type_id == paths_record.component_type_id
                 )
+            else:
+                conditions.append(Paths.component_type_id.is_(None))
 
-            # 查询该病害类型下的所有标度
+            if paths_record.component_form_id is not None:
+                conditions.append(
+                    Paths.component_form_id == paths_record.component_form_id
+                )
+            else:
+                conditions.append(Paths.component_form_id.is_(None))
+
+            # 查询该病害类型下的所有标度值
             scales_stmt = (
                 select(BridgeScales.scale_value)
                 .join(Paths, Paths.scale_id == BridgeScales.id)
@@ -1016,6 +1100,26 @@ class ScoresService:
 
         except Exception as e:
             print(f"获取最高标度失败: {e}")
+            return None
+
+    def _get_scale_value(self, scale_id: int) -> Optional[int]:
+        """
+        获取标度值
+
+        Args:
+            scale_id: 标度ID
+
+        Returns:
+            标度值
+        """
+        try:
+            stmt = select(BridgeScales.scale_value).where(
+                and_(BridgeScales.id == scale_id, BridgeScales.is_active == True)
+            )
+            return self.session.exec(stmt).first()
+
+        except Exception as e:
+            print(f"获取标度值失败: {e}")
             return None
 
     def _calculate_damage_scores(
@@ -1070,6 +1174,198 @@ class ScoresService:
         except Exception as e:
             raise Exception(f"计算病害分数失败: {str(e)}")
 
+    def _calculate_single_component_score(self, damages: List[Dict[str, Any]]) -> float:
+        """
+        计算单个构件的分数
+
+        Args:
+            damages: 该构件的所有病害记录
+
+        Returns:
+            构件分数
+        """
+        try:
+            damage_count = len(damages)
+
+            # 病害数量 = 0，构件分数 = 100
+            if damage_count == 0:
+                return 100.0
+
+            # 病害数量 = 1，构件分数 = 100 - 病害分数
+            if damage_count == 1:
+                return 100.0 - damages[0]["damage_score"]
+
+            # 病害数量 >= 100，构件分数 = 0
+            if damage_count >= 100:
+                return 0.0
+
+            # 病害数量 >= 2
+            # 病害分数降序排序
+            damage_scores = [d["damage_score"] for d in damages]
+            damage_scores.sort(reverse=True)
+
+            # 累计计算U值
+            total_u = 0.0
+
+            for i, score in enumerate(damage_scores, 1):
+                # U_i = (score / (100 * √i)) * (100 - total_u)
+                u_i = (score / (100 * math.sqrt(i))) * (100 - total_u)
+                total_u += u_i
+
+            # 构件分数 = 100 - total_u
+            component_score = 100.0 - total_u
+
+            return max(0.0, component_score)
+
+        except Exception as e:
+            print(f"计算单个构件分数失败: {e}")
+            return 0.0
+
+    def _get_all_components_from_paths(
+        self, request: ScoreListRequest
+    ) -> Dict[str, Dict[str, Any]]:
+        """
+        从paths表获取该桥梁类型下的所有构件信息
+
+        Args:
+            request: 评分请求参数
+
+        Returns:
+            构件信息字典 {component_key: component_info}
+        """
+        try:
+            # 查询该桥梁类型下的所有构件路径
+            conditions = [
+                Paths.bridge_type_id == request.bridge_type_id,
+                Paths.part_id.is_not(None),
+                Paths.is_active == True,
+            ]
+
+            # 获取名称信息
+            stmt = (
+                select(
+                    Paths.part_id,
+                    Paths.structure_id,
+                    Paths.component_type_id,
+                    Paths.component_form_id,
+                    BridgeParts.name.label("part_name"),
+                    BridgeStructures.name.label("structure_name"),
+                    BridgeComponentTypes.name.label("component_type_name"),
+                    BridgeComponentForms.name.label("component_form_name"),
+                )
+                .select_from(Paths)
+                .join(BridgeParts, Paths.part_id == BridgeParts.id, isouter=False)
+                .join(
+                    BridgeStructures,
+                    Paths.structure_id == BridgeStructures.id,
+                    isouter=True,
+                )
+                .join(
+                    BridgeComponentTypes,
+                    Paths.component_type_id == BridgeComponentTypes.id,
+                    isouter=True,
+                )
+                .join(
+                    BridgeComponentForms,
+                    Paths.component_form_id == BridgeComponentForms.id,
+                    isouter=True,
+                )
+                .where(and_(*conditions))
+                .distinct()
+            )
+
+            records = self.session.exec(stmt).all()
+
+            components = {}
+
+            for record in records:
+                # 构件的唯一标识：部位+部件类型+构件形式
+                component_key = f"{record.part_id}_{record.component_type_id or 'null'}_{record.component_form_id or 'null'}"
+
+                # 避免重复
+                if component_key not in components:
+                    component_info = {
+                        "bridge_instance_name": request.bridge_instance_name,
+                        "assessment_unit_instance_name": request.assessment_unit_instance_name,
+                        "bridge_type_id": request.bridge_type_id,
+                        "part_id": record.part_id,
+                        "part_name": record.part_name,
+                        "structure_id": record.structure_id,
+                        "structure_name": record.structure_name,
+                        "component_type_id": record.component_type_id,
+                        "component_type_name": record.component_type_name,
+                        "component_form_id": record.component_form_id,
+                        "component_form_name": record.component_form_name,
+                    }
+
+                    components[component_key] = component_info
+
+            print(f"从paths表获取到 {len(components)} 个构件:")
+            for key, info in components.items():
+                print(
+                    f"  - {key}: {info['part_name']}/{info['component_type_name'] or 'None'}/{info['component_form_name'] or 'None'}"
+                )
+
+            return components
+
+        except Exception as e:
+            print(f"从paths表获取构件信息失败: {e}")
+            return {}
+
+    def _calculate_component_scores(
+        self, damage_scores: List[Dict[str, Any]], request: ScoreListRequest
+    ) -> Dict[str, Dict[str, Any]]:
+        """
+        按构件分组并计算构件分数
+
+        Args:
+            damage_scores: 包含分数的病害记录列表
+            request: 评分请求参数
+
+        Returns:
+            构件分数字典 {component_key: {component_info, damages, component_score}}
+        """
+        try:
+            # 获取桥梁类型下的所有构件信息
+            all_components = self._get_all_components_from_paths(request)
+
+            # 按构件分组病害数据
+            components_with_damages = defaultdict(list)
+
+            for damage in damage_scores:
+                component_key = damage["component_key"]
+                components_with_damages[component_key].append(damage)
+
+            component_scores = {}
+
+            print(f"开始计算构件分数，共 {len(all_components)} 个构件:")
+
+            # 计算每个构件的分数
+            for component_key, component_info in all_components.items():
+                damages = components_with_damages.get(component_key, [])
+
+                # 计算构件分数
+                component_score = self._calculate_single_component_score(damages)
+
+                component_name = f"{component_info['part_name']}/{component_info['component_type_name'] or 'None'}/{component_info['component_form_name'] or 'None'}"
+                damage_count = len(damages)
+
+                print(
+                    f"  - {component_name}: {damage_count}个病害, 分数={component_score:.2f}"
+                )
+
+                component_scores[component_key] = {
+                    "component_info": component_info,
+                    "damages": damages,
+                    "damage_count": len(damages),
+                    "component_score": component_score,
+                }
+
+            return component_scores
+
+        except Exception as e:
+            raise Exception(f"计算构件分数失败: {str(e)}")
+
     def calculate_score(self, request: ScoreListRequest) -> Dict[str, Any]:
         """
         计算评分
@@ -1081,7 +1377,15 @@ class ScoresService:
             # 计算病害分数
             damage_scores = self._calculate_damage_scores(damage_records)
 
-            return {"damage_records": damage_records, "message": "获取病害数据成功"}
+            # 计算构件分数
+            component_scores = self._calculate_component_scores(damage_scores, request)
+
+            return {
+                "damage_records": damage_records,
+                "damage_scores": damage_scores,
+                "component_scores": component_scores,
+                "message": "评分计算成功",
+            }
 
         except Exception as e:
             raise Exception(f"计算评分失败: {str(e)}")
