@@ -13,3 +13,4 @@ httpx==0.25.2
 APScheduler==3.11.0
 SQLAlchemy==2.0.41
 openpyxl==3.1.2
+pandas==2.3.1

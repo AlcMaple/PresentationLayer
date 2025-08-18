@@ -20,6 +20,7 @@ from models import (
     BridgeScales,
     AssessmentUnit,
     BridgeDiseases,
+    Rating,
 )
 from schemas.scores import (
     ScoreListRequest,
@@ -33,7 +34,9 @@ from schemas.scores import (
 from services.base_crud import PageParams
 from services.component_deduction import ComponentDeductionService
 from services.bridge_component_service import get_bridge_component_service
+from services.t import TService
 from exceptions import NotFoundException
+from utils.base import get_rating_by_score
 
 
 class ScoresService:
@@ -1393,24 +1396,24 @@ class ScoresService:
         except Exception as e:
             raise Exception(f"计算构件分数失败: {str(e)}")
 
-    def _calculate_main_component_scores(
+    def _calculate_all_component_type_scores(
         self, component_scores: Dict[str, Dict[str, Any]], request: ScoreListRequest
     ) -> Dict[int, Dict[str, Any]]:
         """
-        计算主要部件的部件分
+        计算所有部件类型的部件分
 
         Args:
             component_scores: 构件分数字典 {component_key: {component_info, damages, component_score}}
             request: 评分请求参数
 
         Returns:
-            主要部件分数字典 {component_type_id: {component_type_info, component_scores, component_part_score, is_special_case}}
+            部件分数字典 {component_type_id: {component_type_info, component_stats, component_type_score}}
         """
         try:
             bridge_service = get_bridge_component_service(self.session)
 
             # 按部件类型分组构件分数
-            component_types_components = defaultdict(list)
+            component_types_data = defaultdict(list)
 
             for component_key, component_data in component_scores.items():
                 component_info = component_data["component_info"]
@@ -1425,14 +1428,14 @@ class ScoresService:
                         "damage_count": component_data["damage_count"],
                     }
 
-                    component_types_components[component_type_id].append(component_item)
+                    component_types_data[component_type_id].append(component_item)
 
-            main_component_scores = {}
+            all_component_type_scores = {}
 
-            print(f"\n开始计算主要部件的部件分:")
+            print(f"\n开始计算所有部件的部件分:")
 
             # 对每个部件类型进行处理
-            for component_type_id, components in component_types_components.items():
+            for component_type_id, components in component_types_data.items():
                 if not components:
                     continue
 
@@ -1445,63 +1448,487 @@ class ScoresService:
                     request.bridge_type_id, component_type_id
                 )
 
-                if not is_main_component:
-                    print(
-                        f"  - {component_type_name} (ID: {component_type_id}): 非主要部件，跳过"
-                    )
-                    continue
+                print(
+                    f"  - {component_type_name} (ID: {component_type_id}): {'主要部件' if is_main_component else '普通部件'}"
+                )
 
-                print(f"  - {component_type_name} (ID: {component_type_id}): 主要部件")
-
-                # 提取该主要部件下所有构件的构件分
+                # 提取该部件下所有构件的构件分
                 component_score_list = [comp["component_score"] for comp in components]
 
-                # 特殊情况：构件分在[0,60)区间
-                special_case_scores = [
-                    score for score in component_score_list if 0 <= score < 60
-                ]
+                # 计算统计信息
+                component_count = len(component_score_list)
+                average_score = (
+                    sum(component_score_list) / component_count
+                    if component_count > 0
+                    else 0
+                )
+                min_score = min(component_score_list) if component_score_list else 0
 
-                if special_case_scores:
-                    # 特殊情况：取最小值作为该主要部件的部件分
-                    component_part_score = min(special_case_scores)
-                    is_special_case = True
+                # 主要部件构件分在[0,60)区间
+                special_case_scores = []
+                is_special_case = False
+
+                if is_main_component:
+                    special_case_scores = [
+                        score for score in component_score_list if 0 <= score < 60
+                    ]
+                    is_special_case = len(special_case_scores) > 0
+
+                # 计算部件分
+                if is_special_case:
+                    # 主要部件取最小值作为部件分
+                    component_type_score = min(special_case_scores)
+                    calculation_method = (
+                        "特殊情况（主要部件构件分在[0,60)区间，取最小值）"
+                    )
+                    t_value = "♾️"
 
                     print(
-                        f"    满足特殊情况，该主要部件下有构件分在[0,60)区间: {special_case_scores}"
+                        f"    满足特殊情况，构件分在[0,60)区间: {special_case_scores}"
                     )
-                    print(
-                        f"    该主要部件的部件分 = {component_part_score:.2f} (取最小值)"
-                    )
+                    print(f"    部件分 = {component_type_score:.2f} (取最小值)")
 
                 else:
-                    # 正常情况：公式计算
-                    component_part_score = 0.0  # 占位值
-                    is_special_case = False
+                    # 公式计算
+                    # 部件分 = 平均分 - ((100 - 最低分) / t 值)
+                    t_value = TService.get_t_value(component_count)
 
+                    if t_value == math.inf:
+                        # 当构件数量为1时，t值为无穷大，部件分等于构件分
+                        component_type_score = component_score_list[0]
+                        calculation_method = "构件数量为1，部件分等于构件分"
+                        t_value = None
+                    else:
+                        component_type_score = average_score - (
+                            (100 - min_score) / t_value
+                        )
+                        calculation_method = "公式计算"
+
+                    print(f"    构件数量: {component_count}, t值: {t_value}")
+                    print(f"    平均分: {average_score:.2f}, 最低分: {min_score:.2f}")
                     print(
-                        f"    不满足特殊情况，该主要部件需要使用公式计算部件分 (暂未实现)"
+                        f"    部件分 = {average_score:.2f} - ((100 - {min_score:.2f}) / {t_value}) = {component_type_score:.2f}"
                     )
-                    print(f"    该主要部件下构件分数: {component_score_list}")
 
-                main_component_scores[component_type_id] = {
+                component_type_score = max(0.0, component_type_score)
+
+                all_component_type_scores[component_type_id] = {
                     "component_type_info": component_type_info,
+                    "is_main_component": is_main_component,
                     "components": components,
-                    "component_scores": component_score_list,
-                    "component_part_score": component_part_score,  # 该主要部件的部件分
+                    "component_stats": {
+                        "component_count": component_count,
+                        "average_score": average_score,
+                        "min_score": min_score,
+                        "component_scores": component_score_list,
+                        "t_value": t_value,
+                    },
+                    "component_type_score": component_type_score,
+                    "calculation_method": calculation_method,
                     "is_special_case": is_special_case,
-                    "special_case_scores": (
-                        special_case_scores if special_case_scores else []
-                    ),
+                    "special_case_scores": special_case_scores,
                 }
 
-            print(
-                f"主要部件部件分计算完成，共处理 {len(main_component_scores)} 个主要部件\n"
-            )
+            print(f"部件分计算完成，共处理 {len(all_component_type_scores)} 个部件\n")
 
-            return main_component_scores
+            return all_component_type_scores
 
         except Exception as e:
-            raise Exception(f"计算主要部件部件分失败: {str(e)}")
+            raise Exception(f"计算部件分失败: {str(e)}")
+
+    def _calculate_part_scores(
+        self,
+        component_type_scores: Dict[int, Dict[str, Any]],
+        request: ScoreListRequest,
+    ) -> Dict[int, Dict[str, Any]]:
+        """
+        计算部位分
+
+        Args:
+            component_type_scores: 部件分数字典 {component_type_id: {component_type_info, component_type_score, ...}}
+            request: 评分请求参数
+
+        Returns:
+            部位分数字典 {part_id: {part_info, components, part_score}}
+        """
+        try:
+            # 获取保存的权重分配数据
+            saved_scores_data = self._get_saved_scores_data(request)
+            if not saved_scores_data:
+                raise Exception("未找到保存的权重分配数据，请先进行权重分配并保存")
+
+            # 按部位分组数据
+            parts_data = defaultdict(list)
+
+            print(f"\n开始计算部位分:")
+
+            # 获取部位和部件信息
+            for (part_id, component_type_id), score_data in saved_scores_data.items():
+                adjusted_weight = float(score_data["adjusted_weight"])
+
+                # 获取部件分
+                component_type_score = 0.0
+                if component_type_id in component_type_scores:
+                    component_type_score = component_type_scores[component_type_id][
+                        "component_type_score"
+                    ]
+                    component_type_name = component_type_scores[component_type_id][
+                        "component_type_info"
+                    ]["component_type_name"]
+                else:
+                    # 没有部件分数据，查询部件名称
+                    component_type = self.session.get(
+                        BridgeComponentTypes, component_type_id
+                    )
+                    component_type_name = (
+                        component_type.name
+                        if component_type
+                        else f"未知部件({component_type_id})"
+                    )
+                    print(f"警告：未找到部件 {component_type_name} 的部件分数据")
+
+                component_item = {
+                    "component_type_id": component_type_id,
+                    "component_type_name": component_type_name,
+                    "component_type_score": component_type_score,
+                    "adjusted_weight": adjusted_weight,
+                    "weighted_score": component_type_score
+                    * adjusted_weight,  # 部件分 × 调整后权重
+                }
+
+                parts_data[part_id].append(component_item)
+
+            # 计算每个部位的部位分
+            part_scores = {}
+
+            for part_id, components in parts_data.items():
+                if not components:
+                    continue
+
+                # 获取部位名称
+                part = self.session.get(BridgeParts, part_id)
+                part_name = part.name if part else f"未知部位({part_id})"
+
+                # 计算部位分：Σ(部件分 × 调整后权重)
+                part_score = sum(comp["weighted_score"] for comp in components)
+
+                # 统计信息
+                total_weight = sum(comp["adjusted_weight"] for comp in components)
+                component_count = len(components)
+
+                print(f"  - {part_name} (ID: {part_id}): {component_count}个部件")
+                for comp in components:
+                    print(
+                        f"    * {comp['component_type_name']}: 部件分={comp['component_type_score']:.2f}, 权重={comp['adjusted_weight']:.4f}, 加权分={comp['weighted_score']:.4f}"
+                    )
+                print(f"    部位分 = {part_score:.2f}")
+
+                part_scores[part_id] = {
+                    "part_info": {"part_id": part_id, "part_name": part_name},
+                    "components": components,
+                    "part_score": part_score,
+                    "total_weight": total_weight,
+                    "component_count": component_count,
+                }
+
+            print(f"部位分计算完成，共处理 {len(part_scores)} 个部位\n")
+
+            return part_scores
+
+        except Exception as e:
+            raise Exception(f"计算部位分失败: {str(e)}")
+
+    def _calculate_total_score(
+        self, part_scores: Dict[int, Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """
+        计算总体评分
+
+        Args:
+            part_scores: 部位分数字典 {part_id: {part_info, components, part_score}}
+
+        Returns:
+            总体评分信息
+        """
+        try:
+            print(f"\n开始计算总体评分:")
+
+            total_score = 0.0
+            part_score_details = []
+
+            # 遍历所有部位分
+            for part_id, part_data in part_scores.items():
+                part_name = part_data["part_info"]["part_name"]
+                part_score = part_data["part_score"]
+
+                # 获取部位权重
+                part_weight = BridgePartWeight.get_weight_by_name(part_name)
+                if part_weight is None:
+                    print(f"警告：未找到部位 {part_name} 的权重，跳过")
+                    continue
+
+                # 计算加权分：部位分 × 部位权重
+                weighted_score = part_score * part_weight
+                total_score += weighted_score
+
+                part_detail = {
+                    "part_id": part_id,
+                    "part_name": part_name,
+                    "part_score": part_score,
+                    "part_weight": part_weight,
+                    "weighted_score": weighted_score,
+                }
+                part_score_details.append(part_detail)
+
+                print(
+                    f"  - {part_name}: 部位分={part_score:.2f}, 部位权重={part_weight}, 加权分={weighted_score:.2f}"
+                )
+
+            print(f"总体评分 = {total_score:.2f}")
+
+            return {
+                "total_score": total_score,
+                "part_score_details": part_score_details,
+                "part_count": len(part_score_details),
+            }
+
+        except Exception as e:
+            raise Exception(f"计算总体评分失败: {str(e)}")
+
+    def _calculate_level(
+        self,
+        total_score_info: Dict[str, Any],
+        part_scores: Dict[int, Dict[str, Any]],
+        component_type_scores: Dict[int, Dict[str, Any]],
+    ) -> Dict[str, Any]:
+        """
+        计算评定等级
+
+        Args:
+        total_score_info: 总体评分信息
+        part_scores: 部位分数字典
+        component_type_scores: 部件分数字典
+        request: 评分请求参数
+
+        Returns:
+            评定等级信息
+        """
+        try:
+            print(f"\n开始计算评定等级:")
+
+            total_score = total_score_info["total_score"]
+
+            # 根据总体评分获取正常评定等级
+            normal_rating = get_rating_by_score(total_score)
+            normal_grade = normal_rating.get_name if normal_rating else "暂无"
+
+            print(f"总体评分: {total_score:.2f}, 正常评定等级: {normal_grade}")
+
+            # 查询各部位的评定等级
+            part_ratings = {}
+            for part_id, part_data in part_scores.items():
+                part_name = part_data["part_info"]["part_name"]
+                part_score = part_data["part_score"]
+                part_rating = get_rating_by_score(part_score)
+                part_grade = part_rating.get_name if part_rating else "未知等级"
+
+                part_ratings[part_name] = {
+                    "part_id": part_id,
+                    "part_score": part_score,
+                    "rating": part_rating,
+                    "grade": part_grade,
+                }
+
+                print(
+                    f"  - {part_name}: 部位分={part_score:.2f}, 评定等级={part_grade}"
+                )
+
+            # 查询主要部件的评定等级
+            main_component_ratings = []
+            for component_type_id, component_data in component_type_scores.items():
+                if component_data["is_main_component"]:
+                    component_type_name = component_data["component_type_info"][
+                        "component_type_name"
+                    ]
+                    component_score = component_data["component_type_score"]
+                    component_rating = get_rating_by_score(component_score)
+                    component_grade = (
+                        component_rating.get_name if component_rating else "未知等级"
+                    )
+
+                    main_component_ratings.append(
+                        {
+                            "component_type_id": component_type_id,
+                            "component_type_name": component_type_name,
+                            "component_score": component_score,
+                            "rating": component_rating,
+                            "grade": component_grade,
+                        }
+                    )
+
+                    print(
+                        f"  - 主要部件 {component_type_name}: 部件分={component_score:.2f}, 评定等级={component_grade}"
+                    )
+
+            # 上部结构和下部结构为3类、桥面系为4类，总体评分在[40,60)
+            condition_a_met = False
+            superstructure_rating = part_ratings.get("上部结构", {}).get("rating")
+            substructure_rating = part_ratings.get("下部结构", {}).get("rating")
+            deck_system_rating = part_ratings.get("桥面系", {}).get("rating")
+
+            if (
+                superstructure_rating == Rating.LEVEL_3
+                and substructure_rating == Rating.LEVEL_3
+                and deck_system_rating == Rating.LEVEL_4
+                and 40 <= total_score < 60
+            ):
+                condition_a_met = True
+                print(
+                    "  满足特殊情况A：上部结构和下部结构为3类、桥面系为4类，总体评分在[40,60)区间"
+                )
+
+            # 主要部件达到4类或5类
+            condition_b_met = False
+            severe_main_components = []
+            for component in main_component_ratings:
+                if component["rating"] in [Rating.LEVEL_4, Rating.LEVEL_5]:
+                    condition_b_met = True
+                    severe_main_components.append(component)
+
+            if condition_b_met:
+                print(
+                    f"  满足特殊情况B：{len(severe_main_components)}个主要部件达到4类或5类"
+                )
+                for component in severe_main_components:
+                    print(
+                        f"    - {component['component_type_name']}: {component['grade']}"
+                    )
+
+            # 确定评定等级
+            abnormal_grade = normal_grade
+
+            # A 条件，如果上部结构和下部结构的部位评分都为 3 类、桥面系的部位评分为 4 类，总体评分在[40,60)区间，评定等级为 3 类
+            # B 条件，如果主要部件的评分等级达到 4 类或者 5 类，用户可以选择按规则和不按规则
+            if condition_b_met:
+                # 满足B条件,计算最严重的主要部件等级
+                worst_rating = min(
+                    component["rating"] for component in severe_main_components
+                )
+                abnormal_grade = worst_rating.get_name
+            elif condition_a_met:
+                # 满足A条件
+                abnormal_grade = "3类"
+                print("  最终判定：满足A条件，评定等级为3类")
+            else:
+                print(f"  最终判定：按正常规则，评定等级为{normal_grade}")
+
+            return {
+                "total_score": total_score,
+                "normal_grade": normal_grade,
+                "abnormal_grade": abnormal_grade,
+                "condition_a_met": condition_a_met,
+                "condition_b_met": condition_b_met,
+                "part_ratings": part_ratings,
+                "main_component_ratings": main_component_ratings,
+                "severe_main_components": severe_main_components,
+            }
+
+        except Exception as e:
+            raise Exception(f"计算评定等级失败: {str(e)}")
+
+    def _build_table_data_structure(
+        self,
+        component_type_scores: Dict[int, Dict[str, Any]],
+        part_scores: Dict[int, Dict[str, Any]],
+        total_score_info: Dict[str, Any],
+        evaluation_info: Dict[str, Any],
+        request: ScoreListRequest,
+    ) -> Dict[str, Any]:
+        """
+        构建评分表格数据结构
+        """
+        try:
+            saved_scores_data = self._get_saved_scores_data(request)
+
+            if not saved_scores_data:
+                raise Exception("未找到保存的权重分配数据，请先进行权重分配并保存")
+
+            # 按部位分组数据
+            parts_data = defaultdict(
+                lambda: {"部位权重": 0.00, "部位评分": 0.00, "部件": {}}
+            )
+
+            for (part_id, component_type_id), score_data in saved_scores_data.items():
+                # 获取调整后权重
+                adjusted_weight = float(score_data["adjusted_weight"])
+
+                # 获取部件分
+                component_type_score = 0.00
+                if component_type_id in component_type_scores:
+                    component_type_score = component_type_scores[component_type_id][
+                        "component_type_score"
+                    ]
+
+                # 获取部位名称和部件名称
+                part = self.session.get(BridgeParts, part_id)
+                part_name = part.name if part else f"未知部位({part_id})"
+
+                component_type = self.session.get(
+                    BridgeComponentTypes, component_type_id
+                )
+                component_type_name = (
+                    component_type.name
+                    if component_type
+                    else f"未知部件({component_type_id})"
+                )
+
+                # 部件数据
+                parts_data[part_name]["部件"][component_type_name] = {
+                    "权重": adjusted_weight,
+                    "部件评分": round(component_type_score, 2),
+                }
+
+            # 填入部位权重和部位评分
+            for part_name, part_info in parts_data.items():
+                # 获取部位权重
+                part_weight = BridgePartWeight.get_weight_by_name(part_name)
+                if part_weight is not None:
+                    parts_data[part_name]["部位权重"] = part_weight
+                else:
+                    parts_data[part_name]["部位权重"] = 0.00
+
+                # 获取部位评分
+                part_score = 0.00
+                for part_id, part_data in part_scores.items():
+                    if part_data["part_info"]["part_name"] == part_name:
+                        part_score = part_data["part_score"]
+                        break
+
+                parts_data[part_name]["部位评分"] = round(part_score, 2)
+
+            # 构建最终结果
+            result = {
+                "总体评分": round(total_score_info["total_score"], 2),
+                "评定等级": evaluation_info["final_grade"],
+                "部位": dict(parts_data),
+            }
+
+            print(f"\n计算完成，返回表格数据结构:")
+            print(f"总体评分: {result['总体评分']}")
+            print(f"评定等级: {result['评定等级']}")
+            for part_name, part_data in result["部位"].items():
+                print(
+                    f"部位 {part_name}: 部位权重={part_data['部位权重']}, 部位评分={part_data['部位评分']}"
+                )
+                for component_name, component_data in part_data["部件"].items():
+                    print(
+                        f"  - 部件 {component_name}: 权重={component_data['权重']}, 部件评分={component_data['部件评分']}"
+                    )
+
+            return result
+
+        except Exception as e:
+            raise Exception(f"构建表格数据结构失败: {str(e)}")
 
     def calculate_score(self, request: ScoreListRequest) -> Dict[str, Any]:
         """
@@ -1517,18 +1944,31 @@ class ScoresService:
             # 计算构件分数
             component_scores = self._calculate_component_scores(damage_scores, request)
 
-            # 计算主要部件的部件分
-            main_component_scores = self._calculate_main_component_scores(
+            # 计算所有部件的部件分
+            component_type_scores = self._calculate_all_component_type_scores(
                 component_scores, request
             )
 
-            return {
-                "damage_records": damage_records,
-                "damage_scores": damage_scores,
-                "component_scores": component_scores,
-                "main_component_scores": main_component_scores,
-                "message": "评分计算成功",
-            }
+            # 计算部位分
+            part_scores = self._calculate_part_scores(component_type_scores, request)
+
+            # 计算总体评分
+            total_score = self._calculate_total_score(part_scores)
+
+            # 计算评定等级
+            level = self._calculate_level(
+                total_score, part_scores, component_type_scores
+            )
+
+            table_data = self._build_table_data_structure(
+                component_type_scores,
+                part_scores,
+                total_score,
+                level,
+                request,
+            )
+
+            return table_data
 
         except Exception as e:
             raise Exception(f"计算评分失败: {str(e)}")
