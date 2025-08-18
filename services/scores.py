@@ -1812,7 +1812,8 @@ class ScoresService:
             if condition_b_met:
                 # 满足B条件,计算最严重的主要部件等级
                 worst_rating = min(
-                    component["rating"] for component in severe_main_components
+                    (component["rating"] for component in severe_main_components),
+                    key=lambda rating: rating.get_min_score,
                 )
                 abnormal_grade = worst_rating.get_name
             elif condition_a_met:
