@@ -23,7 +23,7 @@ def setup_test_environment():
     """
     测试环境初始化
     """
-    print(f"\n🚀 开始测试 - 环境: {settings.ENVIRONMENT}")
-    print(f"📊 数据库: {settings.MYSQL_DATABASE}")
+    print(f"\n 开始测试 - 环境: {settings.ENVIRONMENT}")
+    print(f" 数据库: {settings.MYSQL_DATABASE}")
     yield
-    print("\n✅ 测试完成")
+    print("\n 测试完成")

@@ -60,7 +60,6 @@ class InspectionRecordsService(
         验证路径是否在user_paths表中存在
         """
         try:
-            # 查询条件
             conditions = [
                 UserPaths.bridge_instance_name == path_request.bridge_instance_name,
                 UserPaths.bridge_type_id == path_request.bridge_type_id,
@@ -107,7 +106,6 @@ class InspectionRecordsService(
         """
         try:
             conditions = [
-                # UserPaths.user_id == path_request.user_id,
                 UserPaths.bridge_instance_name == path_request.bridge_instance_name,
                 UserPaths.bridge_type_id == path_request.bridge_type_id,
                 UserPaths.part_id == path_request.part_id,
@@ -116,7 +114,6 @@ class InspectionRecordsService(
                 UserPaths.is_active == True,
             ]
 
-            # 处理可选字段
             if path_request.assessment_unit_instance_name:
                 conditions.append(
                     UserPaths.assessment_unit_instance_name
@@ -130,11 +127,10 @@ class InspectionRecordsService(
             else:
                 conditions.append(UserPaths.structure_id.is_(None))
 
-            # 添加用户ID验证
+            # 用户ID验证
             if path_request.user_id is not None:
                 conditions.append(UserPaths.user_id == path_request.user_id)
             else:
-                # user_id为空代表管理员，可以访问所有路径（包括管理员创建的公共路径）
                 conditions.append(UserPaths.user_id.is_(None))
 
             stmt = select(UserPaths).where(and_(*conditions)).limit(1)
@@ -183,12 +179,8 @@ class InspectionRecordsService(
             # 查询 paths 表中是否存在对应的病害和标度组合，基于 paths_record 的基础路径信息，加上病害和标度信息
             conditions = [
                 Paths.category_id == user_path.category_id,
-                # Paths.assessment_unit_id == user_path.assessment_unit_id,
                 Paths.bridge_type_id == user_path.bridge_type_id,
                 Paths.part_id == user_path.part_id,
-                # Paths.structure_id == user_path.structure_id,
-                # Paths.component_type_id == user_path.component_type_id,
-                # Paths.component_form_id == user_path.component_form_id,
                 Paths.disease_id == damage_type_id,
                 Paths.scale_id == scale_id,
                 Paths.is_active == True,
@@ -296,7 +288,6 @@ class InspectionRecordsService(
             self.session.commit()
             self.session.refresh(inspection_record)
 
-            # 返回详细信息
             return self.get_record_with_details(inspection_record.id)
 
         except (ValidationException, SystemException) as e:
@@ -510,9 +501,8 @@ class InspectionRecordsService(
                     resource="InspectionRecords", identifier=str(record_id)
                 )
 
-            # 如果更新了病害类型或标度，需要验证组合的有效性
+            # 如果更新了病害类型或标度，验证组合的有效性
             if update_data.damage_type_code or update_data.scale_code:
-                # 构建路径验证请求
                 path_request = PathValidationRequest(
                     user_id=existing_record.user_id,
                     bridge_instance_name=existing_record.bridge_instance_name,

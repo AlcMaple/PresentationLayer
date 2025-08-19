@@ -1910,7 +1910,8 @@ class ScoresService:
             # 构建最终结果
             result = {
                 "总体评分": round(total_score_info["total_score"], 2),
-                "评定等级": evaluation_info["final_grade"],
+                "评定等级": evaluation_info["normal_grade"],
+                "不规则评定等级": evaluation_info["abnormal_grade"],
                 "部位": dict(parts_data),
             }
 

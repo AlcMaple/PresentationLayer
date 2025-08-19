@@ -1,0 +1,56 @@
+_validate_path_exists:
+    构建查询条件，查询数据库，根据是否有结果返回 True 或 False
+_get_matching_user_path：
+    构建查询条件，查询数据库，根据是否有结果返回用户路径
+
+两个的区别在于返回的内容，查询上下文代码后，可以直接结合在一起
+---
+
+_validate_damage_scale_combination：
+    获取指定的user_paths的记录，根据获取到的 id 来获取 paths 的记录，
+    通过用户提供的参数 code 获取病害和标度的 Id，结合 paths的记录以及标度和病害的 id 查询是否存在该病害和标度的组合
+
+create：
+    将参数PathValidationRequest化，调用_validate_path_exists验证是否存在这个路径，
+    验证病害和标度的组合是否有效，调用_validate_damage_scale_combination，
+    通过 病害和标度的code 找 id，然后处理图片的上传，创建检查记录，调用get_record_with_details返回详细信息
+
+根据上下文我发现，调用_validate_damage_scale_combination方法有两次都是给 code，然后_validate_damage_scale_combination方法里面根据 code 找 id，还有一次是把 id 转换为 code 传递，并且前两次的 id 都是由 code 转换而来的，这里来了一次相互转换，我觉得可以优化代码为只要传 id 就好了，找 id 放在外面
+---
+
+get_record_with_details：
+    根据检查记录的 id 获取数据库的记录，调用_get_record_related_data方法获取关联记录，为了构建详细信息，
+    将表单数据PathValidationRequest化，然后调用get_form_options_by_path方法获取表单选项，
+    将返回数据InspectionRecordsResponse化
+
+_get_record_related_data：
+    定义和其他表的映射关系，除了病害和标度单独处理，其他统一处理获取 code 和 name
+
+统一处理这一块
+        for field_name, model_class, prefix in field_mappings:
+            field_id = getattr(record, field_name, None)
+            if field_id:
+                try:
+                    stmt = select(model_class.code, model_class.name).where(
+                        model_class.id == field_id
+                    )
+                    result = self.session.exec(stmt).first()
+                    if result:
+                        details[f"{prefix}_code"] = result[0]
+                        details[f"{prefix}_name"] = result[1]
+                    else:
+                        details[f"{prefix}_code"] = None
+                        details[f"{prefix}_name"] = None
+                except:
+                    details[f"{prefix}_code"] = None
+                    details[f"{prefix}_name"] = None
+            else:
+                details[f"{prefix}_code"] = None
+                details[f"{prefix}_name"] = None
+                感觉好多 None，感觉可以优化
+
+
+---
+
+update：
+    调用get_by_id方法获取更新前的记录
