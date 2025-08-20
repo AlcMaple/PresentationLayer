@@ -20,12 +20,18 @@ class InspectionRecords(BaseModel, table=True):
 
     # 前7层路径字段
     # 用户实例路径字段
-    bridge_instance_name: str = Field(max_length=200, description="桥梁实例名称")
+    bridge_instance_name: Optional[str] = Field(
+        default=None, max_length=200, description="桥梁实例名称"
+    )
     assessment_unit_instance_name: Optional[str] = Field(
         default=None, max_length=200, description="评定单元实例名称"
     )
-    bridge_type_id: int = Field(foreign_key="bridge_types.id", description="桥梁类型ID")
-    part_id: int = Field(foreign_key="bridge_parts.id", description="部位ID")
+    bridge_type_id: Optional[int] = Field(
+        default=None, foreign_key="bridge_types.id", description="桥梁类型ID"
+    )
+    part_id: Optional[int] = Field(
+        default=None, foreign_key="bridge_parts.id", description="部位ID"
+    )
     structure_id: Optional[int] = Field(
         default=None, foreign_key="bridge_structures.id", description="结构类型ID"
     )
