@@ -36,6 +36,10 @@ class InspectionRecords(BaseModel, table=True):
         default=None, foreign_key="bridge_component_forms.id", description="构件形式ID"
     )
 
+    user_paths_id: Optional[int] = Field(
+        default=None, foreign_key="user_paths.id", description="用户实例路径ID"
+    )
+
     # 病害和标度数据
     damage_type_id: int = Field(
         foreign_key="bridge_diseases.id", description="病害类型ID"

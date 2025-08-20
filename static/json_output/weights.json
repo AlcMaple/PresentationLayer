@@ -1,22 +1,22 @@
 {
   "metadata": {
     "source_file": "weight_base.xlsx",
-    "export_time": "2025-07-28T14:24:38.674635",
-    "total_records": 97
+    "export_time": "2025-08-20T16:15:49.839911",
+    "total_records": 117
   },
   "bridge_types": {
     "悬索桥": {
       "name": "悬索桥",
       "level": "桥梁类型",
-      "record_count": 19,
+      "record_count": 21,
       "children": {
         "上部结构": {
           "name": "上部结构",
           "level": "部位",
           "record_count": 9,
           "children": {
-            "-": {
-              "name": "-",
+            "上部结构": {
+              "name": "上部结构",
               "level": "结构类型",
               "record_count": 9,
               "children": {
@@ -74,8 +74,8 @@
           "level": "部位",
           "record_count": 4,
           "children": {
-            "-": {
-              "name": "-",
+            "下部结构": {
+              "name": "下部结构",
               "level": "结构类型",
               "record_count": 4,
               "children": {
@@ -106,12 +106,12 @@
         "桥面系": {
           "name": "桥面系",
           "level": "部位",
-          "record_count": 6,
+          "record_count": 8,
           "children": {
-            "-": {
-              "name": "-",
+            "桥面系": {
+              "name": "桥面系",
               "level": "结构类型",
-              "record_count": 6,
+              "record_count": 8,
               "children": {
                 "桥面铺装": {
                   "name": "桥面铺装",
@@ -128,18 +128,28 @@
                   "level": "部件类型",
                   "weight": 0.1
                 },
-                "栏杆、护栏": {
-                  "name": "栏杆、护栏",
+                "栏杆": {
+                  "name": "栏杆",
                   "level": "部件类型",
                   "weight": 0.1
                 },
-                "排水系统": {
-                  "name": "排水系统",
+                "防排水系统": {
+                  "name": "防排水系统",
                   "level": "部件类型",
                   "weight": 0.1
                 },
-                "照明、标志": {
-                  "name": "照明、标志",
+                "护栏": {
+                  "name": "护栏",
+                  "level": "部件类型",
+                  "weight": 0.1
+                },
+                "标志": {
+                  "name": "标志",
+                  "level": "部件类型",
+                  "weight": 0.05
+                },
+                "照明": {
+                  "name": "照明",
                   "level": "部件类型",
                   "weight": 0.05
                 }
@@ -152,12 +162,12 @@
     "拱式桥": {
       "name": "拱式桥",
       "level": "桥梁类型",
-      "record_count": 25,
+      "record_count": 31,
       "children": {
         "上部结构": {
           "name": "上部结构",
           "level": "部位",
-          "record_count": 12,
+          "record_count": 14,
           "children": {
             "钢筋混凝土拱桥（板拱桥、肋拱桥和箱拱桥）": {
               "name": "钢筋混凝土拱桥（板拱桥、肋拱桥和箱拱桥）",
@@ -206,10 +216,15 @@
             "钢筋混凝土拱桥\n（刚架拱桥）": {
               "name": "钢筋混凝土拱桥\n（刚架拱桥）",
               "level": "结构类型",
-              "record_count": 3,
+              "record_count": 4,
               "children": {
-                "刚架拱片（桁架拱片）": {
-                  "name": "刚架拱片（桁架拱片）",
+                "桁架拱片": {
+                  "name": "桁架拱片",
+                  "level": "部件类型",
+                  "weight": 0.5
+                },
+                "刚架拱片": {
+                  "name": "刚架拱片",
                   "level": "部件类型",
                   "weight": 0.5
                 },
@@ -228,10 +243,15 @@
             "钢筋混凝土拱桥\n（桁架拱桥）": {
               "name": "钢筋混凝土拱桥\n（桁架拱桥）",
               "level": "结构类型",
-              "record_count": 3,
+              "record_count": 4,
               "children": {
-                "刚架拱片（桁架拱片）": {
-                  "name": "刚架拱片（桁架拱片）",
+                "桁架拱片": {
+                  "name": "桁架拱片",
+                  "level": "部件类型",
+                  "weight": 0.5
+                },
+                "刚架拱片": {
+                  "name": "刚架拱片",
                   "level": "部件类型",
                   "weight": 0.5
                 },
@@ -252,20 +272,30 @@
         "下部结构": {
           "name": "下部结构",
           "level": "部位",
-          "record_count": 7,
+          "record_count": 9,
           "children": {
-            "-": {
-              "name": "-",
+            "下部结构": {
+              "name": "下部结构",
               "level": "结构类型",
-              "record_count": 7,
+              "record_count": 9,
               "children": {
-                "翼墙、耳墙": {
-                  "name": "翼墙、耳墙",
+                "翼墙": {
+                  "name": "翼墙",
                   "level": "部件类型",
                   "weight": 0.02
                 },
-                "锥坡、护坡": {
-                  "name": "锥坡、护坡",
+                "耳墙": {
+                  "name": "耳墙",
+                  "level": "部件类型",
+                  "weight": 0.02
+                },
+                "护坡": {
+                  "name": "护坡",
+                  "level": "部件类型",
+                  "weight": 0.01
+                },
+                "锥坡": {
+                  "name": "锥坡",
                   "level": "部件类型",
                   "weight": 0.01
                 },
@@ -301,12 +331,12 @@
         "桥面系": {
           "name": "桥面系",
           "level": "部位",
-          "record_count": 6,
+          "record_count": 8,
           "children": {
-            "-": {
-              "name": "-",
+            "桥面系": {
+              "name": "桥面系",
               "level": "结构类型",
-              "record_count": 6,
+              "record_count": 8,
               "children": {
                 "桥面铺装": {
                   "name": "桥面铺装",
@@ -323,18 +353,28 @@
                   "level": "部件类型",
                   "weight": 0.1
                 },
-                "栏杆、护栏": {
-                  "name": "栏杆、护栏",
+                "栏杆": {
+                  "name": "栏杆",
                   "level": "部件类型",
                   "weight": 0.1
                 },
-                "排水系统": {
-                  "name": "排水系统",
+                "防排水系统": {
+                  "name": "防排水系统",
                   "level": "部件类型",
                   "weight": 0.1
                 },
-                "照明、标志": {
-                  "name": "照明、标志",
+                "护栏": {
+                  "name": "护栏",
+                  "level": "部件类型",
+                  "weight": 0.1
+                },
+                "标志": {
+                  "name": "标志",
+                  "level": "部件类型",
+                  "weight": 0.05
+                },
+                "照明": {
+                  "name": "照明",
                   "level": "部件类型",
                   "weight": 0.05
                 }
@@ -347,20 +387,20 @@
     "斜拉桥": {
       "name": "斜拉桥",
       "level": "桥梁类型",
-      "record_count": 17,
+      "record_count": 21,
       "children": {
         "上部结构": {
           "name": "上部结构",
           "level": "部位",
           "record_count": 4,
           "children": {
-            "-": {
-              "name": "-",
+            "上部结构": {
+              "name": "上部结构",
               "level": "结构类型",
               "record_count": 4,
               "children": {
-                "斜拉索系统（斜拉索、锚具、拉索护套、减震装置等）": {
-                  "name": "斜拉索系统（斜拉索、锚具、拉索护套、减震装置等）",
+                "斜拉索系统": {
+                  "name": "斜拉索系统",
                   "level": "部件类型",
                   "weight": 0.4
                 },
@@ -386,20 +426,30 @@
         "下部结构": {
           "name": "下部结构",
           "level": "部位",
-          "record_count": 7,
+          "record_count": 9,
           "children": {
-            "-": {
-              "name": "-",
+            "下部结构": {
+              "name": "下部结构",
               "level": "结构类型",
-              "record_count": 7,
+              "record_count": 9,
               "children": {
-                "翼墙、耳墙": {
-                  "name": "翼墙、耳墙",
+                "翼墙": {
+                  "name": "翼墙",
                   "level": "部件类型",
                   "weight": 0.02
                 },
-                "锥坡、护坡": {
-                  "name": "锥坡、护坡",
+                "耳墙": {
+                  "name": "耳墙",
+                  "level": "部件类型",
+                  "weight": 0.02
+                },
+                "护坡": {
+                  "name": "护坡",
+                  "level": "部件类型",
+                  "weight": 0.01
+                },
+                "锥坡": {
+                  "name": "锥坡",
                   "level": "部件类型",
                   "weight": 0.01
                 },
@@ -435,12 +485,12 @@
         "桥面系": {
           "name": "桥面系",
           "level": "部位",
-          "record_count": 6,
+          "record_count": 8,
           "children": {
-            "-": {
-              "name": "-",
+            "桥面系": {
+              "name": "桥面系",
               "level": "结构类型",
-              "record_count": 6,
+              "record_count": 8,
               "children": {
                 "桥面铺装": {
                   "name": "桥面铺装",
@@ -457,18 +507,28 @@
                   "level": "部件类型",
                   "weight": 0.1
                 },
-                "栏杆、护栏": {
-                  "name": "栏杆、护栏",
+                "栏杆": {
+                  "name": "栏杆",
                   "level": "部件类型",
                   "weight": 0.1
                 },
-                "排水系统": {
-                  "name": "排水系统",
+                "防排水系统": {
+                  "name": "防排水系统",
                   "level": "部件类型",
                   "weight": 0.1
                 },
-                "照明、标志": {
-                  "name": "照明、标志",
+                "护栏": {
+                  "name": "护栏",
+                  "level": "部件类型",
+                  "weight": 0.1
+                },
+                "标志": {
+                  "name": "标志",
+                  "level": "部件类型",
+                  "weight": 0.05
+                },
+                "照明": {
+                  "name": "照明",
                   "level": "部件类型",
                   "weight": 0.05
                 }
@@ -481,7 +541,7 @@
     "梁式桥": {
       "name": "梁式桥",
       "level": "桥梁类型",
-      "record_count": 16,
+      "record_count": 20,
       "children": {
         "上部结构": {
           "name": "上部结构",
@@ -493,8 +553,8 @@
               "level": "结构类型",
               "record_count": 1,
               "children": {
-                "上部承重构件（主梁、挂梁）": {
-                  "name": "上部承重构件（主梁、挂梁）",
+                "上部承重构件": {
+                  "name": "上部承重构件",
                   "level": "部件类型",
                   "weight": 0.7
                 }
@@ -505,15 +565,15 @@
               "level": "结构类型",
               "record_count": 1,
               "children": {
-                "上部一般构件（湿接缝、横隔板等）": {
-                  "name": "上部一般构件（湿接缝、横隔板等）",
+                "上部一般构件": {
+                  "name": "上部一般构件",
                   "level": "部件类型",
                   "weight": 0.18
                 }
               }
             },
-            "-": {
-              "name": "-",
+            "支座": {
+              "name": "支座",
               "level": "结构类型",
               "record_count": 1,
               "children": {
@@ -529,20 +589,30 @@
         "下部结构": {
           "name": "下部结构",
           "level": "部位",
-          "record_count": 7,
+          "record_count": 9,
           "children": {
-            "-": {
-              "name": "-",
+            "下部结构": {
+              "name": "下部结构",
               "level": "结构类型",
-              "record_count": 7,
+              "record_count": 9,
               "children": {
-                "翼墙、耳墙": {
-                  "name": "翼墙、耳墙",
+                "翼墙": {
+                  "name": "翼墙",
                   "level": "部件类型",
                   "weight": 0.02
                 },
-                "锥坡、护坡": {
-                  "name": "锥坡、护坡",
+                "耳墙": {
+                  "name": "耳墙",
+                  "level": "部件类型",
+                  "weight": 0.02
+                },
+                "护坡": {
+                  "name": "护坡",
+                  "level": "部件类型",
+                  "weight": 0.01
+                },
+                "锥坡": {
+                  "name": "锥坡",
                   "level": "部件类型",
                   "weight": 0.01
                 },
@@ -578,12 +648,12 @@
         "桥面系": {
           "name": "桥面系",
           "level": "部位",
-          "record_count": 6,
+          "record_count": 8,
           "children": {
-            "-": {
-              "name": "-",
+            "桥面系": {
+              "name": "桥面系",
               "level": "结构类型",
-              "record_count": 6,
+              "record_count": 8,
               "children": {
                 "桥面铺装": {
                   "name": "桥面铺装",
@@ -600,18 +670,28 @@
                   "level": "部件类型",
                   "weight": 0.1
                 },
-                "栏杆、护栏": {
-                  "name": "栏杆、护栏",
+                "栏杆": {
+                  "name": "栏杆",
                   "level": "部件类型",
                   "weight": 0.1
                 },
-                "排水系统": {
-                  "name": "排水系统",
+                "防排水系统": {
+                  "name": "防排水系统",
                   "level": "部件类型",
                   "weight": 0.1
                 },
-                "照明、标志": {
-                  "name": "照明、标志",
+                "护栏": {
+                  "name": "护栏",
+                  "level": "部件类型",
+                  "weight": 0.1
+                },
+                "标志": {
+                  "name": "标志",
+                  "level": "部件类型",
+                  "weight": 0.05
+                },
+                "照明": {
+                  "name": "照明",
                   "level": "部件类型",
                   "weight": 0.05
                 }
@@ -624,15 +704,15 @@
     "钢-混凝土组合拱桥": {
       "name": "钢-混凝土组合拱桥",
       "level": "桥梁类型",
-      "record_count": 20,
+      "record_count": 24,
       "children": {
         "上部结构": {
           "name": "上部结构",
           "level": "部位",
           "record_count": 7,
           "children": {
-            "-": {
-              "name": "-",
+            "上部结构": {
+              "name": "上部结构",
               "level": "结构类型",
               "record_count": 7,
               "children": {
@@ -656,8 +736,8 @@
                   "level": "部件类型",
                   "weight": 0.13
                 },
-                "系杆(含锚具)": {
-                  "name": "系杆(含锚具)",
+                "系杆及防护板": {
+                  "name": "系杆及防护板",
                   "level": "部件类型",
                   "weight": 0.28
                 },
@@ -678,20 +758,30 @@
         "下部结构": {
           "name": "下部结构",
           "level": "部位",
-          "record_count": 7,
+          "record_count": 9,
           "children": {
-            "-": {
-              "name": "-",
+            "下部结构": {
+              "name": "下部结构",
               "level": "结构类型",
-              "record_count": 7,
+              "record_count": 9,
               "children": {
-                "翼墙、耳墙": {
-                  "name": "翼墙、耳墙",
+                "翼墙": {
+                  "name": "翼墙",
                   "level": "部件类型",
                   "weight": 0.02
                 },
-                "锥坡、护坡": {
-                  "name": "锥坡、护坡",
+                "耳墙": {
+                  "name": "耳墙",
+                  "level": "部件类型",
+                  "weight": 0.02
+                },
+                "护坡": {
+                  "name": "护坡",
+                  "level": "部件类型",
+                  "weight": 0.01
+                },
+                "锥坡": {
+                  "name": "锥坡",
                   "level": "部件类型",
                   "weight": 0.01
                 },
@@ -727,12 +817,12 @@
         "桥面系": {
           "name": "桥面系",
           "level": "部位",
-          "record_count": 6,
+          "record_count": 8,
           "children": {
-            "-": {
-              "name": "-",
+            "桥面系": {
+              "name": "桥面系",
               "level": "结构类型",
-              "record_count": 6,
+              "record_count": 8,
               "children": {
                 "桥面铺装": {
                   "name": "桥面铺装",
@@ -749,18 +839,28 @@
                   "level": "部件类型",
                   "weight": 0.1
                 },
-                "栏杆、护栏": {
-                  "name": "栏杆、护栏",
+                "栏杆": {
+                  "name": "栏杆",
                   "level": "部件类型",
                   "weight": 0.1
                 },
-                "排水系统": {
-                  "name": "排水系统",
+                "防排水系统": {
+                  "name": "防排水系统",
                   "level": "部件类型",
                   "weight": 0.1
                 },
-                "照明、标志": {
-                  "name": "照明、标志",
+                "护栏": {
+                  "name": "护栏",
+                  "level": "部件类型",
+                  "weight": 0.1
+                },
+                "标志": {
+                  "name": "标志",
+                  "level": "部件类型",
+                  "weight": 0.05
+                },
+                "照明": {
+                  "name": "照明",
                   "level": "部件类型",
                   "weight": 0.05
                 }

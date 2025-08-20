@@ -114,48 +114,63 @@ class BridgeJsonAdjuster:
 
         return sorted_data
 
-    def adjust_component_forms(self, component_forms):
-        """调整构件形式级别的数据"""
-        adjusted_forms = {}
+    def split_hierarchical_keys(self, data_dict, target_levels=None):
+        """
+        对指定层级的keys进行顿号分割处理
 
-        for form_name, form_data in component_forms.items():
-            if not isinstance(form_data, dict):
+        Args:
+            data_dict: 要处理的字典
+            target_levels: 需要分割的层级列表，如果为None则处理所有支持的层级
+
+        Returns:
+            处理后的字典
+        """
+        if target_levels is None:
+            target_levels = ["部件类型", "构件形式", "病害类型"]
+
+        processed_data = {}
+
+        for key, value in data_dict.items():
+            if not isinstance(value, dict):
+                processed_data[key] = value
                 continue
 
-            adjusted_forms[form_name] = {
-                "name": form_data.get("name", form_name),
-                "level": form_data.get("level", "构件形式"),
-                "record_count": form_data.get("record_count", 0),
-                "damage_types": {},
-            }
+            current_level = value.get("level", "")
 
-            # 处理病害类型
-            if "children" in form_data:
-                damage_types_data = {}
-                for child_name, child_data in form_data["children"].items():
-                    if child_name != "details" and isinstance(child_data, dict):
-                        damage_types_data[child_name] = child_data
+            # 检查是否需要对当前层级进行分割处理
+            if current_level in target_levels:
+                # 分割key
+                split_keys = self.split_by_separator(key)
 
-                adjusted_forms[form_name]["damage_types"] = self.process_damage_types(
-                    damage_types_data
-                )
+                # 为每个分割的key创建相同的数据结构
+                for split_key in split_keys:
+                    new_value = value.copy()
+                    new_value["name"] = split_key  # 更新名称为分割后的值
+                    processed_data[split_key] = new_value
+            else:
+                # 不需要分割，直接复制
+                processed_data[key] = value
 
-        return adjusted_forms
+        return processed_data
 
     def adjust_recursive_structure(self, data, current_level_name=""):
-        """递归调整数据结构"""
+        """递归调整数据结构，支持所有层级的顿号分割"""
         if not isinstance(data, dict):
             return data
 
+        # 首先对当前层级的keys进行顿号分割处理
+        split_data = self.split_hierarchical_keys(data)
         adjusted_data = {}
 
-        for key, value in data.items():
+        for key, value in split_data.items():
             if not isinstance(value, dict):
                 adjusted_data[key] = value
                 continue
 
+            current_level = value.get("level", "")
+
             # 检查是否到达构件形式级别
-            if value.get("level") == "构件形式":
+            if current_level == "构件形式":
                 # 这是构件形式级别，需要特殊处理
                 adjusted_data[key] = {
                     "name": value.get("name", key),
@@ -194,6 +209,34 @@ class BridgeJsonAdjuster:
 
         return adjusted_data
 
+    def adjust_component_forms(self, component_forms):
+        """调整构件形式级别的数据"""
+        adjusted_forms = {}
+
+        for form_name, form_data in component_forms.items():
+            if not isinstance(form_data, dict):
+                continue
+
+            adjusted_forms[form_name] = {
+                "name": form_data.get("name", form_name),
+                "level": form_data.get("level", "构件形式"),
+                "record_count": form_data.get("record_count", 0),
+                "damage_types": {},
+            }
+
+            # 处理病害类型
+            if "children" in form_data:
+                damage_types_data = {}
+                for child_name, child_data in form_data["children"].items():
+                    if child_name != "details" and isinstance(child_data, dict):
+                        damage_types_data[child_name] = child_data
+
+                adjusted_forms[form_name]["damage_types"] = self.process_damage_types(
+                    damage_types_data
+                )
+
+        return adjusted_forms
+
     def adjust_json_file(self, input_file, output_file=None):
         """调整JSON文件结构"""
         if not os.path.exists(input_file):
@@ -218,8 +261,8 @@ class BridgeJsonAdjuster:
                     "original_file": input_file,
                     "adjusted_time": datetime.now().isoformat(),
                     "original_metadata": original_data.get("metadata", {}),
-                    "structure_version": "2.0",
-                    "description": "调整后的桥梁数据结构，病害类型按顿号分割，标度数据使用数组格式",
+                    "structure_version": "2.1",
+                    "description": "调整后的桥梁数据结构，所有层级都支持顿号分割，标度数据使用数组格式",
                 }
             }
 
@@ -297,11 +340,14 @@ class BridgeJsonAdjuster:
             adjusted_sheets = 1
 
         print(f"• 处理的工作表数量: {original_sheets}")
-        print(f"• 数据结构版本: 2.0 (支持病害类型分割和数组格式标度)")
+        print(f"• 数据结构版本: 2.1 (支持所有层级顿号分割和数组格式标度)")
         print(f"• 主要改进:")
-        print(f"  - 病害类型按顿号分割为独立项目")
+        print(
+            f"  - 所有层级（部位、结构类型、部件类型、构件形式、病害类型）均支持顿号分割"
+        )
         print(f"  - 标度、定性描述、定量描述转换为对应数组")
         print(f"  - 每个标度值对应明确的描述信息")
+        print(f"  - 分割后的项目保持独立的数据结构")
         print("=" * 50)
 
     def adjust_all_files_in_directory(

@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "export_time": "2025-08-12T11:20:51.194509",
+    "export_time": "2025-08-20T16:15:33.075961",
     "total_records": 102,
     "columns": [
       "桥梁类型",
@@ -34,8 +34,8 @@
                   "level": "部件类型",
                   "record_count": 12,
                   "children": {
-                    "-": {
-                      "name": "-",
+                    "上部承重构件、上部一般构件": {
+                      "name": "上部承重构件、上部一般构件",
                       "level": "构件形式",
                       "record_count": 12,
                       "children": {
@@ -331,8 +331,8 @@
                   "level": "部件类型",
                   "record_count": 8,
                   "children": {
-                    "-": {
-                      "name": "-",
+                    "上部承重构件、上部一般构件": {
+                      "name": "上部承重构件、上部一般构件",
                       "level": "构件形式",
                       "record_count": 8,
                       "children": {
@@ -526,8 +526,8 @@
                 }
               }
             },
-            "-": {
-              "name": "-",
+            "支座": {
+              "name": "支座",
               "level": "结构类型",
               "record_count": 12,
               "children": {
@@ -844,8 +844,8 @@
           "level": "部位",
           "record_count": 46,
           "children": {
-            "-": {
-              "name": "-",
+            "下部结构": {
+              "name": "下部结构",
               "level": "结构类型",
               "record_count": 46,
               "children": {
@@ -854,8 +854,8 @@
                   "level": "部件类型",
                   "record_count": 4,
                   "children": {
-                    "-": {
-                      "name": "-",
+                    "翼墙、耳墙": {
+                      "name": "翼墙、耳墙",
                       "level": "构件形式",
                       "record_count": 4,
                       "children": {
@@ -960,8 +960,8 @@
                   "level": "部件类型",
                   "record_count": 2,
                   "children": {
-                    "-": {
-                      "name": "-",
+                    "锥坡、护坡": {
+                      "name": "锥坡、护坡",
                       "level": "构件形式",
                       "record_count": 2,
                       "children": {
@@ -1881,8 +1881,8 @@
                   "level": "部件类型",
                   "record_count": 3,
                   "children": {
-                    "-": {
-                      "name": "-",
+                    "河床": {
+                      "name": "河床",
                       "level": "构件形式",
                       "record_count": 3,
                       "children": {
@@ -1964,8 +1964,8 @@
                   "level": "部件类型",
                   "record_count": 2,
                   "children": {
-                    "-": {
-                      "name": "-",
+                    "调治构造物": {
+                      "name": "调治构造物",
                       "level": "构件形式",
                       "record_count": 2,
                       "children": {
@@ -2028,8 +2028,8 @@
           "level": "部位",
           "record_count": 24,
           "children": {
-            "-": {
-              "name": "-",
+            "桥面系": {
+              "name": "桥面系",
               "level": "结构类型",
               "record_count": 24,
               "children": {
@@ -2312,8 +2312,8 @@
                   "level": "部件类型",
                   "record_count": 4,
                   "children": {
-                    "-": {
-                      "name": "-",
+                    "伸缩缝装置": {
+                      "name": "伸缩缝装置",
                       "level": "构件形式",
                       "record_count": 4,
                       "children": {
@@ -2418,8 +2418,8 @@
                   "level": "部件类型",
                   "record_count": 2,
                   "children": {
-                    "-": {
-                      "name": "-",
+                    "人行道": {
+                      "name": "人行道",
                       "level": "构件形式",
                       "record_count": 2,
                       "children": {
@@ -2478,8 +2478,8 @@
                   "level": "部件类型",
                   "record_count": 2,
                   "children": {
-                    "-": {
-                      "name": "-",
+                    "栏杆、护栏": {
+                      "name": "栏杆、护栏",
                       "level": "构件形式",
                       "record_count": 2,
                       "children": {
@@ -2538,8 +2538,8 @@
                   "level": "部件类型",
                   "record_count": 2,
                   "children": {
-                    "-": {
-                      "name": "-",
+                    "防排水系统": {
+                      "name": "防排水系统",
                       "level": "构件形式",
                       "record_count": 2,
                       "children": {
@@ -2598,8 +2598,8 @@
                   "level": "部件类型",
                   "record_count": 3,
                   "children": {
-                    "-": {
-                      "name": "-",
+                    "照明、标志": {
+                      "name": "照明、标志",
                       "level": "构件形式",
                       "record_count": 3,
                       "children": {
