@@ -61,7 +61,7 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
             results = {}
             actual_conditions = {}
 
-            for level in cascade_levels:
+            for i, level in enumerate(cascade_levels):
                 # 获取当前层级的选项
                 parent_conditions = {
                     k: v for k, v in actual_conditions.items() if v is not None
@@ -76,17 +76,21 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
 
                 results[f"{level}_options"] = processed_options
 
-                # 更新实际条件，用于下一层级
+                # 更新下一层级
                 current_value = conditions.get(f"{level}_id")
+
                 if current_value is not None:
-                    # 用户提供了具体值，使用用户值
+                    # 处理下一层级
                     actual_conditions[f"{level}_id"] = current_value
                 elif null_id is not None:
-                    # 当前层级只有"-"选项，使用null_id作为下级查询条件
+                    # 当前层级只有"-"选项，使用null_id作为下级查询条件处理下一层级
                     actual_conditions[f"{level}_id"] = null_id
                 else:
-                    # 当前层级有多个选项但用户未选择，不设置条件（让下级返回空）
-                    actual_conditions[f"{level}_id"] = None
+                    # 当前层级有多个选项但用户未选择，或者当前层级为空
+                    # 停止处理后续层级，将剩余层级的选项设为空数组
+                    for remaining_level in cascade_levels[i + 1 :]:
+                        results[f"{remaining_level}_options"] = []
+                    break
 
             return CascadeOptionsResponse(
                 category_options=results["category_options"],

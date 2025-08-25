@@ -623,7 +623,7 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
                 "quantity_id",
             ]
 
-            # 构建唯一性检查条件
+            # 唯一性检查条件
             uniqueness_conditions = []
             for field in path_uniqueness_fields:
                 field_value = path_data.get(field)
