@@ -6,7 +6,6 @@ from config.database import get_db
 from services.user_paths import get_user_paths_service
 from schemas.user_paths import CascadeOptionsRequest, UserPathsCreate, UserPathsUpdate
 from utils.responses import success, bad_request
-# from utils.base import get_assessment_units_by_category
 
 router = APIRouter(prefix="/user_paths", tags=["用户路径管理"])
 
@@ -50,17 +49,6 @@ async def create_user_path(
     result = service.create(user_path_data)
 
     return success(result.model_dump(), "创建用户路径成功")
-
-
-# @router.get("/get-assessment_units", summary="获取评定单元")
-# async def get_assessment_units(
-#     category_id: int,
-#     session: Session = Depends(get_db),
-# ):
-#     """获取评定单元"""
-#     units = get_assessment_units_by_category(category_id, session)
-#     return success(units, "获取评定单元成功")
-
 
 @router.get("/tree", summary="获取用户路径嵌套数据结构")
 async def get_nested_user_paths_data(

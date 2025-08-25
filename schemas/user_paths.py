@@ -50,22 +50,6 @@ class UserPathsResponse(BaseModel):
     bridge_instance_name: str
     assessment_unit_instance_name: Optional[str]
 
-    # 基础路径字段
-    category_id: int
-    category_name: Optional[str] = None
-    assessment_unit_id: Optional[int]
-    assessment_unit_name: Optional[str] = None
-    bridge_type_id: Optional[int]
-    bridge_type_name: Optional[str] = None
-    part_id: Optional[int]
-    part_name: Optional[str] = None
-    structure_id: Optional[int]
-    structure_name: Optional[str] = None
-    component_type_id: Optional[int]
-    component_type_name: Optional[str] = None
-    component_form_id: Optional[int]
-    component_form_name: Optional[str] = None
-
     # 关联信息
     paths_id: Optional[int]
 

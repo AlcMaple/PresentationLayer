@@ -107,7 +107,7 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
             raise Exception(f"获取级联选项失败: {str(e)}")
 
     def _check_duplicate_user_path(
-        self, obj_in: UserPathsCreate, exclude_id: Optional[int] = None
+        self, obj_in: UserPathsCreate, paths_id: int, exclude_id: Optional[int] = None
     ) -> None:
         """
         检查同一用户是否已创建相同路径
@@ -123,18 +123,9 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
             conditions = [
                 UserPaths.user_id == obj_in.user_id,
                 UserPaths.bridge_instance_name == obj_in.bridge_instance_name,
-                UserPaths.category_id == obj_in.category_id,
-                UserPaths.bridge_type_id == obj_in.bridge_type_id,
-                UserPaths.part_id == obj_in.part_id,
+                UserPaths.paths_id == paths_id,
                 UserPaths.is_active == True,
             ]
-
-            if obj_in.assessment_unit_id is not None:
-                conditions.append(
-                    UserPaths.assessment_unit_id == obj_in.assessment_unit_id
-                )
-            else:
-                conditions.append(UserPaths.assessment_unit_id.is_(None))
 
             if obj_in.assessment_unit_instance_name is not None:
                 conditions.append(
@@ -143,25 +134,6 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
                 )
             else:
                 conditions.append(UserPaths.assessment_unit_instance_name.is_(None))
-
-            if obj_in.structure_id is not None:
-                conditions.append(UserPaths.structure_id == obj_in.structure_id)
-            else:
-                conditions.append(UserPaths.structure_id.is_(None))
-
-            if obj_in.component_type_id is not None:
-                conditions.append(
-                    UserPaths.component_type_id == obj_in.component_type_id
-                )
-            else:
-                conditions.append(UserPaths.component_type_id.is_(None))
-
-            if obj_in.component_form_id is not None:
-                conditions.append(
-                    UserPaths.component_form_id == obj_in.component_form_id
-                )
-            else:
-                conditions.append(UserPaths.component_form_id.is_(None))
 
             # 如果是更新操作，排除当前记录
             if exclude_id is not None:
@@ -205,20 +177,13 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
                 raise ValidationException("评定单元实例名称不能填写，请选择评定单元")
 
             # 检查同一用户是否已创建相同路径
-            self._check_duplicate_user_path(obj_in)
+            self._check_duplicate_user_path(obj_in, paths_id=paths_id)
 
             # 创建用户路径记录
             user_path = UserPaths(
                 user_id=obj_in.user_id,
                 bridge_instance_name=obj_in.bridge_instance_name,
                 assessment_unit_instance_name=obj_in.assessment_unit_instance_name,
-                category_id=obj_in.category_id,
-                assessment_unit_id=obj_in.assessment_unit_id,
-                bridge_type_id=obj_in.bridge_type_id,
-                part_id=obj_in.part_id,
-                structure_id=obj_in.structure_id,
-                component_type_id=obj_in.component_type_id,
-                component_form_id=obj_in.component_form_id,
                 paths_id=paths_id,
                 is_active=True,
             )
@@ -310,28 +275,11 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
                     resource="UserPaths", identifier=str(user_path_id)
                 )
 
-            # 获取关联的详细信息
-            details = self._get_related_names(user_path)
-
             return UserPathsResponse(
                 id=user_path.id,
                 user_id=user_path.user_id,
                 bridge_instance_name=user_path.bridge_instance_name,
                 assessment_unit_instance_name=user_path.assessment_unit_instance_name,
-                category_id=user_path.category_id,
-                category_name=details.get("category_name"),
-                assessment_unit_id=user_path.assessment_unit_id,
-                assessment_unit_name=details.get("assessment_unit_name"),
-                bridge_type_id=user_path.bridge_type_id,
-                bridge_type_name=details.get("bridge_type_name"),
-                part_id=user_path.part_id,
-                part_name=details.get("part_name"),
-                structure_id=user_path.structure_id,
-                structure_name=details.get("structure_name"),
-                component_type_id=user_path.component_type_id,
-                component_type_name=details.get("component_type_name"),
-                component_form_id=user_path.component_form_id,
-                component_form_name=details.get("component_form_name"),
                 paths_id=user_path.paths_id,
                 is_active=user_path.is_active,
                 created_at=user_path.created_at,
@@ -342,35 +290,6 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
             raise
         except Exception as e:
             raise Exception(f"获取用户路径详情失败: {str(e)}")
-
-    def _get_related_names(self, user_path: UserPaths) -> Dict[str, Optional[str]]:
-        """获取关联表的名称信息"""
-        details = {}
-
-        # 映射关系
-        field_mappings = [
-            ("category_id", Categories, "category_name"),
-            ("assessment_unit_id", AssessmentUnit, "assessment_unit_name"),
-            ("bridge_type_id", BridgeTypes, "bridge_type_name"),
-            ("part_id", BridgeParts, "part_name"),
-            ("structure_id", BridgeStructures, "structure_name"),
-            ("component_type_id", BridgeComponentTypes, "component_type_name"),
-            ("component_form_id", BridgeComponentForms, "component_form_name"),
-        ]
-
-        for field_name, model_class, detail_key in field_mappings:
-            field_id = getattr(user_path, field_name, None)
-            if field_id:
-                try:
-                    stmt = select(model_class.name).where(model_class.id == field_id)
-                    result = self.session.exec(stmt).first()
-                    details[detail_key] = result
-                except:
-                    details[detail_key] = None
-            else:
-                details[detail_key] = None
-
-        return details
 
     def update(self, user_path_id: int, obj_in: UserPathsUpdate) -> UserPathsResponse:
         """
@@ -394,54 +313,97 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
             # 获取更新数据
             update_data = obj_in.model_dump(exclude_unset=True)
 
-            # 合并现有数据和更新数据
-            merged_data = UserPathsCreate(
-                category_id=update_data.get(
-                    "category_id", existing_user_path.category_id
-                ),
-                assessment_unit_id=update_data.get(
-                    "assessment_unit_id", existing_user_path.assessment_unit_id
-                ),
-                bridge_type_id=update_data.get(
-                    "bridge_type_id", existing_user_path.bridge_type_id
-                ),
-                part_id=update_data.get("part_id", existing_user_path.part_id),
-                structure_id=update_data.get(
-                    "structure_id", existing_user_path.structure_id
-                ),
-                component_type_id=update_data.get(
-                    "component_type_id", existing_user_path.component_type_id
-                ),
-                component_form_id=update_data.get(
-                    "component_form_id", existing_user_path.component_form_id
-                ),
-                user_id=existing_user_path.user_id,
-                bridge_instance_name=update_data.get(
-                    "bridge_instance_name", existing_user_path.bridge_instance_name
-                ),
-                assessment_unit_instance_name=update_data.get(
-                    "assessment_unit_instance_name",
-                    existing_user_path.assessment_unit_instance_name,
-                ),
-            )
+            # 有基础路径字段更新，需要重新计算paths_id
+            path_fields = [
+                "category_id",
+                "assessment_unit_id",
+                "bridge_type_id",
+                "part_id",
+                "structure_id",
+                "component_type_id",
+                "component_form_id",
+            ]
 
-            # 查找基础路径ID
-            new_paths_id = self._find_matching_paths_id(merged_data)
-            if not new_paths_id:
-                raise ValidationException(
-                    "未找到匹配的基础路径，请检查选择的路径组合是否正确"
+            if any(field in update_data for field in path_fields):
+                # 获取当前paths记录的基础路径信息
+                current_paths_stmt = select(Paths).where(
+                    and_(
+                        Paths.id == existing_user_path.paths_id, Paths.is_active == True
+                    )
+                )
+                current_paths = self.session.exec(current_paths_stmt).first()
+
+                if not current_paths:
+                    raise ValidationException("当前用户路径关联的基础路径不存在")
+
+                # 构建完整的路径数据用于查找新的paths_id
+                merged_data = UserPathsCreate(
+                    category_id=update_data.get(
+                        "category_id", current_paths.category_id
+                    ),
+                    assessment_unit_id=update_data.get(
+                        "assessment_unit_id", current_paths.assessment_unit_id
+                    ),
+                    bridge_type_id=update_data.get(
+                        "bridge_type_id", current_paths.bridge_type_id
+                    ),
+                    part_id=update_data.get("part_id", current_paths.part_id),
+                    structure_id=update_data.get(
+                        "structure_id", current_paths.structure_id
+                    ),
+                    component_type_id=update_data.get(
+                        "component_type_id", current_paths.component_type_id
+                    ),
+                    component_form_id=update_data.get(
+                        "component_form_id", current_paths.component_form_id
+                    ),
+                    user_id=existing_user_path.user_id,
+                    bridge_instance_name=update_data.get(
+                        "bridge_instance_name", existing_user_path.bridge_instance_name
+                    ),
+                    assessment_unit_instance_name=update_data.get(
+                        "assessment_unit_instance_name",
+                        existing_user_path.assessment_unit_instance_name,
+                    ),
                 )
 
-            # 检查用户路径重复
-            self._check_duplicate_user_path(merged_data, exclude_id=user_path_id)
+                # 查找新的基础路径ID
+                new_paths_id = self._find_matching_paths_id(merged_data)
+                if not new_paths_id:
+                    raise ValidationException(
+                        "未找到匹配的基础路径，请检查选择的路径组合是否正确"
+                    )
 
-            # 更新paths_id
-            update_data["paths_id"] = new_paths_id
+                # 检查用户路径是否重复
+                self._check_duplicate_user_path(
+                    merged_data, exclude_id=user_path_id, paths_id=new_paths_id
+                )
 
-            # 更新记录
-            for field, value in update_data.items():
-                if hasattr(existing_user_path, field):
-                    setattr(existing_user_path, field, value)
+                # 更新paths_id
+                update_data["paths_id"] = new_paths_id
+
+            # 验证评定单元实例名称逻辑
+            final_assessment_unit_id = update_data.get("assessment_unit_id")
+            final_assessment_unit_instance_name = update_data.get(
+                "assessment_unit_instance_name"
+            )
+
+            if final_assessment_unit_id is None and final_assessment_unit_instance_name:
+                raise ValidationException("评定单元实例名称不能填写，请选择评定单元")
+
+            # 更新字段
+            allowed_fields = {
+                "bridge_instance_name",
+                "assessment_unit_instance_name",
+                "paths_id",
+            }
+            filtered_update_data = {
+                k: v for k, v in update_data.items() if k in allowed_fields
+            }
+
+            # 更新
+            for field, value in filtered_update_data.items():
+                setattr(existing_user_path, field, value)
 
             existing_user_path.updated_at = datetime.now(timezone.utc)
 

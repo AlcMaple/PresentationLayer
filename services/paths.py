@@ -578,8 +578,6 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
                     raise DuplicateException(
                         resource="Paths", field="name", value=obj_in.name
                     )
-
-            # 通过各种 code 找到对应的 ID
             path_data = {
                 "code": final_code,
                 "name": obj_in.name,
@@ -651,14 +649,12 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
             self.session.commit()
             self.session.refresh(path_model)
 
-            # 构建返回数据
             response_data = {
                 "id": path_model.id,
                 "code": path_model.code,
                 "name": path_model.name,
             }
 
-            # 添加各个ID对应的关联数据
             response_data.update(self._get_related_data(path_model))
 
             return PathsResponse(**response_data)
