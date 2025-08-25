@@ -24,7 +24,7 @@ from schemas import (
 )
 from services import BaseCRUDService, PageParams, get_inspection_records_service
 from exceptions import NotFoundException, ValidationException, DuplicateException
-from utils import get_assessment_units_by_category
+from utils import CascadeOptionsManager
 
 
 class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpdate]):
@@ -32,426 +32,75 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
 
     def __init__(self, session: Session):
         super().__init__(UserPaths, session)
-
-    def _get_category_options(self) -> List[Dict[str, Any]]:
-        """获取桥梁类别选项"""
-        try:
-            # 从 paths 表里获取所有的桥梁类别
-            exist_category_ids_stmt = (
-                select(Paths.category_id)
-                .where(and_(Paths.category_id.is_not(None), Paths.is_active == True))
-                .distinct()
-            )
-            exist_category_ids = self.session.exec(exist_category_ids_stmt).all()
-
-            if not exist_category_ids:
-                return []
-
-            # 查询分类详细信息
-            stmt = (
-                select(Categories.id, Categories.name)
-                .where(
-                    and_(
-                        Categories.id.in_(exist_category_ids),
-                        Categories.is_active == True,
-                    )
-                )
-                .order_by(Categories.name)
-            )
-
-            results = self.session.exec(stmt).all()
-            return [{"id": r[0], "name": r[1]} for r in results]
-
-        except Exception as e:
-            print(f"获取桥梁类别选项时出错: {e}")
-            return []
+        self.cascade_manager = CascadeOptionsManager(session)
 
     def get_cascade_options(
         self, request: CascadeOptionsRequest
     ) -> CascadeOptionsResponse:
-        """
-        获取级联下拉选项
-
-        Args:
-            request: 级联选项请求
-
-        Returns:
-            级联选项响应
-        """
         try:
-            # 获取桥梁类别选项
-            category_options = self._get_category_options()
+            conditions = {
+                "category_id": request.category_id,
+                "assessment_unit_id": request.assessment_unit_id,
+                "bridge_type_id": request.bridge_type_id,
+                "part_id": request.part_id,
+                "structure_id": request.structure_id,
+                "component_type_id": request.component_type_id,
+            }
 
-            # 获取评定单元选项
-            assessment_unit_options = get_assessment_units_by_category(
-                request.category_id, self.session
-            )
-            # print("评定单元选项：", assessment_unit_options)
-            assessment_unit_null_id = -1
-            if (
-                len(assessment_unit_options) == 1
-                and assessment_unit_options[0]["name"] == "-"
-            ):
-                assessment_unit_null_id = assessment_unit_options[0]["id"]
-                # print("评定单元“-”的 id：", assessment_unit_null_id)
-                assessment_unit_options = []
+            # 级联层级顺序
+            cascade_levels = [
+                "category",
+                "assessment_unit",
+                "bridge_type",
+                "part",
+                "structure",
+                "component_type",
+                "component_form",
+            ]
 
-            if not request.assessment_unit_id:
-                request.assessment_unit_id = assessment_unit_null_id
+            results = {}
+            actual_conditions = {}
 
-            # 获取桥梁类型选项
-            bridge_type_options = self._get_bridge_type_options(
-                request.category_id, request.assessment_unit_id
-            )
+            for level in cascade_levels:
+                # 获取当前层级的选项
+                parent_conditions = {
+                    k: v for k, v in actual_conditions.items() if v is not None
+                }
 
-            # 获取部位选项
-            part_options = self._get_part_options(
-                request.category_id, request.assessment_unit_id, request.bridge_type_id
-            )
+                raw_options = self.cascade_manager.get_cascade_options(
+                    level, parent_conditions
+                )
+                processed_options, null_id = (
+                    self.cascade_manager.process_cascade_result(raw_options)
+                )
 
-            # 获取结构类型选项
-            structure_options = self._get_structure_options(
-                request.category_id,
-                request.assessment_unit_id,
-                request.bridge_type_id,
-                request.part_id,
-            )
+                results[f"{level}_options"] = processed_options
 
-            # 如果只有一个元素，并且name是“-”，则结构类型返回空列表，并把 name 对应的 id 传递给部件类型选项
-            structure_null_id = -1
-            if len(structure_options) == 1 and structure_options[0]["name"] == "-":
-                structure_null_id = structure_options[0]["id"]
-                structure_options = []
-
-            # 获取部件类型选项
-            if not request.structure_id:
-                request.structure_id = structure_null_id
-            component_type_options = self._get_component_type_options(
-                request.category_id,
-                request.assessment_unit_id,
-                request.bridge_type_id,
-                request.part_id,
-                request.structure_id,
-            )
-
-            component_null_id = -1
-            if (
-                len(component_type_options) == 1
-                and component_type_options[0]["name"] == "-"
-            ):
-                component_null_id = component_type_options[0]["id"]
-                component_type_options = []
-
-            # 获取构件形式选项
-            if not request.component_type_id:
-                request.component_type_id = component_null_id
-            component_form_options = self._get_component_form_options(
-                request.category_id,
-                request.assessment_unit_id,
-                request.bridge_type_id,
-                request.part_id,
-                request.structure_id,
-                request.component_type_id,
-            )
-
-            if (
-                len(component_form_options) == 1
-                and component_form_options[0]["name"] == "-"
-            ):
-                component_form_options = []
+                # 更新实际条件，用于下一层级
+                current_value = conditions.get(f"{level}_id")
+                if current_value is not None:
+                    # 用户提供了具体值，使用用户值
+                    actual_conditions[f"{level}_id"] = current_value
+                elif null_id is not None:
+                    # 当前层级只有"-"选项，使用null_id作为下级查询条件
+                    actual_conditions[f"{level}_id"] = null_id
+                else:
+                    # 当前层级有多个选项但用户未选择，不设置条件（让下级返回空）
+                    actual_conditions[f"{level}_id"] = None
 
             return CascadeOptionsResponse(
-                category_options=category_options,
-                assessment_unit_options=assessment_unit_options,
-                bridge_type_options=bridge_type_options,
-                part_options=part_options,
-                structure_options=structure_options,
-                component_type_options=component_type_options,
-                component_form_options=component_form_options,
+                category_options=results["category_options"],
+                assessment_unit_options=results["assessment_unit_options"],
+                bridge_type_options=results["bridge_type_options"],
+                part_options=results["part_options"],
+                structure_options=results["structure_options"],
+                component_type_options=results["component_type_options"],
+                component_form_options=results["component_form_options"],
             )
 
         except Exception as e:
             print(f"获取级联选项时出错: {e}")
             raise Exception(f"获取级联选项失败: {str(e)}")
-
-    def _get_bridge_type_options(
-        self, category_id: int, assessment_unit_id: int
-    ) -> List[Dict[str, Any]]:
-        """获取桥梁类型选项"""
-        try:
-            conditions = [
-                Paths.category_id == category_id,
-                Paths.bridge_type_id.is_not(None),
-                Paths.is_active == True,
-            ]
-            if assessment_unit_id is not None:
-                conditions.append(Paths.assessment_unit_id == assessment_unit_id)
-            else:
-                conditions.append(Paths.assessment_unit_id.is_(None))
-
-            existing_ids_stmt = (
-                select(Paths.bridge_type_id).where(and_(*conditions)).distinct()
-            )
-            existing_ids = self.session.exec(existing_ids_stmt).all()
-
-            if not existing_ids:
-                return []
-
-            # 查询桥梁类型详细信息
-            stmt = (
-                select(BridgeTypes.id, BridgeTypes.name)
-                .where(
-                    and_(
-                        BridgeTypes.id.in_(existing_ids),
-                        BridgeTypes.is_active == True,
-                    )
-                )
-                .order_by(BridgeTypes.name)
-            )
-
-            results = self.session.exec(stmt).all()
-            return [{"id": r[0], "name": r[1]} for r in results]
-
-        except Exception as e:
-            print(f"获取桥梁类型选项时出错: {e}")
-            return []
-
-    def _get_part_options(
-        self, category_id: int, assessment_unit_id: int, bridge_type_id: int
-    ) -> List[Dict[str, Any]]:
-        """获取部位选项"""
-        try:
-            existing_part_ids_stmt = (
-                select(Paths.part_id)
-                .where(
-                    and_(
-                        Paths.category_id == category_id,
-                        Paths.bridge_type_id == bridge_type_id,
-                        Paths.part_id.is_not(None),
-                        Paths.is_active == True,
-                    )
-                )
-                .distinct()
-            )
-
-            if assessment_unit_id is not None:
-                existing_part_ids_stmt = existing_part_ids_stmt.where(
-                    Paths.assessment_unit_id == assessment_unit_id
-                )
-            else:
-                existing_part_ids_stmt = existing_part_ids_stmt.where(
-                    Paths.assessment_unit_id.is_(None)
-                )
-
-            existing_ids = self.session.exec(existing_part_ids_stmt).all()
-
-            if not existing_ids:
-                return []
-
-            # 查询部位详细信息
-            stmt = (
-                select(BridgeParts.id, BridgeParts.name)
-                .where(
-                    and_(
-                        BridgeParts.id.in_(existing_ids), BridgeParts.is_active == True
-                    )
-                )
-                .order_by(BridgeParts.name)
-            )
-
-            results = self.session.exec(stmt).all()
-            return [{"id": r[0], "name": r[1]} for r in results]
-
-        except Exception as e:
-            print(f"获取部位选项时出错: {e}")
-            return []
-
-    def _get_structure_options(
-        self,
-        category_id: int,
-        assessment_unit_id: int,
-        bridge_type_id: int,
-        part_id: int,
-    ) -> List[Dict[str, Any]]:
-        """获取结构类型选项"""
-        try:
-            existing_structure_ids_stmt = (
-                select(Paths.structure_id)
-                .where(
-                    and_(
-                        Paths.category_id == category_id,
-                        Paths.bridge_type_id == bridge_type_id,
-                        Paths.part_id == part_id,
-                        Paths.structure_id.is_not(None),
-                        Paths.is_active == True,
-                    )
-                )
-                .distinct()
-            )
-
-            if assessment_unit_id is not None:
-                existing_structure_ids_stmt = existing_structure_ids_stmt.where(
-                    Paths.assessment_unit_id == assessment_unit_id
-                )
-            else:
-                existing_structure_ids_stmt = existing_structure_ids_stmt.where(
-                    Paths.assessment_unit_id.is_(None)
-                )
-            existing_ids = self.session.exec(existing_structure_ids_stmt).all()
-
-            if not existing_ids:
-                return []
-
-            # 查询结构类型详细信息
-            stmt = (
-                select(BridgeStructures.id, BridgeStructures.name)
-                .where(
-                    and_(
-                        BridgeStructures.id.in_(existing_ids),
-                        BridgeStructures.is_active == True,
-                    )
-                )
-                .order_by(BridgeStructures.name)
-            )
-
-            results = self.session.exec(stmt).all()
-
-            # 如果有多个结构类型，过滤掉名称为“-”的记录
-            if len(results) > 1:
-                return [{"id": r[0], "name": r[1]} for r in results if r[1] != "-"]
-
-            return [{"id": r[0], "name": r[1]} for r in results]
-
-        except Exception as e:
-            print(f"获取结构类型选项时出错: {e}")
-            return []
-
-    def _get_component_type_options(
-        self,
-        category_id: int,
-        assessment_unit_id: int,
-        bridge_type_id: int,
-        part_id: int,
-        structure_id: Optional[int],
-    ) -> List[Dict[str, Any]]:
-        """获取部件类型选项"""
-        try:
-            # 查询条件
-            conditions = [
-                Paths.bridge_type_id == bridge_type_id,
-                Paths.category_id == category_id,
-                Paths.part_id == part_id,
-                Paths.component_type_id.is_not(None),
-                Paths.is_active == True,
-            ]
-
-            # 处理结构类型条件
-            if structure_id is not None:
-                conditions.append(Paths.structure_id == structure_id)
-            else:
-                conditions.append(Paths.structure_id.is_(None))
-
-            if assessment_unit_id is not None:
-                conditions.append(Paths.assessment_unit_id == assessment_unit_id)
-            else:
-                conditions.append(Paths.assessment_unit_id.is_(None))
-            existing_component_type_ids_stmt = (
-                select(Paths.component_type_id).where(and_(*conditions)).distinct()
-            )
-            existing_ids = self.session.exec(existing_component_type_ids_stmt).all()
-
-            if not existing_ids:
-                return []
-
-            # 查询部件类型详细信息
-            stmt = (
-                select(BridgeComponentTypes.id, BridgeComponentTypes.name)
-                .where(
-                    and_(
-                        BridgeComponentTypes.id.in_(existing_ids),
-                        BridgeComponentTypes.is_active == True,
-                    )
-                )
-                .order_by(BridgeComponentTypes.name)
-            )
-
-            results = self.session.exec(stmt).all()
-
-            if len(results) > 1:
-                return [{"id": r[0], "name": r[1]} for r in results if r[1] != "-"]
-
-            return [{"id": r[0], "name": r[1]} for r in results]
-
-        except Exception as e:
-            print(f"获取部件类型选项时出错: {e}")
-            return []
-
-    def _get_component_form_options(
-        self,
-        category_id: int,
-        assessment_unit_id: int,
-        bridge_type_id: int,
-        part_id: int,
-        structure_id: Optional[int],
-        component_type_id: Optional[int],
-    ) -> List[Dict[str, Any]]:
-        """获取构件形式选项"""
-        try:
-            # 查询条件
-            conditions = [
-                Paths.bridge_type_id == bridge_type_id,
-                Paths.category_id == category_id,
-                Paths.part_id == part_id,
-                Paths.component_form_id.is_not(None),
-                Paths.is_active == True,
-            ]
-
-            # 处理结构类型条件
-            if structure_id is not None:
-                conditions.append(Paths.structure_id == structure_id)
-            else:
-                conditions.append(Paths.structure_id.is_(None))
-
-            # 处理部件类型条件
-            if component_type_id is not None:
-                conditions.append(Paths.component_type_id == component_type_id)
-            else:
-                conditions.append(Paths.component_type_id.is_(None))
-
-            if assessment_unit_id is not None:
-                conditions.append(Paths.assessment_unit_id == assessment_unit_id)
-            else:
-                conditions.append(Paths.assessment_unit_id.is_(None))
-            existing_component_form_ids_stmt = (
-                select(Paths.component_form_id).where(and_(*conditions)).distinct()
-            )
-            existing_ids = self.session.exec(existing_component_form_ids_stmt).all()
-
-            if not existing_ids:
-                return []
-
-            # 查询构件形式详细信息
-            stmt = (
-                select(BridgeComponentForms.id, BridgeComponentForms.name)
-                .where(
-                    and_(
-                        BridgeComponentForms.id.in_(existing_ids),
-                        BridgeComponentForms.is_active == True,
-                    )
-                )
-                .order_by(BridgeComponentForms.name)
-            )
-
-            results = self.session.exec(stmt).all()
-
-            if len(results) > 1:
-                return [{"id": r[0], "name": r[1]} for r in results if r[1] != "-"]
-
-            return [{"id": r[0], "name": r[1]} for r in results]
-
-        except Exception as e:
-            print(f"获取构件形式选项时出错: {e}")
-            return []
 
     def _check_duplicate_user_path(
         self, obj_in: UserPathsCreate, exclude_id: Optional[int] = None
