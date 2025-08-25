@@ -63,6 +63,13 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
             if conditions:
                 filter_conditions.extend(self._build_path_filter_conditions(conditions))
             if filter_conditions:
+                """
+                filter_conditions = [
+                    Paths.is_active == True,      # 基础条件
+                    Paths.category_id == 5,       # 从category_code转换而来
+                    Paths.bridge_type_id == 12    # 从bridge_type_code转换而来
+                ]
+                """
                 statement = statement.where(and_(*filter_conditions))
                 count_statement = count_statement.where(and_(*filter_conditions))
 
@@ -369,6 +376,7 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
                         )
                         result = self.session.exec(stmt).first()
                         if result:
+                            # 添加过滤条件，如 Paths.category_id == 5
                             filter_conditions.append(path_field == result)
                     except Exception as e:
                         print(
@@ -499,6 +507,55 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
             print(f"获取paths单条记录数据时出错: {e}")
             return None
 
+    def _resolve_code_to_id(
+        self, code_value: Optional[str], model_class, id_field: str
+    ) -> Optional[int]:
+        """
+        解析code到对应的ID
+
+        Args:
+            code_value: code值，可为None或空字符串
+            model_class: 对应的模型类
+            id_field: ID字段名
+
+        Returns:
+            对应的ID值，如果未找到则为None
+        """
+        try:
+            # 如果code_value为None或空字符串，查找name为"-"的记录
+            if not code_value or not code_value.strip():
+                stmt = select(model_class.id, model_class.code).where(
+                    and_(
+                        model_class.name == "-",
+                        model_class.is_active == True,
+                    )
+                )
+                result = self.session.exec(stmt).first()
+                if result:
+                    return result[0]  # 返回ID
+                else:
+                    # 如果找不到name为"-"的记录，返回None
+                    return None
+            else:
+                stmt = select(model_class.id).where(
+                    and_(
+                        model_class.code == code_value.strip(),
+                        model_class.is_active == True,
+                    )
+                )
+                result = self.session.exec(stmt).first()
+                if result:
+                    return result
+                else:
+                    raise ValidationException(
+                        f"找不到 {id_field} 对应code为 '{code_value}' 的记录"
+                    )
+        except ValidationException:
+            raise
+        except Exception as e:
+            print(f"解析 {id_field} 时出错: {e}")
+            return None
+
     def create(self, obj_in: PathsCreate) -> Optional[PathsResponse]:
         """
         创建paths记录
@@ -545,21 +602,11 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
 
             for code_field, model_class, id_field in code_to_id_mappings:
                 code_value = getattr(obj_in, code_field, None)
-                if code_value:
-                    # 查找对应的 ID
-                    stmt = select(model_class.id).where(
-                        and_(
-                            model_class.code == code_value,
-                            model_class.is_active == True,
-                        )
-                    )
-                    result = self.session.exec(stmt).first()
-                    if result:
-                        path_data[id_field] = result
-                    else:
-                        raise ValidationException(
-                            f"找不到 {code_field} 为 '{code_value}' 的记录"
-                        )
+                resolved_id = self._resolve_code_to_id(
+                    code_value, model_class, id_field
+                )
+                if resolved_id is not None:
+                    path_data[id_field] = resolved_id
 
             # 检查记录的唯一性
             path_uniqueness_fields = [
@@ -689,24 +736,10 @@ class PathsService(BaseCRUDService[Paths, PathsCreate, PathsUpdate]):
             for code_field, model_class, id_field in code_to_id_mappings:
                 if code_field in obj_data:
                     code_value = obj_data.pop(code_field)  # 移除code字段
-                    if code_value:
-                        # 查找对应的 ID
-                        stmt = select(model_class.id).where(
-                            and_(
-                                model_class.code == code_value,
-                                model_class.is_active == True,
-                            )
-                        )
-                        result = self.session.exec(stmt).first()
-                        if result:
-                            obj_data[id_field] = result
-                        else:
-                            raise ValidationException(
-                                f"找不到 {code_field} 为 '{code_value}' 的记录"
-                            )
-                    else:
-                        # 如果code为空，将对应的ID设为None
-                        obj_data[id_field] = None
+                    resolved_id = self._resolve_code_to_id(
+                        code_value, model_class, id_field
+                    )
+                    obj_data[id_field] = resolved_id
 
             # 检查记录的唯一性（排除当前记录）
             path_uniqueness_fields = [

@@ -1,0 +1,254 @@
+<svg viewBox="0 0 1200 900" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <pattern id="diagonalHatch" patternUnits="userSpaceOnUse" width="4" height="4">
+            <path d="M 0,4 L 4,0 M -1,1 L 1,-1 M 3,5 L 5,3" stroke="#e0e0e0" stroke-width="0.5" />
+        </pattern>
+        <linearGradient id="layerGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style="stop-color:#f8f9fa;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#e9ecef;stop-opacity:1" />
+        </linearGradient>
+    </defs>
+
+    <!-- 背景 -->
+    <rect width="1200" height="900" fill="#fafbfc" />
+
+    <!-- 标题 -->
+    <text x="600" y="30" text-anchor="middle" font-size="24" font-weight="bold" fill="#2c3e50">
+        桥梁评分系统架构图
+    </text>
+    <text x="600" y="55" text-anchor="middle" font-size="14" fill="#7f8c8d">
+        Python + FastAPI + MySQL + SQLModel
+    </text>
+
+    <!-- 表示层 -->
+    <rect x="50" y="80" width="1100" height="80" fill="url(#layerGrad)" stroke="#3498db" stroke-width="2" rx="5" />
+    <text x="70" y="105" font-size="16" font-weight="bold" fill="#2c3e50">表示层 (Presentation Layer)</text>
+
+    <rect x="80" y="115" width="150" height="35" fill="#3498db" stroke="#2980b9" rx="3" />
+    <text x="155" y="135" text-anchor="middle" font-size="12" fill="white">Web界面</text>
+
+    <rect x="250" y="115" width="150" height="35" fill="#3498db" stroke="#2980b9" rx="3" />
+    <text x="325" y="135" text-anchor="middle" font-size="12" fill="white">API文档</text>
+
+    <rect x="420" y="115" width="150" height="35" fill="#3498db" stroke="#2980b9" rx="3" />
+    <text x="495" y="135" text-anchor="middle" font-size="12" fill="white">数据录入界面</text>
+
+    <rect x="590" y="115" width="150" height="35" fill="#3498db" stroke="#2980b9" rx="3" />
+    <text x="665" y="135" text-anchor="middle" font-size="12" fill="white">评分查询界面</text>
+
+    <rect x="760" y="115" width="150" height="35" fill="#3498db" stroke="#2980b9" rx="3" />
+    <text x="835" y="135" text-anchor="middle" font-size="12" fill="white">权重配置界面</text>
+
+    <rect x="930" y="115" width="150" height="35" fill="#3498db" stroke="#2980b9" rx="3" />
+    <text x="1005" y="135" text-anchor="middle" font-size="12" fill="white">系统管理界面</text>
+
+    <!-- API网关层 -->
+    <rect x="50" y="180" width="1100" height="70" fill="url(#layerGrad)" stroke="#e67e22" stroke-width="2" rx="5" />
+    <text x="70" y="205" font-size="16" font-weight="bold" fill="#2c3e50">API网关层 (API Gateway)</text>
+
+    <rect x="100" y="220" width="200" height="25" fill="#e67e22" stroke="#d35400" rx="3" />
+    <text x="200" y="235" text-anchor="middle" font-size="12" fill="white">FastAPI 路由</text>
+
+    <rect x="320" y="220" width="150" height="25" fill="#e67e22" stroke="#d35400" rx="3" />
+    <text x="395" y="235" text-anchor="middle" font-size="12" fill="white">CORS中间件</text>
+
+    <rect x="490" y="220" width="150" height="25" fill="#e67e22" stroke="#d35400" rx="3" />
+    <text x="565" y="235" text-anchor="middle" font-size="12" fill="white">异常处理</text>
+
+    <rect x="660" y="220" width="150" height="25" fill="#e67e22" stroke="#d35400" rx="3" />
+    <text x="735" y="235" text-anchor="middle" font-size="12" fill="white">请求验证</text>
+
+    <rect x="830" y="220" width="150" height="25" fill="#e67e22" stroke="#d35400" rx="3" />
+    <text x="905" y="235" text-anchor="middle" font-size="12" fill="white">响应序列化</text>
+
+    <!-- 业务逻辑层 -->
+    <rect x="50" y="270" width="1100" height="200" fill="url(#layerGrad)" stroke="#27ae60" stroke-width="2" rx="5" />
+    <text x="70" y="295" font-size="16" font-weight="bold" fill="#2c3e50">业务逻辑层 (Business Logic Layer)</text>
+
+    <!-- 核心业务模块 -->
+    <text x="80" y="320" font-size="14" font-weight="bold" fill="#2c3e50">核心业务模块:</text>
+
+    <rect x="100" y="330" width="180" height="60" fill="#2ecc71" stroke="#27ae60" rx="3" />
+    <text x="190" y="350" text-anchor="middle" font-size="12" font-weight="bold" fill="white">基础数据管理</text>
+    <text x="190" y="365" text-anchor="middle" font-size="10" fill="white">• 基础路径表CRUD</text>
+    <text x="190" y="380" text-anchor="middle" font-size="10" fill="white">• 枚举数据管理</text>
+
+    <rect x="300" y="330" width="180" height="60" fill="#2ecc71" stroke="#27ae60" rx="3" />
+    <text x="390" y="350" text-anchor="middle" font-size="12" font-weight="bold" fill="white">用户数据管理</text>
+    <text x="390" y="365" text-anchor="middle" font-size="10" fill="white">• 用户路径表CRUD</text>
+    <text x="390" y="380" text-anchor="middle" font-size="10" fill="white">• 数据录入管理</text>
+
+    <rect x="500" y="330" width="180" height="60" fill="#2ecc71" stroke="#27ae60" rx="3" />
+    <text x="590" y="350" text-anchor="middle" font-size="12" font-weight="bold" fill="white">评分计算引擎</text>
+    <text x="590" y="365" text-anchor="middle" font-size="10" fill="white">• 构件分计算</text>
+    <text x="590" y="380" text-anchor="middle" font-size="10" fill="white">• 部位分计算</text>
+
+    <rect x="700" y="330" width="180" height="60" fill="#2ecc71" stroke="#27ae60" rx="3" />
+    <text x="790" y="350" text-anchor="middle" font-size="12" font-weight="bold" fill="white">权重管理</text>
+    <text x="790" y="365" text-anchor="middle" font-size="10" fill="white">• 权重分配计算</text>
+    <text x="790" y="380" text-anchor="middle" font-size="10" fill="white">• 动态权重调整</text>
+
+    <rect x="900" y="330" width="180" height="60" fill="#2ecc71" stroke="#27ae60" rx="3" />
+    <text x="990" y="350" text-anchor="middle" font-size="12" font-weight="bold" fill="white">级联查询服务</text>
+    <text x="990" y="365" text-anchor="middle" font-size="10" fill="white">• 递归数据查询</text>
+    <text x="990" y="380" text-anchor="middle" font-size="10" fill="white">• 多层级联处理</text>
+
+    <!-- 通用服务层 -->
+    <text x="80" y="420" font-size="14" font-weight="bold" fill="#2c3e50">通用服务层:</text>
+
+    <rect x="100" y="430" width="150" height="30" fill="#95a5a6" stroke="#7f8c8d" rx="3" />
+    <text x="175" y="448" text-anchor="middle" font-size="11" fill="white">BaseCRUD服务</text>
+
+    <rect x="270" y="430" width="150" height="30" fill="#95a5a6" stroke="#7f8c8d" rx="3" />
+    <text x="345" y="448" text-anchor="middle" font-size="11" fill="white">代码生成器</text>
+
+    <rect x="440" y="430" width="150" height="30" fill="#95a5a6" stroke="#7f8c8d" rx="3" />
+    <text x="515" y="448" text-anchor="middle" font-size="11" fill="white">路径级联服务</text>
+
+    <rect x="610" y="430" width="150" height="30" fill="#95a5a6" stroke="#7f8c8d" rx="3" />
+    <text x="685" y="448" text-anchor="middle" font-size="11" fill="white">分页服务</text>
+
+    <rect x="780" y="430" width="150" height="30" fill="#95a5a6" stroke="#7f8c8d" rx="3" />
+    <text x="855" y="448" text-anchor="middle" font-size="11" fill="white">异常处理</text>
+
+    <rect x="950" y="430" width="150" height="30" fill="#95a5a6" stroke="#7f8c8d" rx="3" />
+    <text x="1025" y="448" text-anchor="middle" font-size="11" fill="white">响应格式化</text>
+
+    <!-- 数据访问层 -->
+    <rect x="50" y="490" width="1100" height="120" fill="url(#layerGrad)" stroke="#9b59b6" stroke-width="2" rx="5" />
+    <text x="70" y="515" font-size="16" font-weight="bold" fill="#2c3e50">数据访问层 (Data Access Layer)</text>
+
+    <!-- SQLModel ORM -->
+    <rect x="100" y="530" width="200" height="40" fill="#a569bd" stroke="#8e44ad" rx="3" />
+    <text x="200" y="548" text-anchor="middle" font-size="12" font-weight="bold" fill="white">SQLModel ORM</text>
+    <text x="200" y="562" text-anchor="middle" font-size="10" fill="white">数据模型定义</text>
+
+    <rect x="320" y="530" width="150" height="40" fill="#a569bd" stroke="#8e44ad" rx="3" />
+    <text x="395" y="548" text-anchor="middle" font-size="12" fill="white">会话管理</text>
+    <text x="395" y="562" text-anchor="middle" font-size="10" fill="white">SQLAlchemy引擎</text>
+
+    <rect x="490" y="530" width="150" height="40" fill="#a569bd" stroke="#8e44ad" rx="3" />
+    <text x="565" y="548" text-anchor="middle" font-size="12" fill="white">查询构建器</text>
+    <text x="565" y="562" text-anchor="middle" font-size="10" fill="white">复杂查询支持</text>
+
+    <rect x="660" y="530" width="150" height="40" fill="#a569bd" stroke="#8e44ad" rx="3" />
+    <text x="735" y="548" text-anchor="middle" font-size="12" fill="white">事务管理</text>
+    <text x="735" y="562" text-anchor="middle" font-size="10" fill="white">数据一致性</text>
+
+    <rect x="830" y="530" width="150" height="40" fill="#a569bd" stroke="#8e44ad" rx="3" />
+    <text x="905" y="548" text-anchor="middle" font-size="12" fill="white">连接池</text>
+    <text x="905" y="562" text-anchor="middle" font-size="10" fill="white">PyMySQL驱动</text>
+
+    <!-- 数据存储层 -->
+    <rect x="50" y="630" width="1100" height="120" fill="url(#layerGrad)" stroke="#e74c3c" stroke-width="2" rx="5" />
+    <text x="70" y="655" font-size="16" font-weight="bold" fill="#2c3e50">数据存储层 (Data Storage Layer)</text>
+
+    <!-- MySQL数据库 -->
+    <rect x="100" y="670" width="300" height="60" fill="#e74c3c" stroke="#c0392b" rx="3" />
+    <text x="250" y="690" text-anchor="middle" font-size="14" font-weight="bold" fill="white">MySQL 数据库</text>
+    <text x="250" y="705" text-anchor="middle" font-size="11" fill="white">桥梁健康监控系统数据库</text>
+    <text x="250" y="720" text-anchor="middle" font-size="10" fill="white">存储所有结构化数据</text>
+
+    <!-- 核心数据表 -->
+    <text x="450" y="685" font-size="12" font-weight="bold" fill="#2c3e50">核心数据表:</text>
+
+    <rect x="450" y="695" width="120" height="45" fill="#f39c12" stroke="#e67e22" rx="2" />
+    <text x="510" y="710" text-anchor="middle" font-size="10" fill="white">基础表组</text>
+    <text x="510" y="722" text-anchor="middle" font-size="9" fill="white">paths, bridge_types</text>
+    <text x="510" y="732" text-anchor="middle" font-size="9" fill="white">bridge_parts等</text>
+
+    <rect x="580" y="695" width="120" height="45" fill="#f39c12" stroke="#e67e22" rx="2" />
+    <text x="640" y="710" text-anchor="middle" font-size="10" fill="white">用户表组</text>
+    <text x="640" y="722" text-anchor="middle" font-size="9" fill="white">user_paths</text>
+    <text x="640" y="732" text-anchor="middle" font-size="9" fill="white">data_entries</text>
+
+    <rect x="710" y="695" width="120" height="45" fill="#f39c12" stroke="#e67e22" rx="2" />
+    <text x="770" y="710" text-anchor="middle" font-size="10" fill="white">评分表组</text>
+    <text x="770" y="722" text-anchor="middle" font-size="9" fill="white">score_records</text>
+    <text x="770" y="732" text-anchor="middle" font-size="9" fill="white">weights</text>
+
+    <rect x="840" y="695" width="120" height="45" fill="#f39c12" stroke="#e67e22" rx="2" />
+    <text x="900" y="710" text-anchor="middle" font-size="10" fill="white">枚举表组</text>
+    <text x="900" y="722" text-anchor="middle" font-size="9" fill="white">ratings</text>
+    <text x="900" y="732" text-anchor="middle" font-size="9" fill="white">damage_scales</text>
+
+    <rect x="970" y="695" width="120" height="45" fill="#f39c12" stroke="#e67e22" rx="2" />
+    <text x="1030" y="710" text-anchor="middle" font-size="10" fill="white">配置表组</text>
+    <text x="1030" y="722" text-anchor="middle" font-size="9" fill="white">t_values</text>
+    <text x="1030" y="732" text-anchor="middle" font-size="9" fill="white">main_components</text>
+
+    <!-- 配置和工具 -->
+    <rect x="50" y="770" width="550" height="100" fill="url(#layerGrad)" stroke="#34495e" stroke-width="2" rx="5" />
+    <text x="70" y="795" font-size="16" font-weight="bold" fill="#2c3e50">配置与工具层</text>
+
+    <rect x="80" y="810" width="120" height="30" fill="#34495e" stroke="#2c3e50" rx="3" />
+    <text x="140" y="828" text-anchor="middle" font-size="11" fill="white">环境配置</text>
+
+    <rect x="220" y="810" width="120" height="30" fill="#34495e" stroke="#2c3e50" rx="3" />
+    <text x="280" y="828" text-anchor="middle" font-size="11" fill="white">数据库配置</text>
+
+    <rect x="360" y="810" width="120" height="30" fill="#34495e" stroke="#2c3e50" rx="3" />
+    <text x="420" y="828" text-anchor="middle" font-size="11" fill="white">应用工厂</text>
+
+    <rect x="500" y="810" width="80" height="30" fill="#34495e" stroke="#2c3e50" rx="3" />
+    <text x="540" y="828" text-anchor="middle" font-size="11" fill="white">生命周期</text>
+
+    <rect x="80" y="850" width="100" height="15" fill="#95a5a6" stroke="#7f8c8d" rx="2" />
+    <text x="130" y="860" text-anchor="middle" font-size="9" fill="white">Uvicorn服务器</text>
+
+    <rect x="200" y="850" width="100" height="15" fill="#95a5a6" stroke="#7f8c8d" rx="2" />
+    <text x="250" y="860" text-anchor="middle" font-size="9" fill="white">模块化路由</text>
+
+    <rect x="320" y="850" width="100" height="15" fill="#95a5a6" stroke="#7f8c8d" rx="2" />
+    <text x="370" y="860" text-anchor="middle" font-size="9" fill="white">测试框架</text>
+
+    <rect x="440" y="850" width="100" height="15" fill="#95a5a6" stroke="#7f8c8d" rx="2" />
+    <text x="490" y="860" text-anchor="middle" font-size="9" fill="white">静态文件</text>
+
+    <!-- 外部集成 -->
+    <rect x="620" y="770" width="530" height="100" fill="url(#layerGrad)" stroke="#16a085" stroke-width="2" rx="5" />
+    <text x="640" y="795" font-size="16" font-weight="bold" fill="#2c3e50">外部集成与扩展</text>
+
+    <rect x="650" y="810" width="120" height="30" fill="#1abc9c" stroke="#16a085" rx="3" />
+    <text x="710" y="828" text-anchor="middle" font-size="11" fill="white">Excel数据导入</text>
+
+    <rect x="790" y="810" width="120" height="30" fill="#1abc9c" stroke="#16a085" rx="3" />
+    <text x="850" y="828" text-anchor="middle" font-size="11" fill="white">PDF文档处理</text>
+
+    <rect x="930" y="810" width="120" height="30" fill="#1abc9c" stroke="#16a085" rx="3" />
+    <text x="990" y="828" text-anchor="middle" font-size="11" fill="white">数据校验</text>
+
+    <rect x="1070" y="810" width="70" height="30" fill="#1abc9c" stroke="#16a085" rx="3" />
+    <text x="1105" y="828" text-anchor="middle" font-size="11" fill="white">监控</text>
+
+    <rect x="650" y="850" width="100" height="15" fill="#95a5a6" stroke="#7f8c8d" rx="2" />
+    <text x="700" y="860" text-anchor="middle" font-size="9" fill="white">Pandas处理</text>
+
+    <rect x="770" y="850" width="100" height="15" fill="#95a5a6" stroke="#7f8c8d" rx="2" />
+    <text x="820" y="860" text-anchor="middle" font-size="9" fill="white">OpenPyXL</text>
+
+    <rect x="890" y="850" width="100" height="15" fill="#95a5a6" stroke="#7f8c8d" rx="2" />
+    <text x="940" y="860" text-anchor="middle" font-size="9" fill="white">Pydantic</text>
+
+    <rect x="1010" y="850" width="100" height="15" fill="#95a5a6" stroke="#7f8c8d" rx="2" />
+    <text x="1060" y="860" text-anchor="middle" font-size="9" fill="white">APScheduler</text>
+
+    <!-- 数据流箭头 -->
+    <defs>
+        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#7f8c8d" />
+        </marker>
+    </defs>
+
+    <!-- 垂直数据流 -->
+    <line x1="600" y1="160" x2="600" y2="180" stroke="#7f8c8d" stroke-width="2" marker-end="url(#arrowhead)" />
+    <line x1="600" y1="250" x2="600" y2="270" stroke="#7f8c8d" stroke-width="2" marker-end="url(#arrowhead)" />
+    <line x1="600" y1="470" x2="600" y2="490" stroke="#7f8c8d" stroke-width="2" marker-end="url(#arrowhead)" />
+    <line x1="600" y1="610" x2="600" y2="630" stroke="#7f8c8d" stroke-width="2" marker-end="url(#arrowhead)" />
+
+    <!-- 说明文字 -->
+    <text x="620" y="175" font-size="10" fill="#7f8c8d">HTTP请求/响应</text>
+    <text x="620" y="265" font-size="10" fill="#7f8c8d">API调用</text>
+    <text x="620" y="485" font-size="10" fill="#7f8c8d">SQL查询</text>
+    <text x="620" y="625" font-size="10" fill="#7f8c8d">数据持久化</text>
+</svg>

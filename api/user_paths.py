@@ -6,13 +6,15 @@ from config.database import get_db
 from services.user_paths import get_user_paths_service
 from schemas.user_paths import CascadeOptionsRequest, UserPathsCreate, UserPathsUpdate
 from utils.responses import success, bad_request
-from utils.base import get_assessment_units_by_category
+# from utils.base import get_assessment_units_by_category
 
 router = APIRouter(prefix="/user_paths", tags=["用户路径管理"])
 
 
 @router.get("/cascade-options", summary="获取级联下拉选项")
 async def get_cascade_options(
+    category_id: Optional[int] = Query(None, description="桥梁类别ID"),
+    assessment_unit_id: Optional[int] = Query(None, description="评定单元ID"),
     bridge_type_id: Optional[int] = Query(None, description="桥梁类型ID"),
     part_id: Optional[int] = Query(None, description="部位ID"),
     structure_id: Optional[int] = Query(None, description="结构类型ID"),
@@ -24,6 +26,8 @@ async def get_cascade_options(
     service = get_user_paths_service(session)
 
     request = CascadeOptionsRequest(
+        category_id=category_id,
+        assessment_unit_id=assessment_unit_id,
         bridge_type_id=bridge_type_id,
         part_id=part_id,
         structure_id=structure_id,
@@ -48,14 +52,14 @@ async def create_user_path(
     return success(result.model_dump(), "创建用户路径成功")
 
 
-@router.get("/get-assessment_units", summary="获取评定单元")
-async def get_assessment_units(
-    category_id: int,
-    session: Session = Depends(get_db),
-):
-    """获取评定单元"""
-    units = get_assessment_units_by_category(category_id, session)
-    return success(units, "获取评定单元成功")
+# @router.get("/get-assessment_units", summary="获取评定单元")
+# async def get_assessment_units(
+#     category_id: int,
+#     session: Session = Depends(get_db),
+# ):
+#     """获取评定单元"""
+#     units = get_assessment_units_by_category(category_id, session)
+#     return success(units, "获取评定单元成功")
 
 
 @router.get("/tree", summary="获取用户路径嵌套数据结构")

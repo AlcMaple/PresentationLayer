@@ -81,6 +81,8 @@ class UserPathsResponse(BaseModel):
 class CascadeOptionsRequest(BaseModel):
     """级联选项请求模型"""
 
+    category_id: Optional[int] = Field(None, description="桥梁类别ID")
+    assessment_unit_id: Optional[int] = Field(None, description="评定单元ID")
     bridge_type_id: Optional[int] = Field(None, description="桥梁类型ID")
     part_id: Optional[int] = Field(None, description="部位ID")
     structure_id: Optional[int] = Field(None, description="结构类型ID")
@@ -91,6 +93,8 @@ class CascadeOptionsRequest(BaseModel):
 class CascadeOptionsResponse(BaseModel):
     """级联选项响应模型"""
 
+    category_options: List[Dict[str, Any]]
+    assessment_unit_options: List[Dict[str, Any]]
     bridge_type_options: List[Dict[str, Any]]
     part_options: List[Dict[str, Any]]
     structure_options: List[Dict[str, Any]]

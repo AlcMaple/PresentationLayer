@@ -297,6 +297,7 @@ def get_assessment_units_by_category(
             .distinct()
         )
         existing_ids = session.exec(existing_ids_stmt).all()
+        # print("existing_ids-p 评定单元:", existing_ids)
 
         if not existing_ids:
             return []
@@ -314,10 +315,11 @@ def get_assessment_units_by_category(
         )
 
         results = session.exec(stmt).all()
+        # print("results-p 评定单元:", results)
 
         # 如果只有一个评定单元，且name 为“-”，则返回空列表
         if len(results) == 1 and results[0][1] == "-":
-            return []
+            return [{"id": results[0][0], "name": results[0][1]}]
 
         # 如果有多个评定单元，且name 为“-”，则过滤掉
         return [{"id": r[0], "name": r[1]} for r in results if r[1] != "-"]

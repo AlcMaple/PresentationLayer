@@ -2,7 +2,6 @@ from typing import List, Optional, Dict, Any, Tuple
 from sqlmodel import Session, select, and_
 from datetime import datetime, timezone
 
-from models.user_paths import UserPaths
 from models import (
     Categories,
     BridgeTypes,
@@ -12,19 +11,20 @@ from models import (
     BridgeComponentForms,
     Paths,
     AssessmentUnit,
+    UserPaths,
 )
-from schemas.user_paths import (
+from schemas import (
     UserPathsCreate,
     UserPathsUpdate,
     UserPathsResponse,
     CascadeOptionsRequest,
     CascadeOptionsResponse,
     NestedPathNode,
+    PathValidationRequest,
 )
-from schemas.inspection_records import PathValidationRequest
-from services.base_crud import BaseCRUDService, PageParams
+from services import BaseCRUDService, PageParams, get_inspection_records_service
 from exceptions import NotFoundException, ValidationException, DuplicateException
-from services.inspection_records import get_inspection_records_service
+from utils import get_assessment_units_by_category
 
 
 class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpdate]):
@@ -32,6 +32,39 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
 
     def __init__(self, session: Session):
         super().__init__(UserPaths, session)
+
+    def _get_category_options(self) -> List[Dict[str, Any]]:
+        """获取桥梁类别选项"""
+        try:
+            # 从 paths 表里获取所有的桥梁类别
+            exist_category_ids_stmt = (
+                select(Paths.category_id)
+                .where(and_(Paths.category_id.is_not(None), Paths.is_active == True))
+                .distinct()
+            )
+            exist_category_ids = self.session.exec(exist_category_ids_stmt).all()
+
+            if not exist_category_ids:
+                return []
+
+            # 查询分类详细信息
+            stmt = (
+                select(Categories.id, Categories.name)
+                .where(
+                    and_(
+                        Categories.id.in_(exist_category_ids),
+                        Categories.is_active == True,
+                    )
+                )
+                .order_by(Categories.name)
+            )
+
+            results = self.session.exec(stmt).all()
+            return [{"id": r[0], "name": r[1]} for r in results]
+
+        except Exception as e:
+            print(f"获取桥梁类别选项时出错: {e}")
+            return []
 
     def get_cascade_options(
         self, request: CascadeOptionsRequest
@@ -46,15 +79,42 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
             级联选项响应
         """
         try:
+            # 获取桥梁类别选项
+            category_options = self._get_category_options()
+
+            # 获取评定单元选项
+            assessment_unit_options = get_assessment_units_by_category(
+                request.category_id, self.session
+            )
+            # print("评定单元选项：", assessment_unit_options)
+            assessment_unit_null_id = -1
+            if (
+                len(assessment_unit_options) == 1
+                and assessment_unit_options[0]["name"] == "-"
+            ):
+                assessment_unit_null_id = assessment_unit_options[0]["id"]
+                # print("评定单元“-”的 id：", assessment_unit_null_id)
+                assessment_unit_options = []
+
+            if not request.assessment_unit_id:
+                request.assessment_unit_id = assessment_unit_null_id
+
             # 获取桥梁类型选项
-            bridge_type_options = self._get_bridge_type_options()
+            bridge_type_options = self._get_bridge_type_options(
+                request.category_id, request.assessment_unit_id
+            )
 
             # 获取部位选项
-            part_options = self._get_part_options(request.bridge_type_id)
+            part_options = self._get_part_options(
+                request.category_id, request.assessment_unit_id, request.bridge_type_id
+            )
 
             # 获取结构类型选项
             structure_options = self._get_structure_options(
-                request.bridge_type_id, request.part_id
+                request.category_id,
+                request.assessment_unit_id,
+                request.bridge_type_id,
+                request.part_id,
             )
 
             # 如果只有一个元素，并且name是“-”，则结构类型返回空列表，并把 name 对应的 id 传递给部件类型选项
@@ -67,7 +127,11 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
             if not request.structure_id:
                 request.structure_id = structure_null_id
             component_type_options = self._get_component_type_options(
-                request.bridge_type_id, request.part_id, request.structure_id
+                request.category_id,
+                request.assessment_unit_id,
+                request.bridge_type_id,
+                request.part_id,
+                request.structure_id,
             )
 
             component_null_id = -1
@@ -82,6 +146,8 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
             if not request.component_type_id:
                 request.component_type_id = component_null_id
             component_form_options = self._get_component_form_options(
+                request.category_id,
+                request.assessment_unit_id,
                 request.bridge_type_id,
                 request.part_id,
                 request.structure_id,
@@ -95,6 +161,8 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
                 component_form_options = []
 
             return CascadeOptionsResponse(
+                category_options=category_options,
+                assessment_unit_options=assessment_unit_options,
                 bridge_type_options=bridge_type_options,
                 part_options=part_options,
                 structure_options=structure_options,
@@ -106,16 +174,25 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
             print(f"获取级联选项时出错: {e}")
             raise Exception(f"获取级联选项失败: {str(e)}")
 
-    def _get_bridge_type_options(self) -> List[Dict[str, Any]]:
+    def _get_bridge_type_options(
+        self, category_id: int, assessment_unit_id: int
+    ) -> List[Dict[str, Any]]:
         """获取桥梁类型选项"""
         try:
-            # 从paths表获取存在的桥梁类型ID
-            existing_bridge_type_ids_stmt = (
-                select(Paths.bridge_type_id)
-                .where(and_(Paths.bridge_type_id.is_not(None), Paths.is_active == True))
-                .distinct()
+            conditions = [
+                Paths.category_id == category_id,
+                Paths.bridge_type_id.is_not(None),
+                Paths.is_active == True,
+            ]
+            if assessment_unit_id is not None:
+                conditions.append(Paths.assessment_unit_id == assessment_unit_id)
+            else:
+                conditions.append(Paths.assessment_unit_id.is_(None))
+
+            existing_ids_stmt = (
+                select(Paths.bridge_type_id).where(and_(*conditions)).distinct()
             )
-            existing_ids = self.session.exec(existing_bridge_type_ids_stmt).all()
+            existing_ids = self.session.exec(existing_ids_stmt).all()
 
             if not existing_ids:
                 return []
@@ -125,7 +202,8 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
                 select(BridgeTypes.id, BridgeTypes.name)
                 .where(
                     and_(
-                        BridgeTypes.id.in_(existing_ids), BridgeTypes.is_active == True
+                        BridgeTypes.id.in_(existing_ids),
+                        BridgeTypes.is_active == True,
                     )
                 )
                 .order_by(BridgeTypes.name)
@@ -138,13 +216,16 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
             print(f"获取桥梁类型选项时出错: {e}")
             return []
 
-    def _get_part_options(self, bridge_type_id: int) -> List[Dict[str, Any]]:
+    def _get_part_options(
+        self, category_id: int, assessment_unit_id: int, bridge_type_id: int
+    ) -> List[Dict[str, Any]]:
         """获取部位选项"""
         try:
             existing_part_ids_stmt = (
                 select(Paths.part_id)
                 .where(
                     and_(
+                        Paths.category_id == category_id,
                         Paths.bridge_type_id == bridge_type_id,
                         Paths.part_id.is_not(None),
                         Paths.is_active == True,
@@ -152,6 +233,16 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
                 )
                 .distinct()
             )
+
+            if assessment_unit_id is not None:
+                existing_part_ids_stmt = existing_part_ids_stmt.where(
+                    Paths.assessment_unit_id == assessment_unit_id
+                )
+            else:
+                existing_part_ids_stmt = existing_part_ids_stmt.where(
+                    Paths.assessment_unit_id.is_(None)
+                )
+
             existing_ids = self.session.exec(existing_part_ids_stmt).all()
 
             if not existing_ids:
@@ -176,7 +267,11 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
             return []
 
     def _get_structure_options(
-        self, bridge_type_id: int, part_id: int
+        self,
+        category_id: int,
+        assessment_unit_id: int,
+        bridge_type_id: int,
+        part_id: int,
     ) -> List[Dict[str, Any]]:
         """获取结构类型选项"""
         try:
@@ -184,6 +279,7 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
                 select(Paths.structure_id)
                 .where(
                     and_(
+                        Paths.category_id == category_id,
                         Paths.bridge_type_id == bridge_type_id,
                         Paths.part_id == part_id,
                         Paths.structure_id.is_not(None),
@@ -192,6 +288,15 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
                 )
                 .distinct()
             )
+
+            if assessment_unit_id is not None:
+                existing_structure_ids_stmt = existing_structure_ids_stmt.where(
+                    Paths.assessment_unit_id == assessment_unit_id
+                )
+            else:
+                existing_structure_ids_stmt = existing_structure_ids_stmt.where(
+                    Paths.assessment_unit_id.is_(None)
+                )
             existing_ids = self.session.exec(existing_structure_ids_stmt).all()
 
             if not existing_ids:
@@ -222,13 +327,19 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
             return []
 
     def _get_component_type_options(
-        self, bridge_type_id: int, part_id: int, structure_id: Optional[int]
+        self,
+        category_id: int,
+        assessment_unit_id: int,
+        bridge_type_id: int,
+        part_id: int,
+        structure_id: Optional[int],
     ) -> List[Dict[str, Any]]:
         """获取部件类型选项"""
         try:
             # 查询条件
             conditions = [
                 Paths.bridge_type_id == bridge_type_id,
+                Paths.category_id == category_id,
                 Paths.part_id == part_id,
                 Paths.component_type_id.is_not(None),
                 Paths.is_active == True,
@@ -240,6 +351,10 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
             else:
                 conditions.append(Paths.structure_id.is_(None))
 
+            if assessment_unit_id is not None:
+                conditions.append(Paths.assessment_unit_id == assessment_unit_id)
+            else:
+                conditions.append(Paths.assessment_unit_id.is_(None))
             existing_component_type_ids_stmt = (
                 select(Paths.component_type_id).where(and_(*conditions)).distinct()
             )
@@ -273,6 +388,8 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
 
     def _get_component_form_options(
         self,
+        category_id: int,
+        assessment_unit_id: int,
         bridge_type_id: int,
         part_id: int,
         structure_id: Optional[int],
@@ -283,6 +400,7 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
             # 查询条件
             conditions = [
                 Paths.bridge_type_id == bridge_type_id,
+                Paths.category_id == category_id,
                 Paths.part_id == part_id,
                 Paths.component_form_id.is_not(None),
                 Paths.is_active == True,
@@ -300,6 +418,10 @@ class UserPathsService(BaseCRUDService[UserPaths, UserPathsCreate, UserPathsUpda
             else:
                 conditions.append(Paths.component_type_id.is_(None))
 
+            if assessment_unit_id is not None:
+                conditions.append(Paths.assessment_unit_id == assessment_unit_id)
+            else:
+                conditions.append(Paths.assessment_unit_id.is_(None))
             existing_component_form_ids_stmt = (
                 select(Paths.component_form_id).where(and_(*conditions)).distinct()
             )

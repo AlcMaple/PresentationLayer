@@ -25,21 +25,27 @@ class UserPaths(BaseModel, table=True):
     )
 
     # 基础路径字段
-    category_id: int = Field(foreign_key="categories.id", description="桥梁类别ID")
-    assessment_unit_id: Optional[int] = Field(
-        default=None, foreign_key="assessment_units.id", description="评定单元ID"
-    )
-    bridge_type_id: int = Field(foreign_key="bridge_types.id", description="桥梁类型ID")
-    part_id: int = Field(foreign_key="bridge_parts.id", description="部位ID")
-    structure_id: Optional[int] = Field(
-        default=None, foreign_key="bridge_structures.id", description="结构类型ID"
-    )
-    component_type_id: Optional[int] = Field(
-        default=None, foreign_key="bridge_component_types.id", description="部件类型ID"
-    )
-    component_form_id: Optional[int] = Field(
-        default=None, foreign_key="bridge_component_forms.id", description="构件形式ID"
-    )
+    # category_id: Optional[int] = Field(
+    #     default=None, foreign_key="categories.id", description="桥梁类别ID"
+    # )
+    # assessment_unit_id: Optional[int] = Field(
+    #     default=None, foreign_key="assessment_units.id", description="评定单元ID"
+    # )
+    # bridge_type_id: Optional[int] = Field(
+    #     default=None, foreign_key="bridge_types.id", description="桥梁类型ID"
+    # )
+    # part_id: Optional[int] = Field(
+    #     default=None, foreign_key="bridge_parts.id", description="部位ID"
+    # )
+    # structure_id: Optional[int] = Field(
+    #     default=None, foreign_key="bridge_structures.id", description="结构类型ID"
+    # )
+    # component_type_id: Optional[int] = Field(
+    #     default=None, foreign_key="bridge_component_types.id", description="部件类型ID"
+    # )
+    # component_form_id: Optional[int] = Field(
+    #     default=None, foreign_key="bridge_component_forms.id", description="构件形式ID"
+    # )
 
     # 关联的基础路径ID
     paths_id: int = Field(foreign_key="paths.id", description="关联的基础路径ID")
@@ -54,6 +60,6 @@ class UserPaths(BaseModel, table=True):
         Index("idx_user_paths_paths_id", "paths_id"),
         Index("idx_user_paths_active", "is_active"),
         # 业务查询索引
-        Index("idx_user_paths_category_bridge", "category_id", "bridge_type_id"),
-        Index("idx_user_paths_full_path", "category_id", "bridge_type_id", "part_id"),
+        # Index("idx_user_paths_category_bridge", "category_id", "bridge_type_id"),
+        # Index("idx_user_paths_full_path", "category_id", "bridge_type_id", "part_id"),
     )

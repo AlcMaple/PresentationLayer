@@ -1,0 +1,121 @@
+<svg viewBox="0 0 1000 700" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <linearGradient id="layerGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style="stop-color:#f8f9fa;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#e9ecef;stop-opacity:1" />
+        </linearGradient>
+        <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#6c757d" />
+        </marker>
+    </defs>
+
+    <!-- 背景 -->
+    <rect width="1000" height="700" fill="#fafbfc" />
+
+    <!-- 标题 -->
+    <text x="500" y="30" text-anchor="middle" font-size="20" font-weight="bold" fill="#2c3e50">
+        桥梁评分系统后端架构图
+    </text>
+    <text x="500" y="50" text-anchor="middle" font-size="12" fill="#7f8c8d">
+        Python + FastAPI + MySQL + SQLModel
+    </text>
+
+    <!-- 用户层 -->
+    <rect x="50" y="80" width="900" height="80" fill="url(#layerGrad)" stroke="#3498db" stroke-width="2" rx="5" />
+    <text x="70" y="105" font-size="16" font-weight="bold" fill="#2c3e50">用户层 (User Layer)</text>
+    <text x="70" y="125" font-size="12" fill="#555">前端应用、移动端、第三方系统等API消费者</text>
+
+    <rect x="100" y="135" width="120" height="20" fill="#3498db" stroke="#2980b9" rx="3" />
+    <text x="160" y="148" text-anchor="middle" font-size="10" fill="white">前端界面</text>
+
+    <rect x="240" y="135" width="120" height="20" fill="#3498db" stroke="#2980b9" rx="3" />
+    <text x="300" y="148" text-anchor="middle" font-size="10" fill="white">移动端APP</text>
+
+    <rect x="380" y="135" width="120" height="20" fill="#3498db" stroke="#2980b9" rx="3" />
+    <text x="440" y="148" text-anchor="middle" font-size="10" fill="white">第三方系统</text>
+
+    <rect x="520" y="135" width="120" height="20" fill="#3498db" stroke="#2980b9" rx="3" />
+    <text x="580" y="148" text-anchor="middle" font-size="10" fill="white">API测试工具</text>
+
+    <rect x="660" y="135" width="120" height="20" fill="#3498db" stroke="#2980b9" rx="3" />
+    <text x="720" y="148" text-anchor="middle" font-size="10" fill="white">数据分析工具</text>
+
+    <!-- 应用层 -->
+    <rect x="50" y="180" width="900" height="150" fill="url(#layerGrad)" stroke="#e67e22" stroke-width="2" rx="5" />
+    <text x="70" y="205" font-size="16" font-weight="bold" fill="#2c3e50">应用层 (Application Layer)</text>
+
+    <!-- API网关 -->
+    <rect x="80" y="220" width="840" height="35" fill="#f39c12" stroke="#e67e22" rx="3" />
+    <text x="100" y="240" font-size="14" font-weight="bold" fill="white">API网关 - FastAPI路由、CORS、异常处理、请求响应格式化</text>
+
+    <!-- 两大业务模块 -->
+    <text x="80" y="275" font-size="14" font-weight="bold" fill="#2c3e50">核心业务模块:</text>
+
+    <rect x="100" y="285" width="380" height="35" fill="#e67e22" stroke="#d35400" rx="3" />
+    <text x="290" y="300" text-anchor="middle" font-size="12" font-weight="bold" fill="white">基础管理模块 (base)</text>
+    <text x="290" y="315" text-anchor="middle" font-size="10" fill="white">基础数据CRUD: 分类、桥梁类型、部位、结构、部件、病害、标度等</text>
+
+    <rect x="500" y="285" width="380" height="35" fill="#e67e22" stroke="#d35400" rx="3" />
+    <text x="690" y="300" text-anchor="middle" font-size="12" font-weight="bold" fill="white">路径管理模块 (paths)</text>
+    <text x="690" y="315" text-anchor="middle" font-size="10" fill="white">用户路径、数据录入、评分计算、权重管理</text>
+
+    <!-- 数据层 -->
+    <rect x="50" y="350" width="900" height="280" fill="url(#layerGrad)" stroke="#27ae60" stroke-width="2" rx="5" />
+    <text x="70" y="375" font-size="16" font-weight="bold" fill="#2c3e50">数据层 (Data Layer)</text>
+
+    <!-- SQLModel ORM -->
+    <rect x="80" y="390" width="840" height="25" fill="#2ecc71" stroke="#27ae60" rx="3" />
+    <text x="100" y="407" font-size="12" font-weight="bold" fill="white">SQLModel ORM + MySQL数据库</text>
+
+    <!-- 数据表分组 -->
+    <text x="80" y="435" font-size="14" font-weight="bold" fill="#2c3e50">核心数据表:</text>
+
+    <!-- 基础数据表组 -->
+    <rect x="100" y="450" width="350" height="80" fill="#95a5a6" stroke="#7f8c8d" rx="3" />
+    <text x="275" y="470" text-anchor="middle" font-size="12" font-weight="bold" fill="white">基础数据表组</text>
+    <text x="120" y="490" font-size="10" fill="white">• categories (分类)</text>
+    <text x="120" y="505" font-size="10" fill="white">• assessment_units (评定单元)</text>
+    <text x="120" y="520" font-size="10" fill="white">• bridge_types (桥梁类型)</text>
+    <text x="275" y="490" font-size="10" fill="white">• bridge_parts (部位)</text>
+    <text x="275" y="505" font-size="10" fill="white">• bridge_structures (结构)</text>
+    <text x="275" y="520" font-size="10" fill="white">• bridge_component_types (部件)</text>
+
+    <!-- 路径数据表组 -->
+    <rect x="470" y="450" width="200" height="80" fill="#95a5a6" stroke="#7f8c8d" rx="3" />
+    <text x="570" y="470" text-anchor="middle" font-size="12" font-weight="bold" fill="white">路径数据表组</text>
+    <text x="490" y="490" font-size="10" fill="white">• paths (基础路径表)</text>
+    <text x="490" y="505" font-size="10" fill="white">• user_paths (用户路径表)</text>
+    <text x="490" y="520" font-size="10" fill="white">• inspection_records (检查记录)</text>
+
+    <!-- 评分配置表组 -->
+    <rect x="690" y="450" width="230" height="80" fill="#95a5a6" stroke="#7f8c8d" rx="3" />
+    <text x="805" y="470" text-anchor="middle" font-size="12" font-weight="bold" fill="white">评分配置表组</text>
+    <text x="710" y="490" font-size="10" fill="white">• scores (评分记录)</text>
+    <text x="710" y="505" font-size="10" fill="white">• weight_references (权重表)</text>
+    <text x="710" y="520" font-size="10" fill="white">• 枚举配置表 (ratings, t_values等)</text>
+
+    <!-- 数据关系说明 -->
+    <text x="80" y="555" font-size="14" font-weight="bold" fill="#2c3e50">数据流与关系:</text>
+
+    <rect x="100" y="565" width="800" height="55" fill="#ecf0f1" stroke="#bdc3c7" rx="3" />
+    <text x="120" y="585" font-size="11" fill="#2c3e50">
+        <tspan x="120" dy="0">1. 基础数据表 → 构建层次化的桥梁结构数据 (分类 → 评定单元 → 桥梁类型 → 部位 → 结构 → 部件 → 构件 → 病害)</tspan>
+        <tspan x="120" dy="15">2. 基础路径表 (paths) → 存储所有可能的数据路径组合，作为元数据</tspan>
+        <tspan x="120" dy="15">3. 用户路径表 (user_paths) → 用户基于基础路径创建的具体实例 → 检查记录表 (inspection_records) → 评分计算</tspan>
+    </text>
+
+    <!-- 数据流箭头 -->
+    <line x1="500" y1="160" x2="500" y2="180" stroke="#6c757d" stroke-width="2" marker-end="url(#arrowhead)" />
+    <line x1="500" y1="330" x2="500" y2="350" stroke="#6c757d" stroke-width="2" marker-end="url(#arrowhead)" />
+
+    <!-- 说明文字 -->
+    <text x="520" y="175" font-size="10" fill="#6c757d">HTTP请求</text>
+    <text x="520" y="345" font-size="10" fill="#6c757d">数据访问</text>
+
+    <!-- 底部架构特点 -->
+    <rect x="50" y="650" width="900" height="40" fill="#34495e" stroke="#2c3e50" rx="5" />
+    <text x="70" y="670" font-size="12" font-weight="bold" fill="white">架构特点:</text>
+    <text x="70" y="685" font-size="10" fill="#ecf0f1">
+        前后端分离 | 模块化路由 | 层次化数据结构 | 复杂业务逻辑支持 | 级联查询 | 权重动态计算 | 多维度评分算法
+    </text>
+</svg>
